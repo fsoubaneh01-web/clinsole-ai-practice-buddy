@@ -1,4 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
+
+export type DiabetesStatus = "none" | "type1" | "type2" | "prediabetes";
 
 export type Patient = {
   id: string;
@@ -6,9 +10,9 @@ export type Patient = {
   phone: string;
   email?: string;
   address: string;
-  dob: string; // ISO date
+  dob: string;
   conditions: string[];
-  diabetesStatus: "none" | "type1" | "type2" | "prediabetes";
+  diabetesStatus: DiabetesStatus;
   allergies: string;
   notes: string;
   createdAt: string;
@@ -70,20 +74,31 @@ export const PLAN_LIMITS = {
   premium: { patients: Infinity, aiPerMonth: Infinity },
 } as const;
 
-type State = {
+type LocalExtras = {
   nurse: Nurse | null;
+  onboarded: boolean;
+  appointments: Appointment[];
+  transactions: Transaction[];
+  patientExtras: Record<string, { assessments: Assessment[]; treatments: Treatment[] }>;
+};
+
+type Ctx = {
+  session: Session | null;
+  loading: boolean;
+  nurse: Nurse | null;
+  onboarded: boolean;
   patients: Patient[];
   appointments: Appointment[];
   transactions: Transaction[];
-  onboarded: boolean;
-};
 
-type Ctx = State & {
-  signIn: (email: string) => void;
-  signOut: () => void;
+  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string) => Promise<{ error?: string }>;
+  signOut: () => Promise<void>;
+
   setNurse: (n: Nurse) => void;
-  addPatient: (p: Omit<Patient, "id" | "createdAt" | "assessments" | "treatments">) => Patient | null;
-  updatePatient: (id: string, p: Partial<Patient>) => void;
+  addPatient: (p: Omit<Patient, "id" | "createdAt" | "assessments" | "treatments">) => Promise<Patient | null>;
+  updatePatient: (id: string, p: Partial<Patient>) => Promise<void>;
+  deletePatient: (id: string) => Promise<void>;
   addTreatment: (patientId: string, t: Omit<Treatment, "id">) => void;
   addAppointment: (a: Omit<Appointment, "id">) => void;
   deleteAppointment: (id: string) => void;
@@ -93,99 +108,111 @@ type Ctx = State & {
   ageOf: (dob: string) => number;
 };
 
-const KEY = "clinsole-state-v2";
-
-const seedDate = (offsetDays: number, hour = 10) => {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  d.setHours(hour, 0, 0, 0);
-  return d.toISOString();
-};
-
-const yearsAgo = (n: number) => {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - n);
-  return d.toISOString().slice(0, 10);
-};
-
-const seed = (): State => {
-  const p1: Patient = {
-    id: "p1",
-    name: "Margaret Chen",
-    phone: "(416) 555-0142",
-    email: "margaret.c@example.com",
-    address: "22 Elm St, Toronto",
-    dob: yearsAgo(74),
-    conditions: ["Neuropathy", "Hypertension"],
-    diabetesStatus: "type2",
-    allergies: "Penicillin",
-    notes: "Prefers morning visits. Cat at home.",
-    createdAt: seedDate(-40),
-    assessments: [{ id: "a1", date: seedDate(-14), summary: "Mild callus on 1st MTP, no ulceration", risk: "medium" }],
-    treatments: [{
-      id: "t1", date: seedDate(-14), fee: 75,
-      soap: {
-        s: "Reports mild burning in R foot at night.",
-        o: "Callus 1st MTP R, dry skin bilateral heels. Monofilament: 6/10 sites.",
-        a: "Diabetic foot at moderate risk; callus requiring debridement.",
-        p: "Debride callus, emollient, review footwear. F/U 4 weeks.",
-      },
-    }],
-    nextFollowUp: seedDate(14),
-  };
-  const p2: Patient = {
-    id: "p2", name: "Harold Whitaker", phone: "(416) 555-0198",
-    address: "14 Oak Ave, North York", dob: yearsAgo(81),
-    conditions: ["Peripheral Vascular Disease"], diabetesStatus: "none",
-    allergies: "None known", notes: "Uses walker. Daughter present.",
-    createdAt: seedDate(-90),
-    assessments: [{ id: "a2", date: seedDate(-7), summary: "Onychomycosis all toenails", risk: "low" }],
-    treatments: [], nextFollowUp: seedDate(21),
-  };
-  const p3: Patient = {
-    id: "p3", name: "Priya Ramesh", phone: "(647) 555-0173",
-    address: "88 Maple Rd, Scarborough", dob: yearsAgo(68),
-    conditions: ["Rheumatoid Arthritis"], diabetesStatus: "prediabetes",
-    allergies: "Latex", notes: "", createdAt: seedDate(-10),
-    assessments: [], treatments: [],
-  };
-
-  return {
-    onboarded: false, nurse: null,
-    patients: [p1, p2, p3],
-    appointments: [
-      { id: "ap1", patientId: "p1", patientName: p1.name, date: seedDate(0, 9), duration: 45, type: "Routine footcare" },
-      { id: "ap2", patientId: "p2", patientName: p2.name, date: seedDate(0, 11), duration: 60, type: "Nail care" },
-      { id: "ap3", patientId: "p3", patientName: p3.name, date: seedDate(0, 14), duration: 45, type: "Initial assessment" },
-      { id: "ap4", patientId: "p1", patientName: p1.name, date: seedDate(2, 10), duration: 45, type: "Follow-up" },
-      { id: "ap5", patientId: "p2", patientName: p2.name, date: seedDate(5, 13), duration: 60, type: "Nail care", recurring: "monthly" },
-    ],
-    transactions: [
-      { id: "tx1", type: "income", amount: 75, date: seedDate(-1), category: "Visit", patientId: "p1" },
-      { id: "tx2", type: "income", amount: 90, date: seedDate(-3), category: "Visit", patientId: "p2" },
-      { id: "tx3", type: "income", amount: 75, date: seedDate(-5), category: "Visit", patientId: "p1" },
-      { id: "tx4", type: "expense", amount: 32, date: seedDate(-6), category: "Supplies", note: "Gauze, blades" },
-      { id: "tx5", type: "income", amount: 120, date: seedDate(-8), category: "Assessment", patientId: "p3" },
-      { id: "tx6", type: "expense", amount: 60, date: seedDate(-12), category: "Fuel" },
-    ],
-  };
-};
-
 const StoreCtx = createContext<Ctx | null>(null);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>(() => {
-    if (typeof window === "undefined") return seed();
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) return JSON.parse(raw);
-    } catch {}
-    return seed();
-  });
+const localKey = (userId: string) => `clinsole-local-${userId}`;
 
+const emptyExtras: LocalExtras = {
+  nurse: null,
+  onboarded: false,
+  appointments: [],
+  transactions: [],
+  patientExtras: {},
+};
+
+const loadLocal = (userId: string): LocalExtras => {
+  if (typeof window === "undefined") return emptyExtras;
+  try {
+    const raw = localStorage.getItem(localKey(userId));
+    if (raw) return { ...emptyExtras, ...JSON.parse(raw) };
+  } catch {}
+  return emptyExtras;
+};
+
+const saveLocal = (userId: string, data: LocalExtras) => {
+  try { localStorage.setItem(localKey(userId), JSON.stringify(data)); } catch {}
+};
+
+type PatientRow = {
+  id: string;
+  name: string;
+  dob: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  conditions: string[] | null;
+  diabetes_status: DiabetesStatus;
+  allergies: string | null;
+  notes: string | null;
+  next_follow_up: string | null;
+  created_at: string;
+};
+
+const rowToPatient = (row: PatientRow, extras?: { assessments: Assessment[]; treatments: Treatment[] }): Patient => ({
+  id: row.id,
+  name: row.name,
+  dob: row.dob ?? "",
+  phone: row.phone ?? "",
+  email: row.email ?? undefined,
+  address: row.address ?? "",
+  conditions: row.conditions ?? [],
+  diabetesStatus: row.diabetes_status,
+  allergies: row.allergies ?? "",
+  notes: row.notes ?? "",
+  nextFollowUp: row.next_follow_up ?? undefined,
+  createdAt: row.created_at,
+  assessments: extras?.assessments ?? [],
+  treatments: extras?.treatments ?? [],
+});
+
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [extras, setExtras] = useState<LocalExtras>(emptyExtras);
+  const [patients, setPatients] = useState<Patient[]>([]);
+
+  // Auth session
   useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
-  }, [state]);
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Load local extras + patients on session change
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) {
+      setExtras(emptyExtras);
+      setPatients([]);
+      return;
+    }
+    const local = loadLocal(userId);
+    // hydrate email from session if missing
+    if (local.nurse && !local.nurse.email) local.nurse.email = session.user.email || "";
+    setExtras(local);
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("patients")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error("load patients", error);
+        return;
+      }
+      setPatients((data as PatientRow[]).map((r) => rowToPatient(r, local.patientExtras[r.id])));
+    })();
+  }, [session]);
+
+  // Persist local extras
+  useEffect(() => {
+    if (session?.user?.id) saveLocal(session.user.id, extras);
+  }, [extras, session]);
 
   const id = () => Math.random().toString(36).slice(2, 10);
 
@@ -197,46 +224,122 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const ctx: Ctx = {
-    ...state,
+    session,
+    loading,
+    nurse: extras.nurse,
+    onboarded: extras.onboarded,
+    patients,
+    appointments: extras.appointments,
+    transactions: extras.transactions,
     ageOf,
-    signIn: (email) =>
-      setState((s) => ({
-        ...s,
-        nurse: s.nurse ?? {
-          name: "", email, credentials: "RN, Advanced Foot Care",
-          serviceArea: "", yearsExperience: 0, bio: "",
-          plan: "free", aiUsedThisMonth: 0,
-        },
-      })),
-    signOut: () => setState((s) => ({ ...s, nurse: null, onboarded: false })),
-    setNurse: (n) => setState((s) => ({ ...s, nurse: n, onboarded: true })),
-    addPatient: (p) => {
-      const plan = state.nurse?.plan || "free";
-      if (state.patients.length >= PLAN_LIMITS[plan].patients) return null;
-      const newP: Patient = { ...p, id: id(), createdAt: new Date().toISOString(), assessments: [], treatments: [] };
-      setState((s) => ({ ...s, patients: [newP, ...s.patients] }));
+
+    signIn: async (email, password) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return error ? { error: error.message } : {};
+    },
+    signUp: async (email, password) => {
+      const redirect = typeof window !== "undefined" ? `${window.location.origin}/app/dashboard` : undefined;
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: redirect },
+      });
+      return error ? { error: error.message } : {};
+    },
+    signOut: async () => {
+      await supabase.auth.signOut();
+      setPatients([]);
+      setExtras(emptyExtras);
+    },
+
+    setNurse: (n) => setExtras((s) => ({ ...s, nurse: n, onboarded: true })),
+
+    addPatient: async (p) => {
+      const userId = session?.user?.id;
+      if (!userId) return null;
+      const plan = extras.nurse?.plan || "free";
+      if (patients.length >= PLAN_LIMITS[plan].patients) return null;
+      const { data, error } = await supabase
+        .from("patients")
+        .insert({
+          nurse_id: userId,
+          name: p.name,
+          dob: p.dob || null,
+          phone: p.phone || null,
+          email: p.email || null,
+          address: p.address || null,
+          conditions: p.conditions,
+          diabetes_status: p.diabetesStatus,
+          allergies: p.allergies || null,
+          notes: p.notes || null,
+          next_follow_up: p.nextFollowUp || null,
+        })
+        .select()
+        .single();
+      if (error || !data) {
+        console.error("addPatient", error);
+        return null;
+      }
+      const newP = rowToPatient(data as PatientRow);
+      setPatients((s) => [newP, ...s]);
       return newP;
     },
-    updatePatient: (pid, p) =>
-      setState((s) => ({ ...s, patients: s.patients.map((x) => (x.id === pid ? { ...x, ...p } : x)) })),
-    addTreatment: (pid, t) =>
-      setState((s) => ({
+    updatePatient: async (pid, p) => {
+      const patch: Record<string, unknown> = {};
+      if (p.name !== undefined) patch.name = p.name;
+      if (p.dob !== undefined) patch.dob = p.dob || null;
+      if (p.phone !== undefined) patch.phone = p.phone || null;
+      if (p.email !== undefined) patch.email = p.email || null;
+      if (p.address !== undefined) patch.address = p.address || null;
+      if (p.conditions !== undefined) patch.conditions = p.conditions;
+      if (p.diabetesStatus !== undefined) patch.diabetes_status = p.diabetesStatus;
+      if (p.allergies !== undefined) patch.allergies = p.allergies || null;
+      if (p.notes !== undefined) patch.notes = p.notes || null;
+      if (p.nextFollowUp !== undefined) patch.next_follow_up = p.nextFollowUp || null;
+
+      if (Object.keys(patch).length > 0) {
+        const { error } = await supabase.from("patients").update(patch).eq("id", pid);
+        if (error) { console.error("updatePatient", error); return; }
+      }
+      setPatients((s) => s.map((x) => (x.id === pid ? { ...x, ...p } : x)));
+    },
+    deletePatient: async (pid) => {
+      const { error } = await supabase.from("patients").delete().eq("id", pid);
+      if (error) { console.error("deletePatient", error); return; }
+      setPatients((s) => s.filter((x) => x.id !== pid));
+      setExtras((s) => {
+        const { [pid]: _, ...rest } = s.patientExtras;
+        return { ...s, patientExtras: rest };
+      });
+    },
+    addTreatment: (pid, t) => {
+      const treatment: Treatment = { ...t, id: id() };
+      setExtras((s) => ({
         ...s,
-        patients: s.patients.map((x) =>
-          x.id === pid ? { ...x, treatments: [{ ...t, id: id() }, ...x.treatments] } : x,
-        ),
-      })),
-    addAppointment: (a) => setState((s) => ({ ...s, appointments: [...s.appointments, { ...a, id: id() }] })),
-    deleteAppointment: (aid) => setState((s) => ({ ...s, appointments: s.appointments.filter((a) => a.id !== aid) })),
-    addTransaction: (t) => setState((s) => ({ ...s, transactions: [{ ...t, id: id() }, ...s.transactions] })),
+        patientExtras: {
+          ...s.patientExtras,
+          [pid]: {
+            assessments: s.patientExtras[pid]?.assessments ?? [],
+            treatments: [treatment, ...(s.patientExtras[pid]?.treatments ?? [])],
+          },
+        },
+      }));
+      setPatients((s) => s.map((x) => (x.id === pid ? { ...x, treatments: [treatment, ...x.treatments] } : x)));
+    },
+    addAppointment: (a) =>
+      setExtras((s) => ({ ...s, appointments: [...s.appointments, { ...a, id: id() }] })),
+    deleteAppointment: (aid) =>
+      setExtras((s) => ({ ...s, appointments: s.appointments.filter((a) => a.id !== aid) })),
+    addTransaction: (t) =>
+      setExtras((s) => ({ ...s, transactions: [{ ...t, id: id() }, ...s.transactions] })),
     upgradeToPremium: () =>
-      setState((s) => ({ ...s, nurse: s.nurse ? { ...s.nurse, plan: "premium" } : s.nurse })),
+      setExtras((s) => ({ ...s, nurse: s.nurse ? { ...s.nurse, plan: "premium" } : s.nurse })),
     useAiCredit: () => {
-      const n = state.nurse;
+      const n = extras.nurse;
       if (!n) return false;
       const limit = PLAN_LIMITS[n.plan].aiPerMonth;
       if (n.aiUsedThisMonth >= limit) return false;
-      setState((s) => ({ ...s, nurse: s.nurse ? { ...s.nurse, aiUsedThisMonth: s.nurse.aiUsedThisMonth + 1 } : s.nurse }));
+      setExtras((s) => ({ ...s, nurse: s.nurse ? { ...s.nurse, aiUsedThisMonth: s.nurse.aiUsedThisMonth + 1 } : s.nurse }));
       return true;
     },
   };
