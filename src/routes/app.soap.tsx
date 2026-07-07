@@ -1,14 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AppShell } from "@/components/AppShell";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { AppShell, Container } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useStore } from "@/lib/store";
+import { useStore, PLAN_LIMITS } from "@/lib/store";
 import { generateSOAP } from "@/lib/ai-mock";
 import { useState } from "react";
-import { Sparkles, Save, Loader2 } from "lucide-react";
+import { Sparkles, Save, Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -21,29 +21,36 @@ export const Route = createFileRoute("/app/soap")({
 
 function SoapNote() {
   const { patientId } = Route.useSearch();
-  const { patients, addTreatment, addTransaction } = useStore();
+  const { patients, addTreatment, addTransaction, ageOf, nurse, useAiCredit } = useStore();
   const [pid, setPid] = useState(patientId || patients[0]?.id || "");
-  const [brief, setBrief] = useState("Routine nail care, mild callus 1st MTP right, patient reports occasional numbness at night.");
+  const [brief, setBrief] = useState("Patient diabetic, thickened nails, reduced sensation, nails trimmed and filed, education provided.");
   const [loading, setLoading] = useState(false);
   const [soap, setSoap] = useState<{ s: string; o: string; a: string; p: string } | null>(null);
   const [fee, setFee] = useState(75);
 
   const patient = patients.find((p) => p.id === pid);
+  const limit = PLAN_LIMITS[nurse?.plan || "free"].aiPerMonth;
+  const used = nurse?.aiUsedThisMonth || 0;
+  const outOfCredit = used >= limit;
 
   const gen = async () => {
     if (!patient) return;
+    if (!useAiCredit()) {
+      toast.error("You've used all AI notes on the Free plan this month.");
+      return;
+    }
     setLoading(true);
     try {
       const out = await generateSOAP({
-        patientName: patient.name,
-        age: patient.age,
-        conditions: patient.conditions,
+        patientName: patient.name, age: ageOf(patient.dob),
+        conditions: [
+          ...patient.conditions,
+          ...(patient.diabetesStatus !== "none" ? [`Diabetes ${patient.diabetesStatus}`] : []),
+        ],
         briefNotes: brief,
       });
       setSoap(out);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const save = () => {
@@ -51,56 +58,77 @@ function SoapNote() {
     addTreatment(patient.id, { date: new Date().toISOString(), soap, fee });
     addTransaction({ type: "income", amount: fee, date: new Date().toISOString(), category: "Visit", patientId: patient.id });
     toast.success("Note saved to patient record");
-    setSoap(null);
-    setBrief("");
+    setSoap(null); setBrief("");
   };
 
   return (
-    <AppShell title="AI SOAP Note">
-      <div className="space-y-4 px-5 pt-4">
-        <div className="rounded-2xl border bg-surface p-4 shadow-soft">
-          <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-            <Sparkles className="h-3.5 w-3.5" /> Draft with AI
-          </div>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>Patient</Label>
-              <Select value={pid} onValueChange={setPid}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+    <AppShell title="AI SOAP Note Generator">
+      <Container className="max-w-4xl py-6">
+        {nurse?.plan === "free" && (
+          <div className="mb-5 flex items-center gap-3 rounded-2xl border bg-surface p-4 shadow-soft">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent text-primary"><Crown className="h-5 w-5" /></div>
+            <div className="flex-1 text-sm">
+              <div className="font-semibold">Free plan · {used}/{limit} AI notes used this month</div>
+              <div className="text-xs text-muted-foreground">Upgrade to Premium for unlimited AI SOAP notes.</div>
             </div>
-            <div className="space-y-1.5">
-              <Label>Quick notes from visit</Label>
-              <Textarea rows={5} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="What did you observe and do?" />
-            </div>
-            <Button onClick={gen} disabled={loading || !patient} className="w-full gradient-primary text-primary-foreground">
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</> : <><Sparkles className="mr-2 h-4 w-4" />Generate SOAP note</>}
-            </Button>
-          </div>
-        </div>
-
-        {soap && (
-          <div className="space-y-3 rounded-2xl border bg-surface p-4 shadow-soft">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Review & edit</div>
-            {(["s","o","a","p"] as const).map((k) => (
-              <div key={k} className="space-y-1.5">
-                <Label className="uppercase">{k === "s" ? "Subjective" : k === "o" ? "Objective" : k === "a" ? "Assessment" : "Plan"}</Label>
-                <Textarea rows={k === "o" || k === "p" ? 4 : 3} value={soap[k]} onChange={(e) => setSoap({ ...soap, [k]: e.target.value })} />
-              </div>
-            ))}
-            <div className="space-y-1.5">
-              <Label>Visit fee</Label>
-              <Input type="number" value={fee} onChange={(e) => setFee(Number(e.target.value))} />
-            </div>
-            <Button onClick={save} size="lg" className="w-full gradient-primary text-primary-foreground">
-              <Save className="mr-2 h-4 w-4" /> Save to patient record
+            <Button asChild size="sm" className="gradient-primary text-primary-foreground">
+              <Link to="/app/subscription">Upgrade</Link>
             </Button>
           </div>
         )}
-      </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border bg-surface p-5 shadow-soft">
+            <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
+              <Sparkles className="h-3.5 w-3.5" /> Draft with AI
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Patient</Label>
+                <Select value={pid} onValueChange={setPid}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Quick visit notes</Label>
+                <Textarea rows={8} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="What did you observe and do?" />
+              </div>
+              <Button onClick={gen} disabled={loading || !patient || outOfCredit} className="w-full gradient-primary text-primary-foreground">
+                {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</> : <><Sparkles className="mr-2 h-4 w-4" />Generate SOAP note</>}
+              </Button>
+              {outOfCredit && <p className="text-center text-xs text-muted-foreground">Upgrade to Premium for unlimited notes.</p>}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-surface p-5 shadow-soft">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Review & edit</div>
+            {!soap ? (
+              <div className="grid h-64 place-items-center rounded-xl border border-dashed bg-surface-muted text-center text-sm text-muted-foreground">
+                Your AI-generated SOAP note will appear here.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(["s","o","a","p"] as const).map((k) => (
+                  <div key={k} className="space-y-1.5">
+                    <Label className="uppercase">{k === "s" ? "Subjective" : k === "o" ? "Objective" : k === "a" ? "Assessment" : "Plan"}</Label>
+                    <Textarea rows={k === "o" || k === "p" ? 4 : 3} value={soap[k]} onChange={(e) => setSoap({ ...soap, [k]: e.target.value })} />
+                  </div>
+                ))}
+                <div className="space-y-1.5">
+                  <Label>Visit fee ($)</Label>
+                  <Input type="number" value={fee} onChange={(e) => setFee(Number(e.target.value))} />
+                </div>
+                <Button onClick={save} size="lg" className="w-full gradient-primary text-primary-foreground">
+                  <Save className="mr-2 h-4 w-4" /> Save to patient record
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </Container>
     </AppShell>
   );
 }

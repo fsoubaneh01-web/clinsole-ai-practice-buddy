@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Brand } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
@@ -25,14 +25,14 @@ function Onboarding() {
     setNurse({
       ...form,
       email: nurse?.email || "nurse@example.com",
-      plan: nurse?.plan || "trial",
-      trialEndsAt: nurse?.trialEndsAt || new Date(Date.now() + 14 * 864e5).toISOString(),
+      plan: nurse?.plan || "free",
+      aiUsedThisMonth: nurse?.aiUsedThisMonth || 0,
     });
     nav({ to: "/app/dashboard" });
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-background px-6 pt-10 pb-10">
+    <div className="mx-auto min-h-screen max-w-lg bg-background px-6 pt-10 pb-10">
       <Brand />
       <div className="mt-8 flex items-center gap-2">
         {[0, 1, 2].map((i) => (
