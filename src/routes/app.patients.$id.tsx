@@ -198,7 +198,7 @@ function PatientProfile() {
 }
 
 type EditableFields = {
-  name: string; phone: string; email: string; address: string; dob: string;
+  name: string; phone: string; email?: string; address: string; dob: string;
   conditions: string[]; diabetesStatus: DiabetesStatus; allergies: string; notes: string;
 };
 
