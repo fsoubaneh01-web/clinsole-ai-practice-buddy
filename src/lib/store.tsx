@@ -285,7 +285,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return newP;
     },
     updatePatient: async (pid, p) => {
-      const patch: Record<string, unknown> = {};
+      const patch: {
+        name?: string; dob?: string | null; phone?: string | null; email?: string | null;
+        address?: string | null; conditions?: string[]; diabetes_status?: DiabetesStatus;
+        allergies?: string | null; notes?: string | null; next_follow_up?: string | null;
+      } = {};
       if (p.name !== undefined) patch.name = p.name;
       if (p.dob !== undefined) patch.dob = p.dob || null;
       if (p.phone !== undefined) patch.phone = p.phone || null;
