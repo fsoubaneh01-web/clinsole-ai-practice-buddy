@@ -9,38 +9,230 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppSubscriptionRouteImport } from './routes/app.subscription'
+import { Route as AppSoapRouteImport } from './routes/app.soap'
+import { Route as AppPatientsRouteImport } from './routes/app.patients'
+import { Route as AppIncomeRouteImport } from './routes/app.income'
+import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
+import { Route as AppCalendarRouteImport } from './routes/app.calendar'
+import { Route as AppAssistantRouteImport } from './routes/app.assistant'
+import { Route as AppPatientsNewRouteImport } from './routes/app.patients.new'
+import { Route as AppPatientsIdRouteImport } from './routes/app.patients.$id'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppSubscriptionRoute = AppSubscriptionRouteImport.update({
+  id: '/subscription',
+  path: '/subscription',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSoapRoute = AppSoapRouteImport.update({
+  id: '/soap',
+  path: '/soap',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPatientsRoute = AppPatientsRouteImport.update({
+  id: '/patients',
+  path: '/patients',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIncomeRoute = AppIncomeRouteImport.update({
+  id: '/income',
+  path: '/income',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAssistantRoute = AppAssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPatientsNewRoute = AppPatientsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AppPatientsRoute,
+} as any)
+const AppPatientsIdRoute = AppPatientsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppPatientsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
+  '/signup': typeof SignupRoute
+  '/app/assistant': typeof AppAssistantRoute
+  '/app/calendar': typeof AppCalendarRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/income': typeof AppIncomeRoute
+  '/app/patients': typeof AppPatientsRouteWithChildren
+  '/app/soap': typeof AppSoapRoute
+  '/app/subscription': typeof AppSubscriptionRoute
+  '/app/patients/$id': typeof AppPatientsIdRoute
+  '/app/patients/new': typeof AppPatientsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
+  '/signup': typeof SignupRoute
+  '/app/assistant': typeof AppAssistantRoute
+  '/app/calendar': typeof AppCalendarRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/income': typeof AppIncomeRoute
+  '/app/patients': typeof AppPatientsRouteWithChildren
+  '/app/soap': typeof AppSoapRoute
+  '/app/subscription': typeof AppSubscriptionRoute
+  '/app/patients/$id': typeof AppPatientsIdRoute
+  '/app/patients/new': typeof AppPatientsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
+  '/signup': typeof SignupRoute
+  '/app/assistant': typeof AppAssistantRoute
+  '/app/calendar': typeof AppCalendarRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/income': typeof AppIncomeRoute
+  '/app/patients': typeof AppPatientsRouteWithChildren
+  '/app/soap': typeof AppSoapRoute
+  '/app/subscription': typeof AppSubscriptionRoute
+  '/app/patients/$id': typeof AppPatientsIdRoute
+  '/app/patients/new': typeof AppPatientsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/login'
+    | '/onboarding'
+    | '/signup'
+    | '/app/assistant'
+    | '/app/calendar'
+    | '/app/dashboard'
+    | '/app/income'
+    | '/app/patients'
+    | '/app/soap'
+    | '/app/subscription'
+    | '/app/patients/$id'
+    | '/app/patients/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/app'
+    | '/login'
+    | '/onboarding'
+    | '/signup'
+    | '/app/assistant'
+    | '/app/calendar'
+    | '/app/dashboard'
+    | '/app/income'
+    | '/app/patients'
+    | '/app/soap'
+    | '/app/subscription'
+    | '/app/patients/$id'
+    | '/app/patients/new'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/login'
+    | '/onboarding'
+    | '/signup'
+    | '/app/assistant'
+    | '/app/calendar'
+    | '/app/dashboard'
+    | '/app/income'
+    | '/app/patients'
+    | '/app/soap'
+    | '/app/subscription'
+    | '/app/patients/$id'
+    | '/app/patients/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  OnboardingRoute: typeof OnboardingRoute
+  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +240,115 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/subscription': {
+      id: '/app/subscription'
+      path: '/subscription'
+      fullPath: '/app/subscription'
+      preLoaderRoute: typeof AppSubscriptionRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/soap': {
+      id: '/app/soap'
+      path: '/soap'
+      fullPath: '/app/soap'
+      preLoaderRoute: typeof AppSoapRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/patients': {
+      id: '/app/patients'
+      path: '/patients'
+      fullPath: '/app/patients'
+      preLoaderRoute: typeof AppPatientsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/income': {
+      id: '/app/income'
+      path: '/income'
+      fullPath: '/app/income'
+      preLoaderRoute: typeof AppIncomeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/dashboard': {
+      id: '/app/dashboard'
+      path: '/dashboard'
+      fullPath: '/app/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/calendar': {
+      id: '/app/calendar'
+      path: '/calendar'
+      fullPath: '/app/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/assistant': {
+      id: '/app/assistant'
+      path: '/assistant'
+      fullPath: '/app/assistant'
+      preLoaderRoute: typeof AppAssistantRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/patients/new': {
+      id: '/app/patients/new'
+      path: '/new'
+      fullPath: '/app/patients/new'
+      preLoaderRoute: typeof AppPatientsNewRouteImport
+      parentRoute: typeof AppPatientsRoute
+    }
+    '/app/patients/$id': {
+      id: '/app/patients/$id'
+      path: '/$id'
+      fullPath: '/app/patients/$id'
+      preLoaderRoute: typeof AppPatientsIdRouteImport
+      parentRoute: typeof AppPatientsRoute
+    }
   }
 }
 
+interface AppPatientsRouteChildren {
+  AppPatientsIdRoute: typeof AppPatientsIdRoute
+  AppPatientsNewRoute: typeof AppPatientsNewRoute
+}
+
+const AppPatientsRouteChildren: AppPatientsRouteChildren = {
+  AppPatientsIdRoute: AppPatientsIdRoute,
+  AppPatientsNewRoute: AppPatientsNewRoute,
+}
+
+const AppPatientsRouteWithChildren = AppPatientsRoute._addFileChildren(
+  AppPatientsRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppAssistantRoute: typeof AppAssistantRoute
+  AppCalendarRoute: typeof AppCalendarRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppIncomeRoute: typeof AppIncomeRoute
+  AppPatientsRoute: typeof AppPatientsRouteWithChildren
+  AppSoapRoute: typeof AppSoapRoute
+  AppSubscriptionRoute: typeof AppSubscriptionRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAssistantRoute: AppAssistantRoute,
+  AppCalendarRoute: AppCalendarRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppIncomeRoute: AppIncomeRoute,
+  AppPatientsRoute: AppPatientsRouteWithChildren,
+  AppSoapRoute: AppSoapRoute,
+  AppSubscriptionRoute: AppSubscriptionRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRoute,
+  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
