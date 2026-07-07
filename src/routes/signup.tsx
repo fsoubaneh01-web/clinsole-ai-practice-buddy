@@ -6,14 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStore } from "@/lib/store";
 import { ArrowLeft, Check } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({ component: Signup });
 
 function Signup() {
   const nav = useNavigate();
-  const { signIn } = useStore();
+  const { signUp } = useStore();
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-background px-6 pt-10 pb-10">
@@ -32,9 +34,13 @@ function Signup() {
 
       <form
         className="mt-6 space-y-4"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          signIn(email || "nurse@example.com");
+          setBusy(true);
+          const { error } = await signUp(email, pw);
+          setBusy(false);
+          if (error) { toast.error(error); return; }
+          toast.success("Account created");
           nav({ to: "/onboarding" });
         }}
       >
@@ -44,10 +50,10 @@ function Signup() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="pw">Password</Label>
-          <Input id="pw" type="password" required placeholder="At least 8 characters" value={pw} onChange={(e) => setPw(e.target.value)} />
+          <Input id="pw" type="password" required minLength={8} placeholder="At least 8 characters" value={pw} onChange={(e) => setPw(e.target.value)} />
         </div>
-        <Button type="submit" size="lg" className="w-full gradient-primary text-primary-foreground shadow-card">
-          Create account
+        <Button type="submit" size="lg" disabled={busy} className="w-full gradient-primary text-primary-foreground shadow-card">
+          {busy ? "Creating account..." : "Create account"}
         </Button>
       </form>
 
@@ -57,3 +63,4 @@ function Signup() {
     </div>
   );
 }
+
