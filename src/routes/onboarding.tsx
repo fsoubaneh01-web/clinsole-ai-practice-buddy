@@ -11,7 +11,7 @@ export const Route = createFileRoute("/onboarding")({ component: Onboarding });
 
 function Onboarding() {
   const nav = useNavigate();
-  const { nurse, setNurse } = useStore();
+  const { nurse, setNurse, session } = useStore();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     name: nurse?.name || "",
@@ -24,7 +24,7 @@ function Onboarding() {
   const submit = () => {
     setNurse({
       ...form,
-      email: nurse?.email || "nurse@example.com",
+      email: nurse?.email || session?.user?.email || "",
       plan: nurse?.plan || "free",
       aiUsedThisMonth: nurse?.aiUsedThisMonth || 0,
     });
