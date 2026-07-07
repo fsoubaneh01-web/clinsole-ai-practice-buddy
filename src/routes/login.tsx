@@ -6,14 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStore } from "@/lib/store";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
 function Login() {
   const nav = useNavigate();
   const { signIn, onboarded } = useStore();
-  const [email, setEmail] = useState("nurse@example.com");
-  const [pw, setPw] = useState("demo1234");
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-background px-6 pt-10 pb-10">
@@ -26,9 +28,12 @@ function Login() {
 
       <form
         className="mt-8 space-y-4"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          signIn(email);
+          setBusy(true);
+          const { error } = await signIn(email, pw);
+          setBusy(false);
+          if (error) { toast.error(error); return; }
           nav({ to: onboarded ? "/app/dashboard" : "/onboarding" });
         }}
       >
@@ -39,10 +44,9 @@ function Login() {
         <div className="space-y-1.5">
           <Label htmlFor="pw">Password</Label>
           <Input id="pw" type="password" required value={pw} onChange={(e) => setPw(e.target.value)} />
-          <div className="text-right"><a className="text-xs text-primary">Forgot password?</a></div>
         </div>
-        <Button type="submit" size="lg" className="w-full gradient-primary text-primary-foreground shadow-card">
-          Sign in
+        <Button type="submit" size="lg" disabled={busy} className="w-full gradient-primary text-primary-foreground shadow-card">
+          {busy ? "Signing in..." : "Sign in"}
         </Button>
       </form>
 
