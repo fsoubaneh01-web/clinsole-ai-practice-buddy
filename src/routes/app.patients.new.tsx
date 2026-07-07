@@ -49,15 +49,15 @@ function NewPatient() {
 
         <form
           className="space-y-4 rounded-3xl border bg-surface p-6 shadow-soft"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            const p = addPatient({
+            const p = await addPatient({
               name: f.name, phone: f.phone, email: f.email, address: f.address, dob: f.dob,
               conditions: f.conditions.split(",").map((s) => s.trim()).filter(Boolean),
               diabetesStatus: f.diabetesStatus, allergies: f.allergies, notes: f.notes,
             });
             if (!p) {
-              toast.error("Free plan limit reached. Upgrade to add more patients.");
+              toast.error("Could not add patient. Check your plan limit or sign in again.");
               return;
             }
             toast.success("Patient added");
