@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      patients: {
+        Row: {
+          address: string | null
+          allergies: string | null
+          conditions: string[]
+          created_at: string
+          diabetes_status: Database["public"]["Enums"]["diabetes_status"]
+          dob: string | null
+          email: string | null
+          id: string
+          name: string
+          next_follow_up: string | null
+          notes: string | null
+          nurse_id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          allergies?: string | null
+          conditions?: string[]
+          created_at?: string
+          diabetes_status?: Database["public"]["Enums"]["diabetes_status"]
+          dob?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          next_follow_up?: string | null
+          notes?: string | null
+          nurse_id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          allergies?: string | null
+          conditions?: string[]
+          created_at?: string
+          diabetes_status?: Database["public"]["Enums"]["diabetes_status"]
+          dob?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          next_follow_up?: string | null
+          notes?: string | null
+          nurse_id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +73,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      diabetes_status: "none" | "prediabetes" | "type1" | "type2"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +200,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      diabetes_status: ["none", "prediabetes", "type1", "type2"],
+    },
   },
 } as const
