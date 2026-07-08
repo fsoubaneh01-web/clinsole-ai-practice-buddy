@@ -140,10 +140,10 @@ function InsightBadge({ icon, label, tone }: { icon: React.ReactNode; label: str
 }
 
 /* ---------------- Dashboard ---------------- */
-function Dashboard({ dark, onToggleTheme }: ScreenProps) {
+function Dashboard({ dark, onToggleTheme, setTab, sessionOpen, onToggleSession }: ScreenProps) {
   return (
     <div className="px-4 pt-6 space-y-5">
-      <header className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+      <header className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div className="h-9 w-9 shrink-0 rounded-xl gradient-primary grid place-items-center text-primary-foreground">
             <Stethoscope size={18} />
@@ -153,13 +153,18 @@ function Dashboard({ dark, onToggleTheme }: ScreenProps) {
             <p className="text-[11px] text-muted-foreground -mt-0.5">Good morning, Nurse Alina</p>
           </div>
         </div>
-        <ThemeToggle dark={dark} onToggle={onToggleTheme} />
-        <button className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-2 text-xs font-medium shadow-sm hover:shadow-md transition-shadow">
-          <Plus size={14} /> Patient
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <ThemeToggle dark={dark} onToggle={onToggleTheme} />
+          <button className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-2 text-xs font-medium shadow-sm hover:shadow-md transition-shadow">
+            <Plus size={14} /> Patient
+          </button>
+        </div>
       </header>
 
+      <SessionPill open={sessionOpen} onToggle={onToggleSession} />
+
       <InsightsRow />
+
 
 
       {/* Active session */}
