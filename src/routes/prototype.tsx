@@ -894,12 +894,20 @@ function InteractiveFootMap() {
 }
 
 /* ---------------- Care timeline ---------------- */
-type TimelineItem = { title: string; patient: string; date: string; progress: number; tone: "teal" | "amber" | "eucalyptus" };
+type DayKey = "mon" | "tue" | "wed";
+type TimelineItem = {
+  title: string; patient: string; date: string; day: DayKey;
+  progress: number; tone: "teal" | "amber" | "eucalyptus"; details: string;
+};
 const TIMELINE: TimelineItem[] = [
-  { title: "Nail Care", patient: "Harold Whitaker", date: "Today · 09:15", progress: 100, tone: "eucalyptus" },
-  { title: "Ulcer Dressing Change", patient: "Harold Whitaker", date: "Today · 09:35", progress: 70, tone: "teal" },
-  { title: "Diabetic Foot Screen", patient: "Margaret Chen", date: "Tomorrow", progress: 30, tone: "amber" },
-  { title: "Callus Debridement", patient: "Priya Ramesh", date: "Fri · 11:00", progress: 10, tone: "teal" },
+  { title: "Nail Care", patient: "Harold Whitaker", date: "Mon 6 · 09:15", day: "mon", progress: 100, tone: "eucalyptus",
+    details: "Tools used: 15 blade, nippers. No signs of infection. Debridement complete." },
+  { title: "Ulcer Dressing Change", patient: "Harold Whitaker", date: "Mon 6 · 09:35", day: "mon", progress: 70, tone: "teal",
+    details: "Silver foam dressing applied. Wound bed 60% granulation, no odor. Next change Q48h." },
+  { title: "Diabetic Foot Screen", patient: "Margaret Chen", date: "Tue 7 · 10:00", day: "tue", progress: 30, tone: "amber",
+    details: "Monofilament 6/10 sites. Pedal pulses palpable bilaterally. Education reinforced." },
+  { title: "Callus Debridement", patient: "Priya Ramesh", date: "Wed 8 · 11:00", day: "wed", progress: 10, tone: "teal",
+    details: "Bilateral plantar callus, 3mm hyperkeratosis. Planned sharp debridement + urea 20%." },
 ];
 const BAR_TONE = {
   teal: "bg-[#0EA5E9]",
@@ -907,37 +915,118 @@ const BAR_TONE = {
   eucalyptus: "bg-[#059669]",
 } as const;
 
-function CareTimeline() {
+const DAYS: { key: DayKey; label: string; num: string }[] = [
+  { key: "mon", label: "Mon", num: "6" },
+  { key: "tue", label: "Tue", num: "7" },
+  { key: "wed", label: "Wed", num: "8" },
+];
+
+function MiniCalendar({ selected, onSelect }: { selected: DayKey; onSelect: (d: DayKey) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      {DAYS.map((d) => {
+        const active = d.key === selected;
+        return (
+          <button
+            key={d.key}
+            onClick={() => onSelect(d.key)}
+            className={`flex flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 text-[10px] font-semibold transition ${
+              active
+                ? "bg-[#0F172A] text-white shadow-md"
+                : "border border-[color:var(--border)] text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span className="uppercase tracking-wider">{d.label}</span>
+            <span className={`text-sm ${active ? "text-white" : "text-foreground"}`}>{d.num}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TimelineWithCalendar() {
+  const [day, setDay] = useState<DayKey>("mon");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const items = TIMELINE.filter((t) => t.day === day);
   return (
     <section>
       <div className="flex items-center justify-between mb-2 px-0.5">
         <h2 className="text-sm font-semibold">Patient Care Timeline</h2>
-        <span className="text-[11px] text-muted-foreground">This week</span>
+        <span className="text-[11px] text-muted-foreground">{items.length} events</span>
+      </div>
+      <div className="mb-3">
+        <MiniCalendar selected={day} onSelect={(d) => { setDay(d); setExpanded(null); }} />
       </div>
       <ul className="space-y-2">
-        {TIMELINE.map((t) => (
-          <li key={t.title + t.patient}>
-            <button className="w-full text-left rounded-2xl bg-card border border-[color:var(--border)] p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate">{t.patient} · {t.title}</p>
-                  <p className="text-[11px] text-muted-foreground">{t.date}</p>
+        <AnimatePresence initial={false}>
+          {items.map((t) => {
+            const key = t.title + t.patient;
+            const isOpen = expanded === key;
+            return (
+              <motion.li
+                key={key}
+                layout
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ type: "spring", stiffness: 260, damping: 26 }}
+              >
+                <div className="rounded-2xl bg-card border border-[color:var(--border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition overflow-hidden">
+                  <button
+                    onClick={() => setExpanded(isOpen ? null : key)}
+                    className="w-full text-left p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate">{t.patient} · {t.title}</p>
+                        <p className="text-[11px] text-muted-foreground">{t.date}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-semibold text-muted-foreground">{t.progress}%</span>
+                        <motion.span
+                          animate={{ rotate: isOpen ? 180 : 0 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                          className="h-6 w-6 grid place-items-center rounded-full bg-muted text-muted-foreground"
+                        >
+                          <ChevronRight size={14} className="rotate-90" />
+                        </motion.span>
+                      </div>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${t.progress}%` }}
+                        transition={{ type: "spring", stiffness: 140, damping: 22 }}
+                        className={`h-full rounded-full ${BAR_TONE[t.tone]}`}
+                      />
+                    </div>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        key="details"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 28 }}
+                        className="overflow-hidden border-t border-[color:var(--border)] bg-[#F8FAFC]"
+                      >
+                        <div className="p-3 text-xs text-foreground/80 leading-relaxed">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Clinical detail</p>
+                          {t.details}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-                <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">{t.progress}%</span>
-              </div>
-              <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${t.progress}%` }}
-                  transition={{ type: "spring", stiffness: 140, damping: 22 }}
-                  className={`h-full rounded-full ${BAR_TONE[t.tone]}`}
-                />
-              </div>
-            </button>
-          </li>
-        ))}
+              </motion.li>
+            );
+          })}
+        </AnimatePresence>
       </ul>
     </section>
   );
 }
+
 
