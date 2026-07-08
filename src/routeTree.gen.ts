@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as PrototypeRouteImport } from './routes/prototype'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
@@ -28,6 +29,11 @@ import { Route as AppPatientsIdRouteImport } from './routes/app.patients_.$id'
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrototypeRoute = PrototypeRouteImport.update({
+  id: '/prototype',
+  path: '/prototype',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/prototype': typeof PrototypeRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/prototype': typeof PrototypeRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/prototype': typeof PrototypeRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/onboarding'
+    | '/prototype'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/onboarding'
+    | '/prototype'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/onboarding'
+    | '/prototype'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  PrototypeRoute: typeof PrototypeRoute
   SignupRoute: typeof SignupRoute
 }
 
@@ -222,6 +235,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prototype': {
+      id: '/prototype'
+      path: '/prototype'
+      fullPath: '/prototype'
+      preLoaderRoute: typeof PrototypeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -358,6 +378,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  PrototypeRoute: PrototypeRoute,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
