@@ -675,6 +675,7 @@ function SessionPill({ open, onToggle }: { open: boolean; onToggle: () => void }
 function RecordingWidget({
   micActive, onToggleMic, onOpen, onClose,
 }: { micActive: boolean; onToggleMic: () => void; onOpen: () => void; onClose: () => void }) {
+  const [mode, setMode] = useState<"ambient" | "direct">("ambient");
   return (
     <motion.div
       initial={{ y: 80, opacity: 0 }}
@@ -683,38 +684,57 @@ function RecordingWidget({
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
       className="fixed bottom-20 left-0 right-0 z-40 px-4"
     >
-      <div className="mx-auto max-w-md rounded-2xl bg-card border border-[color:var(--border)] shadow-card p-3 flex items-center gap-3">
-        <button
-          onClick={onToggleMic}
-          aria-label={micActive ? "Pause recording" : "Resume recording"}
-          className={`shrink-0 h-11 w-11 rounded-full grid place-items-center text-white transition ${micActive ? "bg-primary shadow-[0_0_0_6px_rgba(14,165,233,0.15)]" : "bg-muted text-muted-foreground"}`}
-        >
-          {micActive ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
-        </button>
-        <button onClick={onOpen} className="min-w-0 flex-1 text-left">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">AI SOAP Note Draft</p>
-          <p className="text-xs font-semibold truncate">{micActive ? "In progress · Harold Whitaker" : "Paused · Harold Whitaker"}</p>
-          <MiniWave active={micActive} />
-        </button>
-        <button onClick={onClose} aria-label="Close" className="shrink-0 h-8 w-8 grid place-items-center rounded-full bg-muted text-muted-foreground hover:text-foreground">
-          <X size={14} />
-        </button>
+      <div className="mx-auto max-w-md rounded-2xl bg-card border border-[color:var(--border)] shadow-card p-3">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onToggleMic}
+            aria-label={micActive ? "Pause recording" : "Resume recording"}
+            className={`shrink-0 h-11 w-11 rounded-full grid place-items-center text-white transition ${micActive ? "bg-primary shadow-[0_0_0_6px_rgba(14,165,233,0.15)]" : "bg-muted text-muted-foreground"}`}
+          >
+            {micActive ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
+          </button>
+          <button onClick={onOpen} className="min-w-0 flex-1 text-left">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              AI SOAP Note Draft {mode === "ambient" ? "(In Progress)" : "(Push-to-talk)"}
+            </p>
+            <p className="text-xs font-semibold truncate">{micActive ? "Recording · Harold Whitaker" : "Paused · Harold Whitaker"}</p>
+            <MiniWave active={micActive} mode={mode} />
+          </button>
+          <button onClick={onClose} aria-label="Close" className="shrink-0 h-8 w-8 grid place-items-center rounded-full bg-muted text-muted-foreground hover:text-foreground">
+            <X size={14} />
+          </button>
+        </div>
+        <div className="mt-2 flex items-center gap-1 rounded-full bg-muted p-0.5 text-[10px] font-semibold">
+          {(["ambient", "direct"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={(e) => { e.stopPropagation(); setMode(m); }}
+              className={`flex-1 rounded-full py-1 transition ${mode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+            >
+              {m === "ambient" ? "Ambient Listening" : "Direct Dictation"}
+            </button>
+          ))}
+        </div>
       </div>
     </motion.div>
   );
 }
 
-function MiniWave({ active }: { active: boolean }) {
-  const bars = [6, 10, 14, 8, 16, 11, 18, 9, 13, 7, 15, 10, 12];
+function MiniWave({ active, mode = "ambient" }: { active: boolean; mode?: "ambient" | "direct" }) {
+  const ambientBars = [6, 10, 14, 8, 16, 11, 18, 9, 13, 7, 15, 10, 12];
+  const directBars = [3, 20, 4, 22, 5, 18, 3, 24, 4, 19, 3, 21, 4];
+  const bars = mode === "ambient" ? ambientBars : directBars;
   return (
-    <div className="mt-1 flex items-center gap-[2px] h-4">
+    <div className="mt-1 flex items-center gap-[2px] h-5">
       {bars.map((h, i) => (
         <span
-          key={i}
-          className="w-[2px] rounded-full bg-primary/70"
+          key={`${mode}-${i}`}
+          className={`rounded-full bg-primary/70 ${mode === "ambient" ? "w-[2px]" : "w-[3px]"}`}
           style={{
             height: `${h}px`,
-            animation: active ? `wave 1s ease-in-out ${i * 55}ms infinite alternate` : "none",
+            animation: active
+              ? `wave ${mode === "ambient" ? "1s" : "0.35s"} ease-in-out ${i * (mode === "ambient" ? 55 : 25)}ms infinite alternate`
+              : "none",
             opacity: active ? 1 : 0.35,
           }}
         />
@@ -722,6 +742,7 @@ function MiniWave({ active }: { active: boolean }) {
     </div>
   );
 }
+
 
 /* ---------------- Snackbar toast ---------------- */
 function Snackbar({ count, onOpen, onDismiss }: { count: number; onOpen: () => void; onDismiss: () => void }) {
