@@ -217,6 +217,21 @@ function Dashboard({ dark, onToggleTheme, setTab, sessionOpen, onToggleSession }
         </div>
       </section>
 
+      {/* Interactive foot map */}
+      <section>
+        <div className="flex items-center justify-between mb-2 px-0.5">
+          <h2 className="text-sm font-semibold">Foot map · Harold Whitaker</h2>
+          <span className="text-[11px] text-muted-foreground">3 active zones</span>
+        </div>
+        <div className="rounded-2xl bg-card border border-[color:var(--border)] shadow-sm p-4">
+          <InteractiveFootMap />
+        </div>
+      </section>
+
+      {/* Care timeline */}
+      <CareTimeline />
+
+
       {/* Quick actions */}
       <section>
         <h2 className="text-sm font-semibold mb-2 px-0.5">Quick actions</h2>
