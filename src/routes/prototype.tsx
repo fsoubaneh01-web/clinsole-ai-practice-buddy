@@ -779,45 +779,72 @@ function InteractiveFootMap() {
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{side === "L" ? "Left" : "Right"} · plantar</p>
               <p className="text-[10px] text-muted-foreground/80">Tap dot</p>
             </div>
-            <svg viewBox="0 0 100 180" className="w-full h-44">
+            <svg viewBox="0 0 100 200" className="w-full h-56">
               <defs>
                 <linearGradient id={`skin-${side}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#FDE8D7" />
                   <stop offset="100%" stopColor="#F5CDA8" />
                 </linearGradient>
               </defs>
-              <path
-                d="M50 8 C 72 8 82 30 80 60 C 78 90 88 118 82 145 C 78 168 60 176 50 176 C 40 176 22 168 18 145 C 12 118 22 90 20 60 C 18 30 28 8 50 8 Z"
-                fill={`url(#skin-${side})`}
-                stroke="#E2B48A"
-                strokeWidth="1.2"
-              />
-              {[
-                { cx: 50, r: 8 }, { cx: 32, r: 5.5 }, { cx: 68, r: 5.5 },
-                { cx: 22, r: 4.5 }, { cx: 78, r: 4.5 },
-              ].map((t, i) => (
-                <circle key={i} cx={t.cx} cy={i === 0 ? 10 : 14 + Math.abs(t.cx - 50) * 0.15} r={t.r} fill={`url(#skin-${side})`} stroke="#E2B48A" strokeWidth="1" />
-              ))}
+              {(() => {
+                // Mirror for left foot so hallux (big toe) sits on the medial side.
+                const flip = side === "L";
+                const Group = ({ children }: { children: React.ReactNode }) => (
+                  <g transform={flip ? "translate(100,0) scale(-1,1)" : undefined}>{children}</g>
+                );
+                return (
+                  <Group>
+                    {/* Sole outline: heel (bottom) → lateral → ball → toes → medial arch → heel */}
+                    <path
+                      d="M 50 192
+                         C 32 192 22 180 22 164
+                         C 22 150 20 138 22 126
+                         C 24 112 26 100 30 88
+                         C 32 78 34 68 40 60
+                         C 46 52 50 46 56 44
+                         C 66 42 74 46 78 54
+                         C 82 62 82 74 80 84
+                         C 78 94 74 104 72 116
+                         C 70 128 72 142 74 156
+                         C 76 172 68 192 50 192 Z"
+                      fill={`url(#skin-${side})`}
+                      stroke="#C99976"
+                      strokeWidth="1.2"
+                      strokeLinejoin="round"
+                    />
+                    {/* Toes: hallux (big) + D2–D5 descending */}
+                    <ellipse cx="58" cy="28" rx="10" ry="12" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                    <ellipse cx="74" cy="34" rx="5.5" ry="7" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                    <ellipse cx="83" cy="42" rx="4.8" ry="6" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                    <ellipse cx="89" cy="52" rx="4.2" ry="5.2" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                    <ellipse cx="92" cy="63" rx="3.6" ry="4.6" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                    {/* Arch shading */}
+                    <path
+                      d="M 34 118 C 44 112 56 112 66 118 C 60 132 58 148 60 162 C 50 168 42 166 36 158 C 30 146 30 132 34 118 Z"
+                      fill="#F0BE96"
+                      opacity="0.55"
+                    />
+                    {anatomy && (
+                      <g>
+                        <g stroke="#0F172A" strokeWidth="0.4" strokeDasharray="1.5 1.5" opacity="0.35" fill="none">
+                          <path d="M28 74 Q 55 70 82 78" />
+                          <path d="M26 108 Q 55 104 80 112" />
+                          <path d="M28 158 Q 55 154 78 160" />
+                        </g>
+                      </g>
+                    )}
+                  </Group>
+                );
+              })()}
               {anatomy && (
-                <g style={{ fontFamily: "inherit" }}>
-                  {/* Anatomical zone dividers */}
-                  <g stroke="#0F172A" strokeWidth="0.4" strokeDasharray="1.5 1.5" opacity="0.35" fill="none">
-                    <path d="M22 34 Q 50 30 78 34" />
-                    <path d="M20 62 Q 50 58 80 62" />
-                    <path d="M20 108 Q 50 104 82 108" />
-                  </g>
-                  {/* Zone labels */}
-                  <g fill="#0F172A" fontSize="4.2" fontWeight="600" opacity="0.7" textAnchor="middle">
-                    <text x="50" y="26">Hallux</text>
-                    <text x={side === "L" ? 22 : 78} y="30">D5</text>
-                    <text x="50" y="50">Digits 2–5</text>
-                    <text x="50" y="80">Met heads</text>
-                    <text x={side === "L" ? 30 : 70} y="98" fontSize="3.6">
-                      {side === "L" ? "Medial" : "Lateral"}
-                    </text>
-                    <text x="50" y="128">Arch</text>
-                    <text x="50" y="160">Heel</text>
-                  </g>
+                <g fill="#0F172A" fontSize="4.4" fontWeight="600" opacity="0.75" textAnchor="middle" style={{ fontFamily: "inherit" }}>
+                  <text x={side === "L" ? 42 : 58} y="26">Hallux</text>
+                  <text x={side === "L" ? 12 : 88} y="55">D5</text>
+                  <text x="50" y="92">Met heads</text>
+                  <text x={side === "L" ? 78 : 22} y="128" fontSize="3.8">Lateral</text>
+                  <text x={side === "L" ? 22 : 78} y="128" fontSize="3.8">Medial</text>
+                  <text x="50" y="140">Arch</text>
+                  <text x="50" y="182">Heel</text>
                 </g>
               )}
             </svg>
