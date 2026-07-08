@@ -3,19 +3,21 @@ import { AppShell, Container } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useStore } from "@/lib/store";
+import { useStore, type Appointment, type Patient } from "@/lib/store";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
-import { Bell, CalendarPlus, RefreshCw, Trash2 } from "lucide-react";
+import { Bell, CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/calendar")({ component: CalendarView });
 
 function CalendarView() {
-  const { appointments, patients, addAppointment, deleteAppointment } = useStore();
+  const { appointments, patients, addAppointment, updateAppointment, deleteAppointment } = useStore();
   const [selected, setSelected] = useState<Date>(new Date());
+  const [editing, setEditing] = useState<Appointment | null>(null);
   const weekStart = startOfWeek(selected, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -26,7 +28,18 @@ function CalendarView() {
   return (
     <AppShell
       title="Schedule"
-      actions={<NewAppointmentDialog patients={patients} defaultDate={selected} onCreate={addAppointment} />}
+      actions={
+        <AppointmentDialog
+          patients={patients}
+          defaultDate={selected}
+          onSave={async (v) => {
+            const r = await addAppointment(v);
+            if (r.error) toast.error(r.error);
+            else toast.success("Appointment booked");
+            return !r.error;
+          }}
+        />
+      }
     >
       <Container className="py-6">
         <div className="rounded-3xl border bg-surface p-4 shadow-soft lg:p-6">
@@ -81,8 +94,14 @@ function CalendarView() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold">{a.patientName}</div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                       <span className="truncate">{a.type}</span>
+                      {a.expectedFee > 0 && <span>· ${a.expectedFee}</span>}
+                      {a.location && (
+                        <span className="inline-flex items-center gap-1 truncate">
+                          <MapPin className="h-3 w-3" />{a.location}
+                        </span>
+                      )}
                       {a.recurring && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                           <RefreshCw className="h-2.5 w-2.5" />{a.recurring}
@@ -96,7 +115,12 @@ function CalendarView() {
                     aria-label="Send reminder"
                   ><Bell className="h-4 w-4" /></button>
                   <button
-                    onClick={() => { deleteAppointment(a.id); toast.success("Appointment cancelled"); }}
+                    onClick={() => setEditing(a)}
+                    className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-primary"
+                    aria-label="Edit"
+                  ><Pencil className="h-4 w-4" /></button>
+                  <button
+                    onClick={async () => { await deleteAppointment(a.id); toast.success("Appointment cancelled"); }}
                     className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     aria-label="Delete"
                   ><Trash2 className="h-4 w-4" /></button>
@@ -105,39 +129,87 @@ function CalendarView() {
             </ul>
           )}
         </section>
+
+        {editing && (
+          <AppointmentDialog
+            patients={patients}
+            defaultDate={new Date(editing.date)}
+            existing={editing}
+            open
+            onOpenChange={(o) => { if (!o) setEditing(null); }}
+            onSave={async (v) => {
+              const r = await updateAppointment(editing.id, v);
+              if (r.error) toast.error(r.error);
+              else toast.success("Appointment updated");
+              return !r.error;
+            }}
+          />
+        )}
       </Container>
     </AppShell>
   );
 }
 
-function NewAppointmentDialog({ patients, defaultDate, onCreate }: any) {
-  const [open, setOpen] = useState(false);
-  const [pid, setPid] = useState(patients[0]?.id || "");
-  const [time, setTime] = useState("10:00");
-  const [type, setType] = useState("Routine footcare");
-  const [duration, setDuration] = useState(45);
-  const [recurring, setRecurring] = useState<string>("none");
+type FormValues = Omit<Appointment, "id" | "patientName">;
+
+function AppointmentDialog({
+  patients, defaultDate, existing, onSave, open: openProp, onOpenChange,
+}: {
+  patients: Patient[];
+  defaultDate: Date;
+  existing?: Appointment;
+  onSave: (v: FormValues) => Promise<boolean>;
+  open?: boolean;
+  onOpenChange?: (o: boolean) => void;
+}) {
+  const controlled = openProp !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlled ? openProp : internalOpen;
+  const setOpen = (o: boolean) => { controlled ? onOpenChange?.(o) : setInternalOpen(o); };
+
+  const init = existing;
+  const [pid, setPid] = useState(init?.patientId || patients[0]?.id || "");
+  const [dateStr, setDateStr] = useState(format(init ? new Date(init.date) : defaultDate, "yyyy-MM-dd"));
+  const [time, setTime] = useState(init ? format(new Date(init.date), "HH:mm") : "10:00");
+  const [duration, setDuration] = useState(init?.duration ?? 45);
+  const [type, setType] = useState(init?.type ?? "Routine footcare");
+  const [location, setLocation] = useState(init?.location ?? "");
+  const [notes, setNotes] = useState(init?.notes ?? "");
+  const [fee, setFee] = useState(init?.expectedFee ?? 65);
+  const [recurring, setRecurring] = useState<string>(init?.recurring ?? "none");
+  const [busy, setBusy] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gradient-primary text-primary-foreground"><CalendarPlus className="mr-1 h-4 w-4" />New appointment</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>New appointment</DialogTitle></DialogHeader>
+      {!controlled && (
+        <DialogTrigger asChild>
+          <Button size="sm" className="gradient-primary text-primary-foreground">
+            <CalendarPlus className="mr-1 h-4 w-4" />New appointment
+          </Button>
+        </DialogTrigger>
+      )}
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{existing ? "Edit appointment" : "New appointment"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>Patient</Label>
             <Select value={pid} onValueChange={setPid}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{patients.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+              <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+              <SelectContent>
+                {patients.length === 0 && <SelectItem value="__none" disabled>No patients yet</SelectItem>}
+                {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5"><Label>Date</Label><Input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} /></div>
             <div className="space-y-1.5"><Label>Time</Label><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
             <div className="space-y-1.5"><Label>Duration (min)</Label><Input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} /></div>
+            <div className="space-y-1.5"><Label>Expected fee ($)</Label><Input type="number" value={fee} onChange={(e) => setFee(Number(e.target.value))} /></div>
           </div>
           <div className="space-y-1.5"><Label>Visit type</Label><Input value={type} onChange={(e) => setType(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Location</Label><Input placeholder="Patient home, clinic address..." value={location} onChange={(e) => setLocation(e.target.value)} /></div>
+          <div className="space-y-1.5"><Label>Notes</Label><Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
           <div className="space-y-1.5">
             <Label>Recurring</Label>
             <Select value={recurring} onValueChange={setRecurring}>
@@ -152,19 +224,21 @@ function NewAppointmentDialog({ patients, defaultDate, onCreate }: any) {
           </div>
           <Button
             className="w-full gradient-primary text-primary-foreground"
-            onClick={() => {
-              const p = patients.find((x: any) => x.id === pid);
-              if (!p) return;
+            disabled={busy || !pid || pid === "__none"}
+            onClick={async () => {
               const [h, m] = time.split(":").map(Number);
-              const d = new Date(defaultDate); d.setHours(h, m, 0, 0);
-              onCreate({
-                patientId: p.id, patientName: p.name, date: d.toISOString(), duration, type,
-                recurring: recurring === "none" ? null : recurring,
+              const d = new Date(`${dateStr}T00:00:00`);
+              d.setHours(h, m, 0, 0);
+              setBusy(true);
+              const ok = await onSave({
+                patientId: pid, date: d.toISOString(), duration, type,
+                location, notes, expectedFee: fee,
+                recurring: recurring === "none" ? null : (recurring as Appointment["recurring"]),
               });
-              toast.success("Appointment booked");
-              setOpen(false);
+              setBusy(false);
+              if (ok) setOpen(false);
             }}
-          >Book appointment</Button>
+          >{busy ? "Saving..." : existing ? "Save changes" : "Book appointment"}</Button>
         </div>
       </DialogContent>
     </Dialog>
