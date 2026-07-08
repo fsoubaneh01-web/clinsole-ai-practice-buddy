@@ -571,6 +571,7 @@ function BottomNav({ tab, setTab, notifCount }: { tab: Tab; setTab: (t: Tab) => 
         {items.map((it) => {
           const active = tab === it.id;
           const showBadge = it.id === "dashboard" && notifCount > 0;
+          const pulseDot = it.id === "schedule" || it.id === "business";
           return (
             <button
               key={it.id}
@@ -585,6 +586,12 @@ function BottomNav({ tab, setTab, notifCount }: { tab: Tab; setTab: (t: Tab) => 
                     <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#0369A1] text-[9px] font-bold text-white ring-2 ring-background">
                       {notifCount}
                     </span>
+                  </span>
+                )}
+                {pulseDot && !showBadge && (
+                  <span className="absolute top-1 right-3.5 flex h-2.5 w-2.5">
+                    <span className="absolute inset-0 rounded-full bg-[#DE8A44] opacity-70 animate-ping" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#DE8A44] ring-2 ring-background" />
                   </span>
                 )}
               </span>
