@@ -10,7 +10,7 @@ import { useState } from "react";
 import { ArrowLeft, Crown } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/app/patients/new")({ component: NewPatient });
+export const Route = createFileRoute("/app/patients_/new")({ component: NewPatient });
 
 function NewPatient() {
   const nav = useNavigate();
