@@ -974,12 +974,19 @@ type SeverityHotspot = {
   tone: "red" | "blue" | "amber";
   label: string;
   note: string;
+  condition: "callus" | "ulcer" | "dry_skin" | "heel_fissure";
 };
 
 const SEV_HOTSPOTS: SeverityHotspot[] = [
-  { id: "l-1st-toe", side: "L", cx: 50, cy: 20, tone: "red", label: "Callus - 1st Toe (Pulsing)", note: "Hyperkeratotic lesion 4mm at left 1st toe. Debrided 06/28/26. Reassess in 2 weeks." },
-  { id: "r-5th-toe", side: "R", cx: 78, cy: 24, tone: "blue", label: "Wound Care - 5th Toe (Active)", note: "Active superficial ulcer at right 5th toe, granulating well. Dressing changed today. Continue silver foam Q48h." },
-  { id: "r-heel", side: "R", cx: 50, cy: 150, tone: "amber", label: "Dry Skin - Heel (Pulsing)", note: "Heel fissure, last noted 07/03/26. Click to dictate observation." },
+  { id: "l-1st-toe", side: "L", cx: 50, cy: 20, tone: "red", condition: "callus",
+    label: "Callus - 1st Toe (Pulsing)",
+    note: "Hyperkeratotic lesion 4mm at left 1st toe. Debrided 06/28/26. Reassess in 2 weeks." },
+  { id: "r-5th-toe", side: "R", cx: 78, cy: 24, tone: "blue", condition: "ulcer",
+    label: "Wound Care - 5th Toe (Active)",
+    note: "Active superficial ulcer at right 5th toe, granulating well. Dressing changed today. Continue silver foam Q48h." },
+  { id: "r-heel", side: "R", cx: 50, cy: 150, tone: "amber", condition: "heel_fissure",
+    label: "Dry Skin - Heel (Pulsing)",
+    note: "Heel fissure, last noted 07/03/26. Click to dictate observation." },
 ];
 
 const TONE_STYLE = {
@@ -993,6 +1000,39 @@ const HOTSPOT_UI: Record<string, { anchor: "left" | "right"; callout?: string }>
   "l-1st-toe": { anchor: "left" },
   "r-5th-toe": { anchor: "right" },
   "r-heel": { anchor: "right", callout: "Heel fissure, last noted 07/03/26. Click to dictate observation." },
+};
+
+/* SOAP templates prefilled per plantar condition. Nurse dictates on top of these. */
+type SoapDraft = { s: string; o: string; a: string; p: string; prompts: string[] };
+const SOAP_TEMPLATES: Record<SeverityHotspot["condition"], (h: SeverityHotspot) => SoapDraft> = {
+  callus: (h) => ({
+    s: `Patient reports pressure discomfort under the ${h.side === "L" ? "left" : "right"} 1st toe when weight-bearing. No new burning or shooting pain. Denies footwear changes.`,
+    o: `Hyperkeratotic plaque ~4mm at plantar 1st MTP. Skin intact, no maceration, no surrounding erythema. 10g monofilament: sensation preserved. Pulses palpable (DP, PT).`,
+    a: `Focal plantar callus over 1st MTP secondary to repetitive pressure. No breakdown; low acute risk.`,
+    p: `Sharp debridement performed. Padding to 1st MTP. Educate on urea 20% cream nightly. Reassess in 2 weeks; consider offloading insole.`,
+    prompts: ["Callus depth (mm)?", "Any subkeratotic haemorrhage?", "Sensation change vs last visit?"],
+  }),
+  ulcer: (h) => ({
+    s: `Patient denies pain at ${h.side === "L" ? "left" : "right"} 5th toe wound site. No fevers, chills, or new drainage odour reported.`,
+    o: `Superficial ulcer ~0.6 x 0.4cm, wound bed 90% granulation, 10% slough, minimal serous exudate. Periwound intact, no cellulitis or tracking erythema. Silver foam dressing changed today.`,
+    a: `Diabetic foot ulcer, Wagner Grade 1, healing trajectory on track. No signs of infection.`,
+    p: `Continue silver foam Q48h. Photo captured for wound register. Offload with felt padding. Escalate to podiatry if area increases > 10% or signs of infection.`,
+    prompts: ["Wound length x width (cm)?", "% granulation vs slough?", "Exudate: none / low / moderate / high?", "Any peri-wound erythema?"],
+  }),
+  dry_skin: (h) => ({
+    s: `Patient notes tight, flaky skin on the ${h.side === "L" ? "left" : "right"} foot; no itching or pain. Uses moisturizer inconsistently.`,
+    o: `Diffuse xerosis on plantar surface. Skin intact, no fissures or maceration. Nails within normal limits. Sensation preserved.`,
+    a: `Plantar xerosis without breakdown. Preventative care indicated.`,
+    p: `Emollient (10% urea) applied. Educate on daily application post-shower and foot self-inspection. Reassess in 4 weeks.`,
+    prompts: ["Any fissures forming?", "Moisturizer frequency?", "Wearing occlusive footwear?"],
+  }),
+  heel_fissure: (h) => ({
+    s: `Patient reports occasional stinging at the ${h.side === "L" ? "left" : "right"} heel with barefoot walking. No bleeding noted at home.`,
+    o: `Linear fissure ~1.2cm at posterior heel, superficial, no active bleeding or purulence. Surrounding hyperkeratosis present. No callus overhang. Sensation preserved with 10g monofilament.`,
+    a: `Superficial heel fissure secondary to xerosis and mechanical loading. No infection.`,
+    p: `Debride hyperkeratotic edges. Apply hydrocolloid to fissure. Urea 25% BID. Educate on closed-back footwear. Reassess in 2 weeks; escalate if depth increases or exudate develops.`,
+    prompts: ["Fissure depth (mm)?", "Any bleeding today?", "Footwear: open- or closed-back?", "Signs of infection?"],
+  }),
 };
 
 function FootGroup({ flip, children }: { flip: boolean; children: React.ReactNode }) {
