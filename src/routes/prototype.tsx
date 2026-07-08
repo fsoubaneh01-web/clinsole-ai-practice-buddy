@@ -1035,6 +1035,24 @@ const SOAP_TEMPLATES: Record<SeverityHotspot["condition"], (h: SeverityHotspot) 
   }),
 };
 
+const CONDITION_LABEL: Record<SeverityHotspot["condition"], string> = {
+  callus: "Callus",
+  ulcer: "Diabetic Ulcer",
+  dry_skin: "Xerosis",
+  heel_fissure: "Heel Fissure",
+};
+
+function SoapRow({ letter, text }: { letter: string; text: string }) {
+  return (
+    <div className="flex gap-2">
+      <span className="h-5 w-5 shrink-0 rounded-md gradient-primary text-primary-foreground grid place-items-center text-[10px] font-bold">
+        {letter}
+      </span>
+      <p className="text-[12px] leading-snug text-foreground/85">{text}</p>
+    </div>
+  );
+}
+
 function FootGroup({ flip, children }: { flip: boolean; children: React.ReactNode }) {
   return <g transform={flip ? "translate(100,0) scale(-1,1)" : undefined}>{children}</g>;
 }
