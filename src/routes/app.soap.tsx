@@ -22,13 +22,14 @@ export const Route = createFileRoute("/app/soap")({
 
 function SoapNote() {
   const { patientId } = Route.useSearch();
-  const { patients, addTreatment, addTransaction, ageOf, nurse, useAiCredit } = useStore();
+  const { patients, addTreatment, addTransaction, ageOf, nurse, useAiCredit, latestAssessmentFor } = useStore();
   const [pid, setPid] = useState(patientId || patients[0]?.id || "");
   const [brief, setBrief] = useState("");
   const [loading, setLoading] = useState(false);
   const [soap, setSoap] = useState<{ s: string; o: string; a: string; p: string } | null>(null);
   const [fee, setFee] = useState(75);
   const generate = useServerFn(generateSoapNote);
+  const latestAssessment = pid ? latestAssessmentFor(pid) : undefined;
 
   const patient = patients.find((p) => p.id === pid);
   const limit = PLAN_LIMITS[nurse?.plan || "free"].aiPerMonth;
