@@ -542,6 +542,7 @@ function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number
 
 /* ---------------- SOAP Workspace ---------------- */
 function SoapWorkspace({ dark, onToggleTheme }: ScreenProps) {
+  const [referralOpen, setReferralOpen] = useState(false);
   return (
     <div className="pt-6 pb-32">
       <div className="px-4 flex items-center justify-between gap-3 mb-4">
@@ -596,6 +597,16 @@ function SoapWorkspace({ dark, onToggleTheme }: ScreenProps) {
         } />
       </div>
 
+      {/* Export / Referral action */}
+      <div className="px-4 mt-4">
+        <button
+          onClick={() => setReferralOpen(true)}
+          className="w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-primary/40 bg-primary/5 text-primary py-3 text-sm font-semibold hover:bg-primary/10 transition"
+        >
+          <FileText size={16} /> Generate Clinical Referral PDF
+        </button>
+      </div>
+
       {/* Sticky bar */}
       <div className="fixed bottom-16 left-0 right-0 z-30">
         <div className="mx-auto max-w-md px-4">
@@ -607,6 +618,128 @@ function SoapWorkspace({ dark, onToggleTheme }: ScreenProps) {
           </div>
         </div>
       </div>
+
+      <ReferralPreviewModal open={referralOpen} onClose={() => setReferralOpen(false)} />
+    </div>
+  );
+}
+
+function ReferralPreviewModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[90] grid place-items-end sm:place-items-center bg-slate-950/50 backdrop-blur-sm p-3"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ y: 40, opacity: 0, scale: 0.98 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 40, opacity: 0, scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 320, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-3xl bg-background border border-[color:var(--border)] shadow-2xl overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[color:var(--border)] bg-card">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-8 w-8 rounded-lg gradient-primary grid place-items-center text-primary-foreground">
+                  <FileText size={15} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Print preview</p>
+                  <h3 className="text-sm font-semibold truncate">Clinical Referral · Harold Whitaker</h3>
+                </div>
+              </div>
+              <button onClick={onClose} className="h-8 w-8 grid place-items-center rounded-full bg-muted text-muted-foreground">
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Simulated document */}
+            <div className="max-h-[65vh] overflow-y-auto bg-[#F1F3F7] p-4">
+              <div className="mx-auto bg-white rounded-md shadow-md ring-1 ring-black/5 overflow-hidden" style={{ aspectRatio: "8.5 / 11" }}>
+                <div className="h-full flex flex-col p-6 text-[10px] leading-relaxed text-slate-800">
+                  {/* Letterhead */}
+                  <div className="flex items-start justify-between pb-3 border-b border-slate-200">
+                    <div>
+                      <p className="text-[13px] font-bold tracking-tight text-slate-900">ClinSole Foot Care</p>
+                      <p className="text-[9px] text-slate-500">Independent Nurse Practice · Reg. #FN-8842</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] uppercase tracking-widest text-slate-400 font-semibold">Referral</p>
+                      <p className="text-[9px] text-slate-500">07 / 07 / 2026</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-[9px]">
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wider">Patient</p>
+                      <p className="font-semibold text-slate-900 text-[10px]">Harold Whitaker</p>
+                      <p className="text-slate-500">DOB 04 / 12 / 1944 · MRN 00812</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wider">Referring</p>
+                      <p className="font-semibold text-slate-900 text-[10px]">Nurse Alina Petrov, RN</p>
+                      <p className="text-slate-500">Visit 12 · Ambient SOAP</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    <Section title="Subjective">
+                      Mild bilateral pedal tingling. No sharp pain. Continues daily moisturizing routine.
+                    </Section>
+                    <Section title="Objective">
+                      Nails elongated but intact. Monofilament 6 / 10 response. No active ulceration on plantar surface or heels.
+                    </Section>
+                    <Section title="Assessment">
+                      Stable diabetic peripheral neuropathy. No acute concerns at this visit.
+                    </Section>
+                    <Section title="Plan">
+                      Routine nail & skin debridement in 6 weeks. Continue daily foot self-inspection and emollient. Escalate if new ulceration or loss of protective sensation.
+                    </Section>
+                  </div>
+
+                  <div className="mt-auto pt-3 border-t border-slate-200 flex items-end justify-between">
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase tracking-wider">Signed</p>
+                      <p className="italic text-[11px] text-slate-800" style={{ fontFamily: "cursive" }}>A. Petrov, RN</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="inline-block h-9 w-9 rounded-md bg-slate-900" style={{ backgroundImage: "linear-gradient(45deg, #0f172a 25%, transparent 25%, transparent 50%, #0f172a 50%, #0f172a 75%, transparent 75%)", backgroundSize: "4px 4px" }} />
+                      <p className="text-[8px] text-slate-400 mt-0.5">Verify: clnsl.ai/r/8842</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-3 border-t border-[color:var(--border)] bg-card flex items-center gap-2">
+              <button className="h-10 w-10 grid place-items-center rounded-xl bg-muted text-muted-foreground" aria-label="Download">
+                <Download size={16} />
+              </button>
+              <button className="h-10 w-10 grid place-items-center rounded-xl bg-muted text-muted-foreground" aria-label="Print">
+                <Printer size={16} />
+              </button>
+              <button className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground font-semibold inline-flex items-center justify-center gap-2 hover:opacity-90 transition">
+                <Send size={15} /> Send to Primary Physician
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[9px] uppercase tracking-widest text-slate-400 font-semibold">{title}</p>
+      <p className="text-[10px] text-slate-700 leading-snug">{children}</p>
     </div>
   );
 }
