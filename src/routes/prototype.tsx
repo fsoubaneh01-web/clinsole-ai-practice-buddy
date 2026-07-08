@@ -1043,7 +1043,7 @@ function InteractiveFootMap() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [dictate, setDictate] = useState<SeverityHotspot | null>(null);
   const [typing, setTyping] = useState(false);
-  const [aiNote, setAiNote] = useState<string | null>(null);
+  const [soap, setSoap] = useState<SoapDraft | null>(null);
   const [showAnatomy, setShowAnatomy] = useState<boolean>(true);
   const active = SEV_HOTSPOTS.find((h) => h.id === openId) || null;
 
@@ -1051,16 +1051,12 @@ function InteractiveFootMap() {
 
   function startDictation(h: SeverityHotspot) {
     setDictate(h);
-    setAiNote(null);
+    setSoap(null);
     setTyping(true);
     window.setTimeout(() => {
       setTyping(false);
-      setAiNote(
-        `Objective — ${h.label}: On plantar exam, findings consistent with prior visit. ` +
-        `Skin intact surrounding lesion, no purulent discharge or erythema tracking. ` +
-        `Sensation preserved with 10g monofilament. Photo captured; plan updated per protocol.`
-      );
-    }, 1500);
+      setSoap(SOAP_TEMPLATES[h.condition](h));
+    }, 1200);
   }
 
 
