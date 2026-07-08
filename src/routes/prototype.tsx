@@ -396,7 +396,7 @@ function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number
               <h3 className="text-sm font-semibold">Foot map</h3>
               <span className="text-[11px] text-muted-foreground">Tap hotspots</span>
             </div>
-            <FootMap onHotspot={setHotspot} />
+            <InteractiveFootMap />
           </div>
 
           <div>
