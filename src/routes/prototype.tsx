@@ -89,10 +89,11 @@ function InsightsRow() {
 
 function InsightBadge({ icon, label, tone }: { icon: React.ReactNode; label: string; tone: "teal" | "eucalyptus" | "amber" }) {
   const tones = {
-    teal: "bg-[color:var(--accent)] text-primary",
-    eucalyptus: "bg-[#E6F2EC] text-[#2E7D32]",
+    teal: "bg-[#E0F2FE] text-[#0369A1]",
+    eucalyptus: "bg-[#DBEAFE] text-[#0F172A]",
     amber: "bg-[#FBEBD9] text-[#DE8A44]",
   }[tone];
+
   return (
     <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm ${tones}`}>
       {icon} {label}
