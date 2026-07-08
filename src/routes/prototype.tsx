@@ -901,12 +901,95 @@ function InteractiveFootMap() {
                 <X size={12} />
               </button>
             </div>
-            <button className="mt-2 w-full rounded-lg bg-primary text-primary-foreground py-1.5 text-[11px] font-semibold">
-              Dictate observation
+            <button
+              onClick={() => active && startDictation(active)}
+              className="mt-2 w-full rounded-lg bg-primary text-primary-foreground py-1.5 text-[11px] font-semibold hover:opacity-90 transition"
+            >
+              Click to dictate observation
             </button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {dictate && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-md grid place-items-center p-4"
+            onClick={() => setDictate(null)}
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.96, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={{ y: 20, scale: 0.96, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 320, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl bg-background p-5 shadow-xl border border-[color:var(--border)]"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: TONE_STYLE[dictate.tone].fill }} />
+                  <h4 className="text-sm font-semibold truncate">Dictating · {dictate.label}</h4>
+                </div>
+                <button onClick={() => setDictate(null)} className="h-7 w-7 grid place-items-center rounded-full bg-muted">
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-[color:var(--border)] bg-[#F8FAFC] p-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Input</p>
+                <p className="text-sm text-foreground/85">
+                  Dictating for {dictate.side === "L" ? "Left" : "Right"} {dictate.label.split("—")[1]?.trim() || dictate.label}...
+                </p>
+              </div>
+
+              <div className="mt-3 rounded-xl border border-[color:var(--border)] bg-card p-3 min-h-[110px]">
+                <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1.5">AI generated note</p>
+                {typing && (
+                  <div className="flex items-center gap-1.5 py-2">
+                    <span className="text-xs text-muted-foreground">AI is typing</span>
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className="h-1.5 w-1.5 rounded-full bg-primary/70"
+                        style={{ animation: `wave 0.9s ease-in-out ${i * 150}ms infinite alternate` }}
+                      />
+                    ))}
+                  </div>
+                )}
+                {!typing && aiNote && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-sm text-foreground/85 leading-relaxed"
+                  >
+                    {aiNote}
+                  </motion.p>
+                )}
+              </div>
+
+              <div className="mt-4 flex items-center gap-2">
+                <button
+                  onClick={() => setDictate(null)}
+                  className="flex-1 h-10 rounded-xl bg-muted text-foreground text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={typing || !aiNote}
+                  onClick={() => setDictate(null)}
+                  className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                >
+                  Add to SOAP
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
