@@ -791,7 +791,7 @@ function InteractiveFootMap() {
                   key={h.id}
                   onMouseEnter={() => setOpenId(h.id)}
                   onFocus={() => setOpenId(h.id)}
-                  onClick={(e) => { e.stopPropagation(); setOpenId(openId === h.id ? null : h.id); }}
+                  onClick={(e) => { e.stopPropagation(); setOpenId(h.id); }}
                   aria-label={h.label}
                   className="absolute z-10 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center focus:outline-none focus:ring-2 focus:ring-primary/40"
                   style={{ left: `${h.cx}%`, top: `calc(2rem + ${(h.cy / 180) * 11}rem)` }}
