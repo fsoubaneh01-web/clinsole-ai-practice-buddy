@@ -738,6 +738,7 @@ function InteractiveFootMap() {
   const [dictate, setDictate] = useState<SeverityHotspot | null>(null);
   const [typing, setTyping] = useState(false);
   const [aiNote, setAiNote] = useState<string | null>(null);
+  const [anatomy, setAnatomy] = useState(true);
   const active = SEV_HOTSPOTS.find((h) => h.id === openId) || null;
 
   function startDictation(h: SeverityHotspot) {
@@ -757,6 +758,20 @@ function InteractiveFootMap() {
 
   return (
     <div className="relative">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Plantar anatomy</p>
+        <button
+          onClick={() => setAnatomy((v) => !v)}
+          className={`text-[10px] font-semibold rounded-full border px-2 py-0.5 transition ${
+            anatomy
+              ? "bg-primary/10 text-primary border-primary/30"
+              : "bg-card text-muted-foreground border-[color:var(--border)]"
+          }`}
+          aria-pressed={anatomy}
+        >
+          {anatomy ? "Anatomy · On" : "Anatomy · Off"}
+        </button>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         {(["L", "R"] as const).map((side) => (
           <div key={side} className="relative rounded-xl bg-[#F8FAFC] border border-[color:var(--border)] p-3">
@@ -783,6 +798,28 @@ function InteractiveFootMap() {
               ].map((t, i) => (
                 <circle key={i} cx={t.cx} cy={i === 0 ? 10 : 14 + Math.abs(t.cx - 50) * 0.15} r={t.r} fill={`url(#skin-${side})`} stroke="#E2B48A" strokeWidth="1" />
               ))}
+              {anatomy && (
+                <g style={{ fontFamily: "inherit" }}>
+                  {/* Anatomical zone dividers */}
+                  <g stroke="#0F172A" strokeWidth="0.4" strokeDasharray="1.5 1.5" opacity="0.35" fill="none">
+                    <path d="M22 34 Q 50 30 78 34" />
+                    <path d="M20 62 Q 50 58 80 62" />
+                    <path d="M20 108 Q 50 104 82 108" />
+                  </g>
+                  {/* Zone labels */}
+                  <g fill="#0F172A" fontSize="4.2" fontWeight="600" opacity="0.7" textAnchor="middle">
+                    <text x="50" y="26">Hallux</text>
+                    <text x={side === "L" ? 22 : 78} y="30">D5</text>
+                    <text x="50" y="50">Digits 2–5</text>
+                    <text x="50" y="80">Met heads</text>
+                    <text x={side === "L" ? 30 : 70} y="98" fontSize="3.6">
+                      {side === "L" ? "Medial" : "Lateral"}
+                    </text>
+                    <text x="50" y="128">Arch</text>
+                    <text x="50" y="160">Heel</text>
+                  </g>
+                </g>
+              )}
             </svg>
             {SEV_HOTSPOTS.filter((h) => h.side === side).map((h) => {
               const t = TONE_STYLE[h.tone];
