@@ -21,17 +21,81 @@ type Tab = "dashboard" | "patients" | "soap" | "schedule" | "business";
 
 function Prototype() {
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    return () => document.documentElement.classList.remove("dark");
+  }, [dark]);
+
+  const screens: Record<Tab, React.ReactNode> = {
+    dashboard: <Dashboard dark={dark} onToggleTheme={() => setDark((v) => !v)} />,
+    patients: <Patients dark={dark} onToggleTheme={() => setDark((v) => !v)} />,
+    soap: <SoapWorkspace dark={dark} onToggleTheme={() => setDark((v) => !v)} />,
+    schedule: <Placeholder title="Schedule" subtitle="Upcoming visits and route planning" />,
+    business: <Placeholder title="Business" subtitle="Revenue, expenses and monthly reports" />,
+  };
+
   return (
-    <div className="min-h-screen bg-[var(--surface-muted)] text-foreground pb-24">
-      <div className="mx-auto max-w-md">
-        {tab === "dashboard" && <Dashboard />}
-        {tab === "patients" && <Patients />}
-        {tab === "soap" && <SoapWorkspace />}
-        {tab === "schedule" && <Placeholder title="Schedule" subtitle="Upcoming visits and route planning" />}
-        {tab === "business" && <Placeholder title="Business" subtitle="Revenue, expenses and monthly reports" />}
+    <div className="min-h-screen bg-[var(--surface-muted)] text-foreground pb-24 overflow-x-hidden">
+      <div className="mx-auto max-w-md relative">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 12, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.99 }}
+            transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.7 }}
+          >
+            {screens[tab]}
+          </motion.div>
+        </AnimatePresence>
       </div>
       <BottomNav tab={tab} setTab={setTab} />
     </div>
+  );
+}
+
+function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-label="Toggle night shift"
+      className="shrink-0 h-9 w-9 grid place-items-center rounded-full bg-card border border-[color:var(--border)] shadow-sm hover:shadow-md transition-shadow text-muted-foreground hover:text-foreground"
+    >
+      <motion.span
+        key={dark ? "moon" : "sun"}
+        initial={{ rotate: -60, opacity: 0, scale: 0.8 }}
+        animate={{ rotate: 0, opacity: 1, scale: 1 }}
+        transition={{ type: "spring", stiffness: 400, damping: 22 }}
+        className="grid place-items-center"
+      >
+        {dark ? <Moon size={16} /> : <Sun size={16} />}
+      </motion.span>
+    </button>
+  );
+}
+
+function InsightsRow() {
+  return (
+    <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-0.5">
+      <InsightBadge icon={<Timer size={12} />} label="42m Charting Saved" tone="teal" />
+      <InsightBadge icon={<CheckCircle2 size={12} />} label="3/3 Notes Synced" tone="eucalyptus" />
+      <InsightBadge icon={<Sparkles size={12} />} label="6 Visits Today" tone="amber" />
+    </div>
+  );
+}
+
+function InsightBadge({ icon, label, tone }: { icon: React.ReactNode; label: string; tone: "teal" | "eucalyptus" | "amber" }) {
+  const tones = {
+    teal: "bg-[color:var(--accent)] text-primary",
+    eucalyptus: "bg-[#E6F2EC] text-[#2E7D32]",
+    amber: "bg-[#FBEBD9] text-[#DE8A44]",
+  }[tone];
+  return (
+    <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm ${tones}`}>
+      {icon} {label}
+    </span>
   );
 }
 
