@@ -207,9 +207,19 @@ function Patients() {
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{p.cond}</p>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {p.tags.map((t) => (
-                    <span key={t} className="text-[10px] font-medium rounded-full bg-accent text-accent-foreground px-2 py-0.5">{t}</span>
-                  ))}
+                  {p.tags.map((t) => {
+                    const risk = /risk|pvd/i.test(t);
+                    return (
+                      <span
+                        key={t}
+                        className={`text-[10px] font-medium rounded-full px-2 py-0.5 ${
+                          risk ? "bg-[#FBEBD9] text-[#DE8A44]" : "bg-accent text-accent-foreground"
+                        }`}
+                      >
+                        {t}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
               <ChevronRight size={18} className="text-muted-foreground shrink-0" />
