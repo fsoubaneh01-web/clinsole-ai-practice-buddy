@@ -161,6 +161,7 @@ function Dashboard({ dark, onToggleTheme, sessionOpen, onToggleSession }: Screen
           </button>
         </div>
       </header>
+      <ShiftBriefing />
 
       <SessionPill open={sessionOpen} onToggle={onToggleSession} />
 
