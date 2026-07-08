@@ -108,9 +108,10 @@ function Dashboard() {
         <h2 className="text-sm font-semibold mb-2 px-0.5">Quick actions</h2>
         <div className="grid grid-cols-2 gap-3">
           <QuickAction icon={<FileText size={18} />} label="New SOAP Note" tint="teal" />
-          <QuickAction icon={<UserPlus size={18} />} label="Add Patient" tint="slate" />
+          <QuickAction icon={<UserPlus size={18} />} label="Add Patient" tint="oatmeal" />
           <QuickAction icon={<CalendarPlus size={18} />} label="Book Visit" tint="amber" />
-          <QuickAction icon={<Sparkles size={18} />} label="AI Assistant" tint="violet" />
+          <QuickAction icon={<Sparkles size={18} />} label="AI Assistant" tint="eucalyptus" />
+
         </div>
       </section>
 
@@ -146,12 +147,12 @@ function Waveform() {
   );
 }
 
-function QuickAction({ icon, label, tint }: { icon: React.ReactNode; label: string; tint: "teal" | "slate" | "amber" | "violet" }) {
+function QuickAction({ icon, label, tint }: { icon: React.ReactNode; label: string; tint: "teal" | "eucalyptus" | "amber" | "oatmeal" }) {
   const tints = {
-    teal: "bg-[oklch(0.94_0.05_195)] text-primary",
-    slate: "bg-[oklch(0.94_0.02_230)] text-[oklch(0.35_0.05_230)]",
-    amber: "bg-[oklch(0.95_0.06_75)] text-[oklch(0.45_0.12_65)]",
-    violet: "bg-[oklch(0.94_0.05_290)] text-[oklch(0.45_0.15_290)]",
+    teal: "bg-[color:var(--accent)] text-primary",
+    eucalyptus: "bg-[#E6F2EC] text-[#2E7D32]",
+    amber: "bg-[#FBEBD9] text-[#DE8A44]",
+    oatmeal: "bg-[#F5F1E8] text-[oklch(0.35_0.03_60)]",
   }[tint];
   return (
     <button className="rounded-2xl bg-card border border-[color:var(--border)] p-3.5 text-left shadow-card hover:-translate-y-0.5 active:translate-y-0 transition">
@@ -206,9 +207,19 @@ function Patients() {
                 </div>
                 <p className="text-xs text-muted-foreground truncate">{p.cond}</p>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {p.tags.map((t) => (
-                    <span key={t} className="text-[10px] font-medium rounded-full bg-accent text-accent-foreground px-2 py-0.5">{t}</span>
-                  ))}
+                  {p.tags.map((t) => {
+                    const risk = /risk|pvd/i.test(t);
+                    return (
+                      <span
+                        key={t}
+                        className={`text-[10px] font-medium rounded-full px-2 py-0.5 ${
+                          risk ? "bg-[#FBEBD9] text-[#DE8A44]" : "bg-accent text-accent-foreground"
+                        }`}
+                      >
+                        {t}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
               <ChevronRight size={18} className="text-muted-foreground shrink-0" />
