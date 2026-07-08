@@ -841,9 +841,7 @@ function InteractiveFootMap() {
                   <text x={side === "L" ? 42 : 58} y="26">Hallux</text>
                   <text x={side === "L" ? 12 : 88} y="55">D5</text>
                   <text x="50" y="92">Met heads</text>
-                  <text x={side === "L" ? 78 : 22} y="128" fontSize="3.8">
-                    {side === "L" ? "Lateral" : "Lateral"}
-                  </text>
+                  <text x={side === "L" ? 78 : 22} y="128" fontSize="3.8">Lateral</text>
                   <text x={side === "L" ? 22 : 78} y="128" fontSize="3.8">Medial</text>
                   <text x="50" y="140">Arch</text>
                   <text x="50" y="182">Heel</text>
