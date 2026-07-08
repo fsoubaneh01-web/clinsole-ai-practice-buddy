@@ -119,6 +119,7 @@ type Ctx = {
   patients: Patient[];
   appointments: Appointment[];
   transactions: Transaction[];
+  footAssessments: FootAssessment[];
 
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string) => Promise<{ error?: string }>;
@@ -132,11 +133,16 @@ type Ctx = {
   addAppointment: (a: Omit<Appointment, "id" | "patientName">) => Promise<{ appointment?: Appointment; error?: string }>;
   updateAppointment: (id: string, a: Partial<Omit<Appointment, "id" | "patientName">>) => Promise<{ error?: string }>;
   deleteAppointment: (id: string) => Promise<void>;
+  addFootAssessment: (a: FootAssessmentInput, photos: File[]) => Promise<{ assessment?: FootAssessment; error?: string }>;
+  deleteFootAssessment: (id: string) => Promise<void>;
+  getPhotoUrl: (path: string) => Promise<string | null>;
+  latestAssessmentFor: (patientId: string) => FootAssessment | undefined;
   addTransaction: (t: Omit<Transaction, "id">) => void;
   upgradeToPremium: () => void;
   useAiCredit: () => boolean;
   ageOf: (dob: string) => number;
 };
+
 
 const StoreCtx = createContext<Ctx | null>(null);
 
