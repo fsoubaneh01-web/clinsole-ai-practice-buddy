@@ -170,23 +170,25 @@ function Dashboard({ dark, onToggleTheme, sessionOpen, onToggleSession }: Screen
 
 
       {/* Active session */}
-      <div className="rounded-2xl bg-gradient-to-br from-[oklch(0.98_0.02_195)] to-white border border-[color:var(--border)] shadow-card p-4">
+      <div className="relative rounded-2xl bg-gradient-to-br from-[oklch(0.98_0.02_195)] to-white border border-primary/30 shadow-card p-4 ring-1 ring-primary/10">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
-              <div className="h-10 w-10 rounded-full gradient-primary grid place-items-center text-primary-foreground">
+              <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" />
+              <div className="relative h-10 w-10 rounded-full gradient-primary grid place-items-center text-primary-foreground">
                 <Mic size={18} />
               </div>
               <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-destructive ring-2 ring-white animate-pulse" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-primary font-semibold">Active session</p>
-              <p className="font-semibold truncate">Harold Whitaker</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-primary font-bold">Current Session</p>
+              <p className="font-semibold truncate">Harold Whitaker <span className="font-normal text-muted-foreground text-xs">· 81 yrs · PVD</span></p>
             </div>
           </div>
           <span className="text-xs font-mono text-muted-foreground">04:12</span>
         </div>
         <Waveform />
+        <DictatingTooltip />
         <button className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-destructive text-destructive-foreground py-2.5 text-sm font-medium hover:opacity-90 transition">
           <Square size={14} fill="currentColor" /> Stop & Draft SOAP
         </button>
@@ -360,6 +362,23 @@ function Patients({ dark, onToggleTheme }: ScreenProps) {
                     );
                   })}
                 </div>
+                {p.name === "Priya Ramesh" && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Care plan</span>
+                      <span className="text-[10px] font-semibold text-primary">5 / 6 visits</span>
+                    </div>
+                    <div className="relative h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: "83%" }}
+                        transition={{ type: "spring", stiffness: 90, damping: 20, delay: 0.2 }}
+                        className="h-full rounded-full bg-gradient-to-r from-primary to-[#0369A1]"
+                      />
+                      <span className="absolute right-[17%] top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_8px_rgba(14,165,233,0.9)] animate-pulse" />
+                    </div>
+                  </div>
+                )}
               </div>
               <ChevronRight size={18} className="text-muted-foreground shrink-0" />
             </button>
@@ -569,6 +588,7 @@ function BottomNav({ tab, setTab, notifCount }: { tab: Tab; setTab: (t: Tab) => 
         {items.map((it) => {
           const active = tab === it.id;
           const showBadge = it.id === "dashboard" && notifCount > 0;
+          const pulseDot = it.id === "schedule" || it.id === "business";
           return (
             <button
               key={it.id}
@@ -583,6 +603,12 @@ function BottomNav({ tab, setTab, notifCount }: { tab: Tab; setTab: (t: Tab) => 
                     <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#0369A1] text-[9px] font-bold text-white ring-2 ring-background">
                       {notifCount}
                     </span>
+                  </span>
+                )}
+                {pulseDot && !showBadge && (
+                  <span className="absolute top-1 right-3.5 flex h-2.5 w-2.5">
+                    <span className="absolute inset-0 rounded-full bg-[#DE8A44] opacity-70 animate-ping" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#DE8A44] ring-2 ring-background" />
                   </span>
                 )}
               </span>
@@ -1036,20 +1062,28 @@ const DAYS: { key: DayKey; label: string; num: string }[] = [
 ];
 
 function MiniCalendar({ selected, onSelect }: { selected: DayKey; onSelect: (d: DayKey) => void }) {
+  const today: DayKey = "tue"; // demo: July 7, 2026
   return (
     <div className="flex items-center gap-2">
       {DAYS.map((d) => {
         const active = d.key === selected;
+        const isToday = d.key === today;
         return (
           <button
             key={d.key}
             onClick={() => onSelect(d.key)}
-            className={`flex flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 text-[10px] font-semibold transition ${
+            className={`relative flex flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 text-[10px] font-semibold transition ${
               active
                 ? "bg-[#0F172A] text-white shadow-md"
                 : "border border-[color:var(--border)] text-muted-foreground hover:text-foreground"
             }`}
           >
+            {isToday && (
+              <>
+                <span className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-primary/70 animate-pulse" />
+                <span className="pointer-events-none absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(14,165,233,0.9)]" />
+              </>
+            )}
             <span className="uppercase tracking-wider">{d.label}</span>
             <span className={`text-sm ${active ? "text-white" : "text-foreground"}`}>{d.num}</span>
           </button>
@@ -1386,3 +1420,33 @@ function WoundImage({ variant }: { variant: "before" | "after" }) {
 
 
 
+
+/* ---------------- Dictating Notes tooltip ---------------- */
+function DictatingTooltip() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, type: "spring", stiffness: 260, damping: 24 }}
+      className="pointer-events-none absolute -top-3 right-4 z-10"
+    >
+      <div className="relative inline-flex items-center gap-1.5 rounded-full bg-[#0F172A] text-white pl-2 pr-2.5 py-1 shadow-lg">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inset-0 rounded-full bg-primary opacity-70 animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+        </span>
+        <span className="text-[10px] font-semibold tracking-wide">Dictating notes</span>
+        <span className="inline-flex items-end gap-[2px]">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="h-1 w-1 rounded-full bg-white/80"
+              style={{ animation: `wave 0.9s ease-in-out ${i * 150}ms infinite alternate` }}
+            />
+          ))}
+        </span>
+        <span className="absolute -bottom-1 right-4 h-2 w-2 rotate-45 bg-[#0F172A]" />
+      </div>
+    </motion.div>
+  );
+}
