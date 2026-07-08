@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStore, PLAN_LIMITS } from "@/lib/store";
-import { generateSOAP } from "@/lib/ai-mock";
+import { generateSoapNote } from "@/lib/soap.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Sparkles, Save, Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
@@ -23,10 +24,11 @@ function SoapNote() {
   const { patientId } = Route.useSearch();
   const { patients, addTreatment, addTransaction, ageOf, nurse, useAiCredit } = useStore();
   const [pid, setPid] = useState(patientId || patients[0]?.id || "");
-  const [brief, setBrief] = useState("Patient diabetic, thickened nails, reduced sensation, nails trimmed and filed, education provided.");
+  const [brief, setBrief] = useState("");
   const [loading, setLoading] = useState(false);
   const [soap, setSoap] = useState<{ s: string; o: string; a: string; p: string } | null>(null);
   const [fee, setFee] = useState(75);
+  const generate = useServerFn(generateSoapNote);
 
   const patient = patients.find((p) => p.id === pid);
   const limit = PLAN_LIMITS[nurse?.plan || "free"].aiPerMonth;
@@ -34,22 +36,36 @@ function SoapNote() {
   const outOfCredit = used >= limit;
 
   const gen = async () => {
-    if (!patient) return;
+    if (!patient) {
+      toast.error("Select a patient first.");
+      return;
+    }
+    if (!brief.trim()) {
+      toast.error("Add a few quick visit notes to generate from.");
+      return;
+    }
     if (!useAiCredit()) {
       toast.error("You've used all AI notes on the Free plan this month.");
       return;
     }
     setLoading(true);
     try {
-      const out = await generateSOAP({
-        patientName: patient.name, age: ageOf(patient.dob),
-        conditions: [
-          ...patient.conditions,
-          ...(patient.diabetesStatus !== "none" ? [`Diabetes ${patient.diabetesStatus}`] : []),
-        ],
-        briefNotes: brief,
+      const age = ageOf(patient.dob);
+      const out = await generate({
+        data: {
+          patientName: patient.name,
+          age: age || null,
+          conditions: patient.conditions,
+          diabetesStatus: patient.diabetesStatus,
+          allergies: patient.allergies || "",
+          briefNotes: brief,
+        },
       });
       setSoap(out);
+      toast.success("SOAP note generated");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to generate note";
+      toast.error(msg);
     } finally { setLoading(false); }
   };
 
