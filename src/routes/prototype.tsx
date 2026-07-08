@@ -36,6 +36,8 @@ function Prototype() {
   const [micActive, setMicActive] = useState(true);
   const [snackVisible, setSnackVisible] = useState(true);
   const [notifCount, setNotifCount] = useState(2);
+  const [privacyLocked, setPrivacyLocked] = useState(false);
+  const [online, setOnline] = useState(true);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -60,6 +62,20 @@ function Prototype() {
 
   return (
     <div className="min-h-screen bg-[var(--surface-muted)] text-foreground pb-24 overflow-x-hidden">
+      {/* Top utility strip: network status + privacy lock */}
+      <div className="sticky top-0 z-40 pointer-events-none">
+        <div className="mx-auto max-w-md px-3 pt-2 flex items-center justify-end gap-1.5 pointer-events-auto">
+          <NetworkStatusBadge online={online} onToggle={() => setOnline((v) => !v)} />
+          <button
+            onClick={() => setPrivacyLocked(true)}
+            aria-label="Enable privacy lock"
+            className="h-7 w-7 grid place-items-center rounded-full bg-card/90 backdrop-blur border border-[color:var(--border)] shadow-sm text-muted-foreground hover:text-foreground transition"
+          >
+            <Lock size={13} />
+          </button>
+        </div>
+      </div>
+
       <div className="mx-auto max-w-md relative">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -92,7 +108,79 @@ function Prototype() {
       )}
 
       <BottomNav tab={tab} setTab={setTab} notifCount={notifCount} />
+
+      <PrivacyLockOverlay open={privacyLocked} onResume={() => setPrivacyLocked(false)} />
     </div>
+  );
+}
+
+function NetworkStatusBadge({ online, onToggle }: { online: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-label={online ? "Cloud synced" : "Offline, 1 note saved locally"}
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold shadow-sm backdrop-blur transition ${
+        online
+          ? "bg-[#E7F6EC]/95 text-[#116932] border-[#B6E3C4]"
+          : "bg-[#FBEBD9]/95 text-[#8A5A1B] border-[#F1C48A]"
+      }`}
+    >
+      {online ? (
+        <>
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inset-0 rounded-full bg-[#22A34A] opacity-70 animate-ping" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#22A34A]" />
+          </span>
+          <Wifi size={10} /> Cloud Synced
+        </>
+      ) : (
+        <>
+          <WifiOff size={10} /> Offline · 1 Note Saved Locally
+        </>
+      )}
+    </button>
+  );
+}
+
+function PrivacyLockOverlay({ open, onResume }: { open: boolean; onResume: () => void }) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          className="fixed inset-0 z-[100] grid place-items-center bg-slate-950/55"
+          style={{ backdropFilter: "blur(22px) saturate(140%)" }}
+        >
+          <motion.div
+            initial={{ y: 12, scale: 0.96, opacity: 0 }}
+            animate={{ y: 0, scale: 1, opacity: 1 }}
+            exit={{ y: 12, scale: 0.96, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+            className="mx-6 max-w-xs w-full rounded-3xl bg-white/10 border border-white/20 p-7 text-center shadow-2xl"
+          >
+            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-white/10 border border-white/25">
+              <span className="absolute inline-flex h-16 w-16 rounded-full bg-white/10 animate-ping" />
+              <Lock size={26} className="relative text-white" />
+            </div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">HIPAA Privacy</p>
+            <h2 className="mt-1 text-lg font-semibold text-white">Privacy Lock Enabled</h2>
+            <p className="mt-1.5 text-xs text-white/70 leading-relaxed">
+              Patient data is hidden. Authenticate to resume the session.
+            </p>
+            <button
+              onClick={onResume}
+              className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-slate-900 py-3 text-sm font-semibold shadow-lg hover:bg-white/95 transition"
+            >
+              <ScanFace size={16} /> Scan FaceID to Resume
+            </button>
+            <p className="mt-3 text-[10px] text-white/50">Or use passcode · Auto-lock: 60s</p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
