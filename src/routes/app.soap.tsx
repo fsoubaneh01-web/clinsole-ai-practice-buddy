@@ -60,6 +60,7 @@ function SoapNote() {
           diabetesStatus: patient.diabetesStatus,
           allergies: patient.allergies || "",
           briefNotes: brief,
+          assessmentSummary: latestAssessment ? summarizeAssessment(latestAssessment) : "",
         },
       });
       setSoap(out);
