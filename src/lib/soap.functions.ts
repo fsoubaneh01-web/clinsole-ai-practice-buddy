@@ -11,6 +11,7 @@ const InputSchema = z.object({
   diabetesStatus: z.string(),
   allergies: z.string(),
   briefNotes: z.string().min(1),
+  assessmentSummary: z.string().optional().default(""),
 });
 
 const SoapSchema = z.object({
@@ -40,6 +41,7 @@ Allergies: ${data.allergies || "none reported"}
 
 Nurse's quick visit notes:
 ${data.briefNotes}
+${data.assessmentSummary ? `\nStructured foot assessment findings from today's visit:\n${data.assessmentSummary}\n` : ""}
 
 Produce a concise, professional SOAP note as JSON with fields:
 - s: Subjective — patient-reported information and history relevant to today's visit.

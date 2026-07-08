@@ -11,10 +11,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useStore, type DiabetesStatus } from "@/lib/store";
+import { useStore, type DiabetesStatus, type FootAssessment, summarizeAssessment } from "@/lib/store";
 import { format } from "date-fns";
-import { ArrowLeft, CalendarPlus, ClipboardPlus, Mail, MapPin, Pencil, Phone, ShieldAlert, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, CalendarPlus, ClipboardPlus, Footprints, Mail, MapPin, Pencil, Phone, ShieldAlert, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/patients_/$id")({ component: PatientProfile });
@@ -22,8 +22,9 @@ export const Route = createFileRoute("/app/patients_/$id")({ component: PatientP
 function PatientProfile() {
   const { id } = Route.useParams();
   const nav = useNavigate();
-  const { patients, ageOf, updatePatient, deletePatient } = useStore();
+  const { patients, ageOf, updatePatient, deletePatient, footAssessments, deleteFootAssessment } = useStore();
   const p = patients.find((x) => x.id === id);
+  const patientAssessments = footAssessments.filter((a) => a.patientId === id);
   const [editing, setEditing] = useState(false);
   if (!p) throw notFound();
 
@@ -55,6 +56,9 @@ function PatientProfile() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button asChild variant="secondary" className="bg-white/15 text-primary-foreground hover:bg-white/25">
+                <Link to="/app/assess" search={{ patientId: p.id }}><Footprints className="mr-1 h-4 w-4" />Assess</Link>
+              </Button>
               <Button asChild variant="secondary" className="bg-white/15 text-primary-foreground hover:bg-white/25">
                 <Link to="/app/soap" search={{ patientId: p.id } as never}><ClipboardPlus className="mr-1 h-4 w-4" />New SOAP</Link>
               </Button>
@@ -163,16 +167,18 @@ function PatientProfile() {
               ))}
             </TabsContent>
 
-            <TabsContent value="assess" className="mt-4 space-y-2">
-              {p.assessments.length === 0 && <Empty text="No foot assessments recorded." />}
-              {p.assessments.map((a) => (
-                <div key={a.id} className="rounded-2xl border bg-surface p-4 shadow-soft">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold">{format(new Date(a.date), "MMM d, yyyy")}</div>
-                    <RiskBadge risk={a.risk} />
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{a.summary}</p>
-                </div>
+            <TabsContent value="assess" className="mt-4 space-y-3">
+              <div className="flex justify-end">
+                <Button asChild size="sm" className="gradient-primary text-primary-foreground">
+                  <Link to="/app/assess" search={{ patientId: p.id }}><Footprints className="mr-1 h-4 w-4" />New assessment</Link>
+                </Button>
+              </div>
+              {patientAssessments.length === 0 && <Empty text="No foot assessments recorded yet." />}
+              {patientAssessments.map((a) => (
+                <AssessmentCard key={a.id} assessment={a} onDelete={async () => {
+                  await deleteFootAssessment(a.id);
+                  toast.success("Assessment deleted");
+                }} />
               ))}
             </TabsContent>
 
@@ -290,11 +296,81 @@ function Card({ title, children, className }: { title: string; children: React.R
 function Empty({ text }: { text: string }) {
   return <div className="rounded-2xl border border-dashed bg-surface-muted p-6 text-center text-sm text-muted-foreground">{text}</div>;
 }
-function RiskBadge({ risk }: { risk: "low" | "medium" | "high" }) {
-  const map = {
+function RiskBadge({ risk }: { risk: "low" | "medium" | "high" | "moderate" }) {
+  const norm = risk === "medium" ? "moderate" : risk;
+  const map: Record<string, string> = {
     low: "bg-success/15 text-success",
-    medium: "bg-warning/20 text-warning-foreground",
+    moderate: "bg-warning/20 text-warning-foreground",
     high: "bg-destructive/15 text-destructive",
-  } as const;
-  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${map[risk]}`}>{risk} risk</span>;
+  };
+  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${map[norm]}`}>{norm} risk</span>;
 }
+
+function AssessmentCard({ assessment, onDelete }: { assessment: FootAssessment; onDelete: () => void | Promise<void> }) {
+  const { getPhotoUrl } = useStore();
+  const [urls, setUrls] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(assessment.photoPaths.map((p) => getPhotoUrl(p))).then((res) => {
+      if (!cancelled) setUrls(res.filter((u): u is string => !!u));
+    });
+    return () => { cancelled = true; };
+  }, [assessment.photoPaths, getPhotoUrl]);
+
+  const feet = [assessment.leftFoot && "Left", assessment.rightFoot && "Right"].filter(Boolean).join(" · ");
+  const skinFindings = [
+    assessment.skinDry && "dry", assessment.skinCallus && "callus", assessment.skinCorns && "corns",
+    assessment.skinFissures && "fissures", assessment.skinUlcer && "ulcer", assessment.skinInfection && "infection",
+  ].filter(Boolean);
+  const nailFindings = [
+    assessment.nailsThickened && "thickened", assessment.nailsFungal && "fungal", assessment.nailsIngrown && "ingrown",
+    assessment.nailsTrimmed && "trimmed", assessment.nailsDebrided && "debrided",
+  ].filter(Boolean);
+
+  return (
+    <div className="rounded-2xl border bg-surface p-4 shadow-soft">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold">{format(new Date(assessment.date), "MMM d, yyyy · h:mm a")}</div>
+          {feet && <div className="text-xs text-muted-foreground">{feet} foot</div>}
+        </div>
+        <div className="flex items-center gap-2">
+          <RiskBadge risk={assessment.riskLevel} />
+          <Button size="sm" variant="ghost" onClick={onDelete}><Trash2 className="h-3.5 w-3.5" /></Button>
+        </div>
+      </div>
+      <div className="mt-3 grid gap-2 text-xs md:grid-cols-2">
+        <Line label="Skin" value={skinFindings.join(", ") || "no findings"} />
+        <Line label="Nails" value={nailFindings.join(", ") || "no findings"} />
+        <Line label="Circulation" value={[
+          assessment.pulsesPresent && `pulses ${assessment.pulsesPresent}`,
+          assessment.capillaryRefill && `refill ${assessment.capillaryRefill}`,
+          assessment.edema && assessment.edema !== "none" && `${assessment.edema} edema`,
+          assessment.skinTemperature && `${assessment.skinTemperature}`,
+        ].filter(Boolean).join(", ") || "—"} />
+        <Line label="Neuro" value={[
+          assessment.protectiveSensation && `sensation ${assessment.protectiveSensation}`,
+          assessment.neuropathyRisk && assessment.neuropathyRisk !== "none" && `${assessment.neuropathyRisk} risk`,
+          assessment.monofilamentFindings,
+        ].filter(Boolean).join(", ") || "—"} />
+      </div>
+      {assessment.notes && <p className="mt-3 rounded-lg bg-surface-muted p-2 text-xs text-muted-foreground">{assessment.notes}</p>}
+      {urls.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {urls.map((u, i) => (
+            <a key={i} href={u} target="_blank" rel="noreferrer" className="block h-20 w-20 overflow-hidden rounded-lg border">
+              <img src={u} alt="clinical" className="h-full w-full object-cover" />
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Line({ label, value }: { label: string; value: string }) {
+  return (
+    <div><span className="font-semibold text-foreground">{label}:</span> <span className="text-muted-foreground">{value}</span></div>
+  );
+}
+

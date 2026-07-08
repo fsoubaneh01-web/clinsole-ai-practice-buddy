@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useStore, PLAN_LIMITS } from "@/lib/store";
+import { useStore, PLAN_LIMITS, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -22,13 +22,14 @@ export const Route = createFileRoute("/app/soap")({
 
 function SoapNote() {
   const { patientId } = Route.useSearch();
-  const { patients, addTreatment, addTransaction, ageOf, nurse, useAiCredit } = useStore();
+  const { patients, addTreatment, addTransaction, ageOf, nurse, useAiCredit, latestAssessmentFor } = useStore();
   const [pid, setPid] = useState(patientId || patients[0]?.id || "");
   const [brief, setBrief] = useState("");
   const [loading, setLoading] = useState(false);
   const [soap, setSoap] = useState<{ s: string; o: string; a: string; p: string } | null>(null);
   const [fee, setFee] = useState(75);
   const generate = useServerFn(generateSoapNote);
+  const latestAssessment = pid ? latestAssessmentFor(pid) : undefined;
 
   const patient = patients.find((p) => p.id === pid);
   const limit = PLAN_LIMITS[nurse?.plan || "free"].aiPerMonth;
@@ -59,6 +60,7 @@ function SoapNote() {
           diabetesStatus: patient.diabetesStatus,
           allergies: patient.allergies || "",
           briefNotes: brief,
+          assessmentSummary: latestAssessment ? summarizeAssessment(latestAssessment) : "",
         },
       });
       setSoap(out);
@@ -112,6 +114,21 @@ function SoapNote() {
                 <Label>Quick visit notes</Label>
                 <Textarea rows={8} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="What did you observe and do?" />
               </div>
+              {patient && (
+                latestAssessment ? (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs">
+                    <div className="mb-1 font-semibold text-primary">Attached: latest foot assessment</div>
+                    <div className="text-muted-foreground">{summarizeAssessment(latestAssessment)}</div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between rounded-xl border border-dashed bg-surface-muted p-3 text-xs">
+                    <span className="text-muted-foreground">No assessment on file for this patient.</span>
+                    <Link to="/app/assess" search={{ patientId: patient.id }} className="font-semibold text-primary hover:underline">
+                      New assessment
+                    </Link>
+                  </div>
+                )
+              )}
               <Button onClick={gen} disabled={loading || !patient || outOfCredit} className="w-full gradient-primary text-primary-foreground">
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</> : <><Sparkles className="mr-2 h-4 w-4" />Generate SOAP note</>}
               </Button>

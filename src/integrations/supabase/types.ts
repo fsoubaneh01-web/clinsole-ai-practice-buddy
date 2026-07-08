@@ -70,6 +70,110 @@ export type Database = {
           },
         ]
       }
+      foot_assessments: {
+        Row: {
+          assessed_at: string
+          capillary_refill: string | null
+          created_at: string
+          edema: string | null
+          id: string
+          left_foot: boolean
+          monofilament_findings: string | null
+          nails_debrided: boolean
+          nails_fungal: boolean
+          nails_ingrown: boolean
+          nails_thickened: boolean
+          nails_trimmed: boolean
+          neuropathy_risk: string | null
+          notes: string | null
+          nurse_id: string
+          patient_id: string
+          photo_urls: string[]
+          protective_sensation: string | null
+          pulses_present: string | null
+          right_foot: boolean
+          risk_level: string
+          skin_callus: boolean
+          skin_corns: boolean
+          skin_dry: boolean
+          skin_fissures: boolean
+          skin_infection: boolean
+          skin_temperature: string | null
+          skin_ulcer: boolean
+          updated_at: string
+        }
+        Insert: {
+          assessed_at?: string
+          capillary_refill?: string | null
+          created_at?: string
+          edema?: string | null
+          id?: string
+          left_foot?: boolean
+          monofilament_findings?: string | null
+          nails_debrided?: boolean
+          nails_fungal?: boolean
+          nails_ingrown?: boolean
+          nails_thickened?: boolean
+          nails_trimmed?: boolean
+          neuropathy_risk?: string | null
+          notes?: string | null
+          nurse_id: string
+          patient_id: string
+          photo_urls?: string[]
+          protective_sensation?: string | null
+          pulses_present?: string | null
+          right_foot?: boolean
+          risk_level?: string
+          skin_callus?: boolean
+          skin_corns?: boolean
+          skin_dry?: boolean
+          skin_fissures?: boolean
+          skin_infection?: boolean
+          skin_temperature?: string | null
+          skin_ulcer?: boolean
+          updated_at?: string
+        }
+        Update: {
+          assessed_at?: string
+          capillary_refill?: string | null
+          created_at?: string
+          edema?: string | null
+          id?: string
+          left_foot?: boolean
+          monofilament_findings?: string | null
+          nails_debrided?: boolean
+          nails_fungal?: boolean
+          nails_ingrown?: boolean
+          nails_thickened?: boolean
+          nails_trimmed?: boolean
+          neuropathy_risk?: string | null
+          notes?: string | null
+          nurse_id?: string
+          patient_id?: string
+          photo_urls?: string[]
+          protective_sensation?: string | null
+          pulses_present?: string | null
+          right_foot?: boolean
+          risk_level?: string
+          skin_callus?: boolean
+          skin_corns?: boolean
+          skin_dry?: boolean
+          skin_fissures?: boolean
+          skin_infection?: boolean
+          skin_temperature?: string | null
+          skin_ulcer?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foot_assessments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
