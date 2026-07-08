@@ -759,7 +759,7 @@ function InteractiveFootMap() {
     <div className="relative">
       <div className="grid grid-cols-2 gap-3">
         {(["L", "R"] as const).map((side) => (
-          <div key={side} className="rounded-xl bg-[#F8FAFC] border border-[color:var(--border)] p-3">
+          <div key={side} className="relative rounded-xl bg-[#F8FAFC] border border-[color:var(--border)] p-3">
             <div className="flex items-center justify-between mb-1">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{side === "L" ? "Left" : "Right"} · plantar</p>
               <p className="text-[10px] text-muted-foreground/80">Tap dot</p>
@@ -783,28 +783,24 @@ function InteractiveFootMap() {
               ].map((t, i) => (
                 <circle key={i} cx={t.cx} cy={i === 0 ? 10 : 14 + Math.abs(t.cx - 50) * 0.15} r={t.r} fill={`url(#skin-${side})`} stroke="#E2B48A" strokeWidth="1" />
               ))}
-              {SEV_HOTSPOTS.filter((h) => h.side === side).map((h) => {
-                const t = TONE_STYLE[h.tone];
-                return (
-                  <g
-                    key={h.id}
-                    onMouseEnter={() => setOpenId(h.id)}
-                    onFocus={() => setOpenId(h.id)}
-                    onClick={(e) => { e.stopPropagation(); setOpenId(openId === h.id ? null : h.id); }}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={h.label}
-                    style={{ cursor: "pointer", outline: "none" }}
-                  >
-                    <circle cx={h.cx} cy={h.cy} r="10" fill={t.glow}>
-                      <animate attributeName="r" values="6;12;6" dur="1.8s" repeatCount="indefinite" />
-                      <animate attributeName="opacity" values="0.55;0.15;0.55" dur="1.8s" repeatCount="indefinite" />
-                    </circle>
-                    <circle cx={h.cx} cy={h.cy} r="4.5" fill={t.fill} stroke="white" strokeWidth="1.5" />
-                  </g>
-                );
-              })}
             </svg>
+            {SEV_HOTSPOTS.filter((h) => h.side === side).map((h) => {
+              const t = TONE_STYLE[h.tone];
+              return (
+                <button
+                  key={h.id}
+                  onMouseEnter={() => setOpenId(h.id)}
+                  onFocus={() => setOpenId(h.id)}
+                  onClick={(e) => { e.stopPropagation(); setOpenId(openId === h.id ? null : h.id); }}
+                  aria-label={h.label}
+                  className="absolute z-10 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  style={{ left: `${h.cx}%`, top: `calc(2rem + ${(h.cy / 180) * 11}rem)` }}
+                >
+                  <span className="absolute h-7 w-7 rounded-full animate-ping" style={{ background: t.glow }} />
+                  <span className="relative h-3.5 w-3.5 rounded-full border-2 border-white shadow-md" style={{ background: t.fill }} />
+                </button>
+              );
+            })}
           </div>
         ))}
       </div>
