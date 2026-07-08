@@ -167,16 +167,18 @@ function PatientProfile() {
               ))}
             </TabsContent>
 
-            <TabsContent value="assess" className="mt-4 space-y-2">
-              {p.assessments.length === 0 && <Empty text="No foot assessments recorded." />}
-              {p.assessments.map((a) => (
-                <div key={a.id} className="rounded-2xl border bg-surface p-4 shadow-soft">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold">{format(new Date(a.date), "MMM d, yyyy")}</div>
-                    <RiskBadge risk={a.risk} />
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{a.summary}</p>
-                </div>
+            <TabsContent value="assess" className="mt-4 space-y-3">
+              <div className="flex justify-end">
+                <Button asChild size="sm" className="gradient-primary text-primary-foreground">
+                  <Link to="/app/assess" search={{ patientId: p.id }}><Footprints className="mr-1 h-4 w-4" />New assessment</Link>
+                </Button>
+              </div>
+              {patientAssessments.length === 0 && <Empty text="No foot assessments recorded yet." />}
+              {patientAssessments.map((a) => (
+                <AssessmentCard key={a.id} assessment={a} onDelete={async () => {
+                  await deleteFootAssessment(a.id);
+                  toast.success("Assessment deleted");
+                }} />
               ))}
             </TabsContent>
 
