@@ -90,12 +90,6 @@ const AppAssessRoute = AppAssessRouteImport.update({
   path: '/assess',
   getParentRoute: () => AppRoute,
 } as any)
-
-const AppAssessRoute = AppAssessRouteImport.update({
-  id: '/assess',
-  path: '/assess',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppPatientsNewRoute = AppPatientsNewRouteImport.update({
   id: '/patients_/new',
   path: '/patients/new',
