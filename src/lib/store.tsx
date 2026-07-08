@@ -226,12 +226,85 @@ const rowToAppointment = (r: AppointmentRow, patientName: string): Appointment =
   recurring: (r.recurring as Appointment["recurring"]) ?? null,
 });
 
+type FootAssessmentRow = {
+  id: string;
+  patient_id: string;
+  assessed_at: string;
+  left_foot: boolean; right_foot: boolean;
+  skin_dry: boolean; skin_callus: boolean; skin_corns: boolean;
+  skin_fissures: boolean; skin_ulcer: boolean; skin_infection: boolean;
+  nails_thickened: boolean; nails_fungal: boolean; nails_ingrown: boolean;
+  nails_trimmed: boolean; nails_debrided: boolean;
+  pulses_present: string | null;
+  capillary_refill: string | null;
+  edema: string | null;
+  skin_temperature: string | null;
+  protective_sensation: string | null;
+  monofilament_findings: string | null;
+  neuropathy_risk: string | null;
+  risk_level: string;
+  notes: string | null;
+  photo_urls: string[] | null;
+};
+
+const rowToFootAssessment = (r: FootAssessmentRow): FootAssessment => ({
+  id: r.id,
+  patientId: r.patient_id,
+  date: r.assessed_at,
+  leftFoot: r.left_foot, rightFoot: r.right_foot,
+  skinDry: r.skin_dry, skinCallus: r.skin_callus, skinCorns: r.skin_corns,
+  skinFissures: r.skin_fissures, skinUlcer: r.skin_ulcer, skinInfection: r.skin_infection,
+  nailsThickened: r.nails_thickened, nailsFungal: r.nails_fungal, nailsIngrown: r.nails_ingrown,
+  nailsTrimmed: r.nails_trimmed, nailsDebrided: r.nails_debrided,
+  pulsesPresent: r.pulses_present ?? "",
+  capillaryRefill: r.capillary_refill ?? "",
+  edema: r.edema ?? "",
+  skinTemperature: r.skin_temperature ?? "",
+  protectiveSensation: r.protective_sensation ?? "",
+  monofilamentFindings: r.monofilament_findings ?? "",
+  neuropathyRisk: r.neuropathy_risk ?? "",
+  riskLevel: (r.risk_level as RiskLevel) || "low",
+  notes: r.notes ?? "",
+  photoPaths: r.photo_urls ?? [],
+});
+
+export function summarizeAssessment(a: FootAssessment): string {
+  const parts: string[] = [];
+  const feet = [a.leftFoot && "left", a.rightFoot && "right"].filter(Boolean).join(" and ");
+  if (feet) parts.push(`Assessed ${feet} foot`);
+  const skin = [
+    a.skinDry && "dry skin", a.skinCallus && "callus", a.skinCorns && "corns",
+    a.skinFissures && "fissures", a.skinUlcer && "ulcer", a.skinInfection && "infection",
+  ].filter(Boolean);
+  if (skin.length) parts.push(`Skin: ${skin.join(", ")}`);
+  const nails = [
+    a.nailsThickened && "thickened", a.nailsFungal && "fungal appearance", a.nailsIngrown && "ingrown",
+    a.nailsTrimmed && "trimmed", a.nailsDebrided && "debrided",
+  ].filter(Boolean);
+  if (nails.length) parts.push(`Nails: ${nails.join(", ")}`);
+  const circ: string[] = [];
+  if (a.pulsesPresent) circ.push(`pedal pulses ${a.pulsesPresent}`);
+  if (a.capillaryRefill) circ.push(`cap refill ${a.capillaryRefill}`);
+  if (a.edema && a.edema !== "none") circ.push(`${a.edema} edema`);
+  if (a.skinTemperature) circ.push(`${a.skinTemperature} skin temp`);
+  if (circ.length) parts.push(`Circulation: ${circ.join(", ")}`);
+  const neuro: string[] = [];
+  if (a.protectiveSensation) neuro.push(`protective sensation ${a.protectiveSensation}`);
+  if (a.monofilamentFindings) neuro.push(`monofilament ${a.monofilamentFindings}`);
+  if (a.neuropathyRisk && a.neuropathyRisk !== "none") neuro.push(`${a.neuropathyRisk} neuropathy risk`);
+  if (neuro.length) parts.push(`Neuro: ${neuro.join(", ")}`);
+  parts.push(`Overall risk: ${a.riskLevel}`);
+  if (a.notes) parts.push(`Notes: ${a.notes}`);
+  return parts.join(". ") + ".";
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [extras, setExtras] = useState<LocalExtras>(emptyExtras);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [footAssessments, setFootAssessments] = useState<FootAssessment[]>([]);
 
   // Auth session
   useEffect(() => {
@@ -245,13 +318,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Load local extras + patients + appointments on session change
+  // Load local extras + patients + appointments + assessments on session change
   useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) {
       setExtras(emptyExtras);
       setPatients([]);
       setAppointments([]);
+      setFootAssessments([]);
       return;
     }
     const local = loadLocal(userId);
@@ -259,9 +333,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setExtras(local);
 
     (async () => {
-      const [pRes, aRes] = await Promise.all([
+      const [pRes, aRes, fRes] = await Promise.all([
         supabase.from("patients").select("*").order("created_at", { ascending: false }),
         supabase.from("appointments").select("*").order("scheduled_at", { ascending: true }),
+        supabase.from("foot_assessments").select("*").order("assessed_at", { ascending: false }),
       ]);
       if (pRes.error) { console.error("load patients", pRes.error); return; }
       const patientRows = pRes.data as PatientRow[];
@@ -270,6 +345,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const nameById = new Map(pList.map((p) => [p.id, p.name]));
       if (aRes.error) { console.error("load appointments", aRes.error); return; }
       setAppointments((aRes.data as AppointmentRow[]).map((r) => rowToAppointment(r, nameById.get(r.patient_id) ?? "Patient")));
+      if (fRes.error) { console.error("load foot_assessments", fRes.error); return; }
+      setFootAssessments((fRes.data as FootAssessmentRow[]).map(rowToFootAssessment));
     })();
   }, [session]);
 
@@ -294,7 +371,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     patients,
     appointments,
     transactions: extras.transactions,
+    footAssessments,
     ageOf,
+    latestAssessmentFor: (pid) => footAssessments.find((a) => a.patientId === pid),
+    getPhotoUrl: async (path) => {
+      const { data, error } = await supabase.storage.from("clinical-photos").createSignedUrl(path, 3600);
+      if (error) { console.error("signed url", error); return null; }
+      return data.signedUrl;
+    },
+
 
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
