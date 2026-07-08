@@ -21,6 +21,7 @@ import { Route as AppIncomeRouteImport } from './routes/app.income'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppCalendarRouteImport } from './routes/app.calendar'
 import { Route as AppAssistantRouteImport } from './routes/app.assistant'
+import { Route as AppAssessRouteImport } from './routes/app.assess'
 import { Route as AppPatientsNewRouteImport } from './routes/app.patients_.new'
 import { Route as AppPatientsIdRouteImport } from './routes/app.patients_.$id'
 
@@ -84,6 +85,11 @@ const AppAssistantRoute = AppAssistantRouteImport.update({
   path: '/assistant',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAssessRoute = AppAssessRouteImport.update({
+  id: '/assess',
+  path: '/assess',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPatientsNewRoute = AppPatientsNewRouteImport.update({
   id: '/patients_/new',
   path: '/patients/new',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/dashboard': typeof AppDashboardRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/dashboard': typeof AppDashboardRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/dashboard': typeof AppDashboardRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/app/assess'
     | '/app/assistant'
     | '/app/calendar'
     | '/app/dashboard'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/app/assess'
     | '/app/assistant'
     | '/app/calendar'
     | '/app/dashboard'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/app/assess'
     | '/app/assistant'
     | '/app/calendar'
     | '/app/dashboard'
@@ -289,6 +301,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAssistantRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/assess': {
+      id: '/app/assess'
+      path: '/assess'
+      fullPath: '/app/assess'
+      preLoaderRoute: typeof AppAssessRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/patients_/new': {
       id: '/app/patients_/new'
       path: '/patients/new'
@@ -307,6 +326,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAssessRoute: typeof AppAssessRoute
   AppAssistantRoute: typeof AppAssistantRoute
   AppCalendarRoute: typeof AppCalendarRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -319,6 +339,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAssessRoute: AppAssessRoute,
   AppAssistantRoute: AppAssistantRoute,
   AppCalendarRoute: AppCalendarRoute,
   AppDashboardRoute: AppDashboardRoute,

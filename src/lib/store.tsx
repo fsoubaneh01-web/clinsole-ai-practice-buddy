@@ -21,12 +21,39 @@ export type Patient = {
   nextFollowUp?: string;
 };
 
+export type RiskLevel = "low" | "moderate" | "high";
+
+export type FootAssessment = {
+  id: string;
+  patientId: string;
+  date: string;
+  leftFoot: boolean;
+  rightFoot: boolean;
+  skinDry: boolean; skinCallus: boolean; skinCorns: boolean;
+  skinFissures: boolean; skinUlcer: boolean; skinInfection: boolean;
+  nailsThickened: boolean; nailsFungal: boolean; nailsIngrown: boolean;
+  nailsTrimmed: boolean; nailsDebrided: boolean;
+  pulsesPresent: string;
+  capillaryRefill: string;
+  edema: string;
+  skinTemperature: string;
+  protectiveSensation: string;
+  monofilamentFindings: string;
+  neuropathyRisk: string;
+  riskLevel: RiskLevel;
+  notes: string;
+  photoPaths: string[];
+};
+
+export type FootAssessmentInput = Omit<FootAssessment, "id" | "date" | "photoPaths">;
+
 export type Assessment = {
   id: string;
   date: string;
   summary: string;
   risk: "low" | "medium" | "high";
 };
+
 
 export type Treatment = {
   id: string;
