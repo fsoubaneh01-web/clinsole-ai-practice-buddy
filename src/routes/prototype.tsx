@@ -316,7 +316,7 @@ const PATIENTS = [
 function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number]; onClose: () => void }) {
   const [hotspot, setHotspot] = useState<null | { title: string; note: string }>(null);
   return (
-    <div className="fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md bg-background rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
@@ -357,7 +357,7 @@ function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number
         </div>
 
         {hotspot && (
-          <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-6" onClick={() => setHotspot(null)}>
+          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-md grid place-items-center p-6" onClick={() => setHotspot(null)}>
             <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-2xl bg-background p-5 shadow-card">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-semibold">{hotspot.title}</h4>
