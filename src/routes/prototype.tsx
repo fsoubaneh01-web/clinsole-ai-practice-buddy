@@ -170,23 +170,25 @@ function Dashboard({ dark, onToggleTheme, sessionOpen, onToggleSession }: Screen
 
 
       {/* Active session */}
-      <div className="rounded-2xl bg-gradient-to-br from-[oklch(0.98_0.02_195)] to-white border border-[color:var(--border)] shadow-card p-4">
+      <div className="relative rounded-2xl bg-gradient-to-br from-[oklch(0.98_0.02_195)] to-white border border-primary/30 shadow-card p-4 ring-1 ring-primary/10">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
-              <div className="h-10 w-10 rounded-full gradient-primary grid place-items-center text-primary-foreground">
+              <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" />
+              <div className="relative h-10 w-10 rounded-full gradient-primary grid place-items-center text-primary-foreground">
                 <Mic size={18} />
               </div>
               <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-destructive ring-2 ring-white animate-pulse" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-wider text-primary font-semibold">Active session</p>
-              <p className="font-semibold truncate">Harold Whitaker</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-primary font-bold">Current Session</p>
+              <p className="font-semibold truncate">Harold Whitaker <span className="font-normal text-muted-foreground text-xs">· 81 yrs · PVD</span></p>
             </div>
           </div>
           <span className="text-xs font-mono text-muted-foreground">04:12</span>
         </div>
         <Waveform />
+        <DictatingTooltip />
         <button className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-destructive text-destructive-foreground py-2.5 text-sm font-medium hover:opacity-90 transition">
           <Square size={14} fill="currentColor" /> Stop & Draft SOAP
         </button>
