@@ -6,6 +6,7 @@ import {
   Search, Home, Users, Stethoscope, Calendar, Wallet, ChevronRight,
   Camera, X, CheckCircle2, Mic, Edit3, Moon, Sun, Timer, Pause, Play, User,
   ChevronDown, Flag, Briefcase, Eye,
+  Lock, Wifi, WifiOff, ScanFace, Printer, Send, Download,
 } from "lucide-react";
 
 
