@@ -80,7 +80,6 @@ export const PLAN_LIMITS = {
 type LocalExtras = {
   nurse: Nurse | null;
   onboarded: boolean;
-  appointments: Appointment[];
   transactions: Transaction[];
   patientExtras: Record<string, { assessments: Assessment[]; treatments: Treatment[] }>;
 };
@@ -103,8 +102,9 @@ type Ctx = {
   updatePatient: (id: string, p: Partial<Patient>) => Promise<void>;
   deletePatient: (id: string) => Promise<void>;
   addTreatment: (patientId: string, t: Omit<Treatment, "id">) => void;
-  addAppointment: (a: Omit<Appointment, "id">) => void;
-  deleteAppointment: (id: string) => void;
+  addAppointment: (a: Omit<Appointment, "id" | "patientName">) => Promise<{ appointment?: Appointment; error?: string }>;
+  updateAppointment: (id: string, a: Partial<Omit<Appointment, "id" | "patientName">>) => Promise<{ error?: string }>;
+  deleteAppointment: (id: string) => Promise<void>;
   addTransaction: (t: Omit<Transaction, "id">) => void;
   upgradeToPremium: () => void;
   useAiCredit: () => boolean;
@@ -118,10 +118,10 @@ const localKey = (userId: string) => `clinsole-local-${userId}`;
 const emptyExtras: LocalExtras = {
   nurse: null,
   onboarded: false,
-  appointments: [],
   transactions: [],
   patientExtras: {},
 };
+
 
 const loadLocal = (userId: string): LocalExtras => {
   if (typeof window === "undefined") return emptyExtras;
