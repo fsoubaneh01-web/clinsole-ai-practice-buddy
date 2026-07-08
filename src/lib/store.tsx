@@ -96,7 +96,7 @@ type Ctx = {
   signOut: () => Promise<void>;
 
   setNurse: (n: Nurse) => void;
-  addPatient: (p: Omit<Patient, "id" | "createdAt" | "assessments" | "treatments">) => Promise<Patient | null>;
+  addPatient: (p: Omit<Patient, "id" | "createdAt" | "assessments" | "treatments">) => Promise<{ patient?: Patient; error?: string }>;
   updatePatient: (id: string, p: Partial<Patient>) => Promise<void>;
   deletePatient: (id: string) => Promise<void>;
   addTreatment: (patientId: string, t: Omit<Treatment, "id">) => void;
@@ -256,9 +256,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     addPatient: async (p) => {
       const userId = session?.user?.id;
-      if (!userId) return null;
+      if (!userId) return { error: "You must be signed in to add a patient." };
       const plan = extras.nurse?.plan || "free";
-      if (patients.length >= PLAN_LIMITS[plan].patients) return null;
+      if (patients.length >= PLAN_LIMITS[plan].patients) {
+        return { error: "You've reached the Free plan patient limit. Upgrade to add more." };
+      }
       const { data, error } = await supabase
         .from("patients")
         .insert({
@@ -278,11 +280,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         .single();
       if (error || !data) {
         console.error("addPatient", error);
-        return null;
+        return { error: error?.message || "Failed to save patient." };
       }
       const newP = rowToPatient(data as PatientRow);
       setPatients((s) => [newP, ...s]);
-      return newP;
+      return { patient: newP };
     },
     updatePatient: async (pid, p) => {
       const patch: {

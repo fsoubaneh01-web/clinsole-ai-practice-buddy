@@ -21,8 +21,8 @@ import { Route as AppIncomeRouteImport } from './routes/app.income'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppCalendarRouteImport } from './routes/app.calendar'
 import { Route as AppAssistantRouteImport } from './routes/app.assistant'
-import { Route as AppPatientsNewRouteImport } from './routes/app.patients.new'
-import { Route as AppPatientsIdRouteImport } from './routes/app.patients.$id'
+import { Route as AppPatientsNewRouteImport } from './routes/app.patients_.new'
+import { Route as AppPatientsIdRouteImport } from './routes/app.patients_.$id'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -85,14 +85,14 @@ const AppAssistantRoute = AppAssistantRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const AppPatientsNewRoute = AppPatientsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AppPatientsRoute,
+  id: '/patients_/new',
+  path: '/patients/new',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppPatientsIdRoute = AppPatientsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AppPatientsRoute,
+  id: '/patients_/$id',
+  path: '/patients/$id',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -105,7 +105,7 @@ export interface FileRoutesByFullPath {
   '/app/calendar': typeof AppCalendarRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/income': typeof AppIncomeRoute
-  '/app/patients': typeof AppPatientsRouteWithChildren
+  '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
   '/app/patients/$id': typeof AppPatientsIdRoute
@@ -121,7 +121,7 @@ export interface FileRoutesByTo {
   '/app/calendar': typeof AppCalendarRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/income': typeof AppIncomeRoute
-  '/app/patients': typeof AppPatientsRouteWithChildren
+  '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
   '/app/patients/$id': typeof AppPatientsIdRoute
@@ -138,11 +138,11 @@ export interface FileRoutesById {
   '/app/calendar': typeof AppCalendarRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/income': typeof AppIncomeRoute
-  '/app/patients': typeof AppPatientsRouteWithChildren
+  '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
-  '/app/patients/$id': typeof AppPatientsIdRoute
-  '/app/patients/new': typeof AppPatientsNewRoute
+  '/app/patients_/$id': typeof AppPatientsIdRoute
+  '/app/patients_/new': typeof AppPatientsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -191,8 +191,8 @@ export interface FileRouteTypes {
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
-    | '/app/patients/$id'
-    | '/app/patients/new'
+    | '/app/patients_/$id'
+    | '/app/patients_/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -289,45 +289,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAssistantRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/patients/new': {
-      id: '/app/patients/new'
-      path: '/new'
+    '/app/patients_/new': {
+      id: '/app/patients_/new'
+      path: '/patients/new'
       fullPath: '/app/patients/new'
       preLoaderRoute: typeof AppPatientsNewRouteImport
-      parentRoute: typeof AppPatientsRoute
+      parentRoute: typeof AppRoute
     }
-    '/app/patients/$id': {
-      id: '/app/patients/$id'
-      path: '/$id'
+    '/app/patients_/$id': {
+      id: '/app/patients_/$id'
+      path: '/patients/$id'
       fullPath: '/app/patients/$id'
       preLoaderRoute: typeof AppPatientsIdRouteImport
-      parentRoute: typeof AppPatientsRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
-
-interface AppPatientsRouteChildren {
-  AppPatientsIdRoute: typeof AppPatientsIdRoute
-  AppPatientsNewRoute: typeof AppPatientsNewRoute
-}
-
-const AppPatientsRouteChildren: AppPatientsRouteChildren = {
-  AppPatientsIdRoute: AppPatientsIdRoute,
-  AppPatientsNewRoute: AppPatientsNewRoute,
-}
-
-const AppPatientsRouteWithChildren = AppPatientsRoute._addFileChildren(
-  AppPatientsRouteChildren,
-)
 
 interface AppRouteChildren {
   AppAssistantRoute: typeof AppAssistantRoute
   AppCalendarRoute: typeof AppCalendarRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppIncomeRoute: typeof AppIncomeRoute
-  AppPatientsRoute: typeof AppPatientsRouteWithChildren
+  AppPatientsRoute: typeof AppPatientsRoute
   AppSoapRoute: typeof AppSoapRoute
   AppSubscriptionRoute: typeof AppSubscriptionRoute
+  AppPatientsIdRoute: typeof AppPatientsIdRoute
+  AppPatientsNewRoute: typeof AppPatientsNewRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -335,9 +323,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppCalendarRoute: AppCalendarRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppIncomeRoute: AppIncomeRoute,
-  AppPatientsRoute: AppPatientsRouteWithChildren,
+  AppPatientsRoute: AppPatientsRoute,
   AppSoapRoute: AppSoapRoute,
   AppSubscriptionRoute: AppSubscriptionRoute,
+  AppPatientsIdRoute: AppPatientsIdRoute,
+  AppPatientsNewRoute: AppPatientsNewRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -352,3 +342,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
