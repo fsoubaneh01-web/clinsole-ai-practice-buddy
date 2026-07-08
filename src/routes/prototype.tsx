@@ -154,7 +154,7 @@ function Dashboard({ dark, onToggleTheme }: ScreenProps) {
         </div>
         <div className="-mx-4 px-4 flex gap-3 overflow-x-auto snap-x pb-2 scrollbar-none">
           {DRAFTS.map((d) => (
-            <article key={d.name} className="snap-start shrink-0 w-[78%] rounded-2xl bg-card border border-[color:var(--border)] shadow-card p-4">
+            <article key={d.name} className="snap-start shrink-0 w-[78%] rounded-2xl bg-card border border-[color:var(--border)] shadow-sm hover:shadow-md transition-shadow p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-semibold truncate">{d.name}</p>
@@ -225,7 +225,7 @@ function QuickAction({ icon, label, tint }: { icon: React.ReactNode; label: stri
     oatmeal: "bg-[#F5F1E8] text-[oklch(0.35_0.03_60)]",
   }[tint];
   return (
-    <button className="rounded-2xl bg-card border border-[color:var(--border)] p-3.5 text-left shadow-card hover:-translate-y-0.5 active:translate-y-0 transition">
+    <button className="rounded-2xl bg-card border border-[color:var(--border)] p-3.5 text-left shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition">
       <div className={`h-10 w-10 rounded-xl grid place-items-center ${tints}`}>{icon}</div>
       <p className="mt-2.5 text-sm font-medium leading-tight">{label}</p>
     </button>
@@ -269,7 +269,7 @@ function Patients({ dark, onToggleTheme }: ScreenProps) {
           <li key={p.name}>
             <button
               onClick={() => setSelected(p.name)}
-              className="w-full text-left rounded-2xl bg-card border border-[color:var(--border)] p-3.5 shadow-card flex items-center gap-3 hover:border-primary/40 transition"
+              className="w-full text-left rounded-2xl bg-card border border-[color:var(--border)] p-3.5 shadow-sm hover:shadow-md flex items-center gap-3 hover:border-primary/40 transition"
             >
               <div className="h-11 w-11 shrink-0 rounded-full gradient-primary grid place-items-center text-primary-foreground font-semibold">
                 {p.name.split(" ").map((n) => n[0]).join("")}
