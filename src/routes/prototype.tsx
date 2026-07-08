@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   Activity, Plus, Square, FileText, UserPlus, CalendarPlus, Sparkles,
   Search, Home, Users, Stethoscope, Calendar, Wallet, ChevronRight,
-  Camera, X, CheckCircle2, Mic, Edit3, Moon, Sun, Timer, Bell, Pause, Play, User,
+  Camera, X, CheckCircle2, Mic, Edit3, Moon, Sun, Timer, Pause, Play, User,
 } from "lucide-react";
 
 
@@ -1005,9 +1005,11 @@ function TimelineWithCalendar({ compact = false }: { compact?: boolean }) {
         <h2 className="text-sm font-semibold">Patient Care Timeline</h2>
         <span className="text-[11px] text-muted-foreground">{items.length} events</span>
       </div>
-      <div className="mb-3">
-        {!compact && <MiniCalendar selected={day} onSelect={(d) => { setDay(d); setExpanded(null); }} />}
-      </div>
+      {!compact && (
+        <div className="mb-3">
+          <MiniCalendar selected={day} onSelect={(d) => { setDay(d); setExpanded(null); }} />
+        </div>
+      )}
       <ul className="space-y-2">
         <AnimatePresence initial={false}>
           {items.map((t) => {
