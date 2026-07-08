@@ -228,8 +228,10 @@ function Dashboard({ dark, onToggleTheme, setTab, sessionOpen, onToggleSession }
         </div>
       </section>
 
-      {/* Care timeline */}
-      <CareTimeline />
+      {/* Care timeline with day filter */}
+      <TimelineWithCalendar />
+
+
 
 
       {/* Quick actions */}
@@ -673,6 +675,7 @@ function SessionPill({ open, onToggle }: { open: boolean; onToggle: () => void }
 function RecordingWidget({
   micActive, onToggleMic, onOpen, onClose,
 }: { micActive: boolean; onToggleMic: () => void; onOpen: () => void; onClose: () => void }) {
+  const [mode, setMode] = useState<"ambient" | "direct">("ambient");
   return (
     <motion.div
       initial={{ y: 80, opacity: 0 }}
@@ -681,38 +684,57 @@ function RecordingWidget({
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
       className="fixed bottom-20 left-0 right-0 z-40 px-4"
     >
-      <div className="mx-auto max-w-md rounded-2xl bg-card border border-[color:var(--border)] shadow-card p-3 flex items-center gap-3">
-        <button
-          onClick={onToggleMic}
-          aria-label={micActive ? "Pause recording" : "Resume recording"}
-          className={`shrink-0 h-11 w-11 rounded-full grid place-items-center text-white transition ${micActive ? "bg-primary shadow-[0_0_0_6px_rgba(14,165,233,0.15)]" : "bg-muted text-muted-foreground"}`}
-        >
-          {micActive ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
-        </button>
-        <button onClick={onOpen} className="min-w-0 flex-1 text-left">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">AI SOAP Note Draft</p>
-          <p className="text-xs font-semibold truncate">{micActive ? "In progress · Harold Whitaker" : "Paused · Harold Whitaker"}</p>
-          <MiniWave active={micActive} />
-        </button>
-        <button onClick={onClose} aria-label="Close" className="shrink-0 h-8 w-8 grid place-items-center rounded-full bg-muted text-muted-foreground hover:text-foreground">
-          <X size={14} />
-        </button>
+      <div className="mx-auto max-w-md rounded-2xl bg-card border border-[color:var(--border)] shadow-card p-3">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onToggleMic}
+            aria-label={micActive ? "Pause recording" : "Resume recording"}
+            className={`shrink-0 h-11 w-11 rounded-full grid place-items-center text-white transition ${micActive ? "bg-primary shadow-[0_0_0_6px_rgba(14,165,233,0.15)]" : "bg-muted text-muted-foreground"}`}
+          >
+            {micActive ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
+          </button>
+          <button onClick={onOpen} className="min-w-0 flex-1 text-left">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              AI SOAP Note Draft {mode === "ambient" ? "(In Progress)" : "(Push-to-talk)"}
+            </p>
+            <p className="text-xs font-semibold truncate">{micActive ? "Recording · Harold Whitaker" : "Paused · Harold Whitaker"}</p>
+            <MiniWave active={micActive} mode={mode} />
+          </button>
+          <button onClick={onClose} aria-label="Close" className="shrink-0 h-8 w-8 grid place-items-center rounded-full bg-muted text-muted-foreground hover:text-foreground">
+            <X size={14} />
+          </button>
+        </div>
+        <div className="mt-2 flex items-center gap-1 rounded-full bg-muted p-0.5 text-[10px] font-semibold">
+          {(["ambient", "direct"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={(e) => { e.stopPropagation(); setMode(m); }}
+              className={`flex-1 rounded-full py-1 transition ${mode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}
+            >
+              {m === "ambient" ? "Ambient Listening" : "Direct Dictation"}
+            </button>
+          ))}
+        </div>
       </div>
     </motion.div>
   );
 }
 
-function MiniWave({ active }: { active: boolean }) {
-  const bars = [6, 10, 14, 8, 16, 11, 18, 9, 13, 7, 15, 10, 12];
+function MiniWave({ active, mode = "ambient" }: { active: boolean; mode?: "ambient" | "direct" }) {
+  const ambientBars = [6, 10, 14, 8, 16, 11, 18, 9, 13, 7, 15, 10, 12];
+  const directBars = [3, 20, 4, 22, 5, 18, 3, 24, 4, 19, 3, 21, 4];
+  const bars = mode === "ambient" ? ambientBars : directBars;
   return (
-    <div className="mt-1 flex items-center gap-[2px] h-4">
+    <div className="mt-1 flex items-center gap-[2px] h-5">
       {bars.map((h, i) => (
         <span
-          key={i}
-          className="w-[2px] rounded-full bg-primary/70"
+          key={`${mode}-${i}`}
+          className={`rounded-full bg-primary/70 ${mode === "ambient" ? "w-[2px]" : "w-[3px]"}`}
           style={{
             height: `${h}px`,
-            animation: active ? `wave 1s ease-in-out ${i * 55}ms infinite alternate` : "none",
+            animation: active
+              ? `wave ${mode === "ambient" ? "1s" : "0.35s"} ease-in-out ${i * (mode === "ambient" ? 55 : 25)}ms infinite alternate`
+              : "none",
             opacity: active ? 1 : 0.35,
           }}
         />
@@ -720,6 +742,7 @@ function MiniWave({ active }: { active: boolean }) {
     </div>
   );
 }
+
 
 /* ---------------- Snackbar toast ---------------- */
 function Snackbar({ count, onOpen, onDismiss }: { count: number; onOpen: () => void; onDismiss: () => void }) {
@@ -772,7 +795,25 @@ const TONE_STYLE = {
 
 function InteractiveFootMap() {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [dictate, setDictate] = useState<SeverityHotspot | null>(null);
+  const [typing, setTyping] = useState(false);
+  const [aiNote, setAiNote] = useState<string | null>(null);
   const active = SEV_HOTSPOTS.find((h) => h.id === openId) || null;
+
+  function startDictation(h: SeverityHotspot) {
+    setDictate(h);
+    setAiNote(null);
+    setTyping(true);
+    window.setTimeout(() => {
+      setTyping(false);
+      setAiNote(
+        `Objective — ${h.label}: On plantar exam, findings consistent with prior visit. ` +
+        `Skin intact surrounding lesion, no purulent discharge or erythema tracking. ` +
+        `Sensation preserved with 10g monofilament. Photo captured; plan updated per protocol.`
+      );
+    }, 1500);
+  }
+
 
   return (
     <div className="relative">
@@ -860,23 +901,114 @@ function InteractiveFootMap() {
                 <X size={12} />
               </button>
             </div>
-            <button className="mt-2 w-full rounded-lg bg-primary text-primary-foreground py-1.5 text-[11px] font-semibold">
-              Dictate observation
+            <button
+              onClick={() => active && startDictation(active)}
+              className="mt-2 w-full rounded-lg bg-primary text-primary-foreground py-1.5 text-[11px] font-semibold hover:opacity-90 transition"
+            >
+              Click to dictate observation
             </button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {dictate && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-md grid place-items-center p-4"
+            onClick={() => setDictate(null)}
+          >
+            <motion.div
+              initial={{ y: 20, scale: 0.96, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={{ y: 20, scale: 0.96, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 320, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl bg-background p-5 shadow-xl border border-[color:var(--border)]"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: TONE_STYLE[dictate.tone].fill }} />
+                  <h4 className="text-sm font-semibold truncate">Dictating · {dictate.label}</h4>
+                </div>
+                <button onClick={() => setDictate(null)} className="h-7 w-7 grid place-items-center rounded-full bg-muted">
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-[color:var(--border)] bg-[#F8FAFC] p-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Input</p>
+                <p className="text-sm text-foreground/85">
+                  Dictating for {dictate.side === "L" ? "Left" : "Right"} {dictate.label.split("—")[1]?.trim() || dictate.label}...
+                </p>
+              </div>
+
+              <div className="mt-3 rounded-xl border border-[color:var(--border)] bg-card p-3 min-h-[110px]">
+                <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1.5">AI generated note</p>
+                {typing && (
+                  <div className="flex items-center gap-1.5 py-2">
+                    <span className="text-xs text-muted-foreground">AI is typing</span>
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className="h-1.5 w-1.5 rounded-full bg-primary/70"
+                        style={{ animation: `wave 0.9s ease-in-out ${i * 150}ms infinite alternate` }}
+                      />
+                    ))}
+                  </div>
+                )}
+                {!typing && aiNote && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-sm text-foreground/85 leading-relaxed"
+                  >
+                    {aiNote}
+                  </motion.p>
+                )}
+              </div>
+
+              <div className="mt-4 flex items-center gap-2">
+                <button
+                  onClick={() => setDictate(null)}
+                  className="flex-1 h-10 rounded-xl bg-muted text-foreground text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={typing || !aiNote}
+                  onClick={() => setDictate(null)}
+                  className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                >
+                  Add to SOAP
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
 
 /* ---------------- Care timeline ---------------- */
-type TimelineItem = { title: string; patient: string; date: string; progress: number; tone: "teal" | "amber" | "eucalyptus" };
+type DayKey = "mon" | "tue" | "wed";
+type TimelineItem = {
+  title: string; patient: string; date: string; day: DayKey;
+  progress: number; tone: "teal" | "amber" | "eucalyptus"; details: string;
+};
 const TIMELINE: TimelineItem[] = [
-  { title: "Nail Care", patient: "Harold Whitaker", date: "Today · 09:15", progress: 100, tone: "eucalyptus" },
-  { title: "Ulcer Dressing Change", patient: "Harold Whitaker", date: "Today · 09:35", progress: 70, tone: "teal" },
-  { title: "Diabetic Foot Screen", patient: "Margaret Chen", date: "Tomorrow", progress: 30, tone: "amber" },
-  { title: "Callus Debridement", patient: "Priya Ramesh", date: "Fri · 11:00", progress: 10, tone: "teal" },
+  { title: "Nail Care", patient: "Harold Whitaker", date: "Mon 6 · 09:15", day: "mon", progress: 100, tone: "eucalyptus",
+    details: "Tools used: 15 blade, nippers. No signs of infection. Debridement complete." },
+  { title: "Ulcer Dressing Change", patient: "Harold Whitaker", date: "Mon 6 · 09:35", day: "mon", progress: 70, tone: "teal",
+    details: "Silver foam dressing applied. Wound bed 60% granulation, no odor. Next change Q48h." },
+  { title: "Diabetic Foot Screen", patient: "Margaret Chen", date: "Tue 7 · 10:00", day: "tue", progress: 30, tone: "amber",
+    details: "Monofilament 6/10 sites. Pedal pulses palpable bilaterally. Education reinforced." },
+  { title: "Callus Debridement", patient: "Priya Ramesh", date: "Wed 8 · 11:00", day: "wed", progress: 10, tone: "teal",
+    details: "Bilateral plantar callus, 3mm hyperkeratosis. Planned sharp debridement + urea 20%." },
 ];
 const BAR_TONE = {
   teal: "bg-[#0EA5E9]",
@@ -884,37 +1016,118 @@ const BAR_TONE = {
   eucalyptus: "bg-[#059669]",
 } as const;
 
-function CareTimeline() {
+const DAYS: { key: DayKey; label: string; num: string }[] = [
+  { key: "mon", label: "Mon", num: "6" },
+  { key: "tue", label: "Tue", num: "7" },
+  { key: "wed", label: "Wed", num: "8" },
+];
+
+function MiniCalendar({ selected, onSelect }: { selected: DayKey; onSelect: (d: DayKey) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      {DAYS.map((d) => {
+        const active = d.key === selected;
+        return (
+          <button
+            key={d.key}
+            onClick={() => onSelect(d.key)}
+            className={`flex flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 text-[10px] font-semibold transition ${
+              active
+                ? "bg-[#0F172A] text-white shadow-md"
+                : "border border-[color:var(--border)] text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span className="uppercase tracking-wider">{d.label}</span>
+            <span className={`text-sm ${active ? "text-white" : "text-foreground"}`}>{d.num}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TimelineWithCalendar() {
+  const [day, setDay] = useState<DayKey>("mon");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const items = TIMELINE.filter((t) => t.day === day);
   return (
     <section>
       <div className="flex items-center justify-between mb-2 px-0.5">
         <h2 className="text-sm font-semibold">Patient Care Timeline</h2>
-        <span className="text-[11px] text-muted-foreground">This week</span>
+        <span className="text-[11px] text-muted-foreground">{items.length} events</span>
+      </div>
+      <div className="mb-3">
+        <MiniCalendar selected={day} onSelect={(d) => { setDay(d); setExpanded(null); }} />
       </div>
       <ul className="space-y-2">
-        {TIMELINE.map((t) => (
-          <li key={t.title + t.patient}>
-            <button className="w-full text-left rounded-2xl bg-card border border-[color:var(--border)] p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold truncate">{t.patient} · {t.title}</p>
-                  <p className="text-[11px] text-muted-foreground">{t.date}</p>
+        <AnimatePresence initial={false}>
+          {items.map((t) => {
+            const key = t.title + t.patient;
+            const isOpen = expanded === key;
+            return (
+              <motion.li
+                key={key}
+                layout
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ type: "spring", stiffness: 260, damping: 26 }}
+              >
+                <div className="rounded-2xl bg-card border border-[color:var(--border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition overflow-hidden">
+                  <button
+                    onClick={() => setExpanded(isOpen ? null : key)}
+                    className="w-full text-left p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate">{t.patient} · {t.title}</p>
+                        <p className="text-[11px] text-muted-foreground">{t.date}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-semibold text-muted-foreground">{t.progress}%</span>
+                        <motion.span
+                          animate={{ rotate: isOpen ? 180 : 0 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                          className="h-6 w-6 grid place-items-center rounded-full bg-muted text-muted-foreground"
+                        >
+                          <ChevronRight size={14} className="rotate-90" />
+                        </motion.span>
+                      </div>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${t.progress}%` }}
+                        transition={{ type: "spring", stiffness: 140, damping: 22 }}
+                        className={`h-full rounded-full ${BAR_TONE[t.tone]}`}
+                      />
+                    </div>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        key="details"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 260, damping: 28 }}
+                        className="overflow-hidden border-t border-[color:var(--border)] bg-[#F8FAFC]"
+                      >
+                        <div className="p-3 text-xs text-foreground/80 leading-relaxed">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Clinical detail</p>
+                          {t.details}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-                <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">{t.progress}%</span>
-              </div>
-              <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${t.progress}%` }}
-                  transition={{ type: "spring", stiffness: 140, damping: 22 }}
-                  className={`h-full rounded-full ${BAR_TONE[t.tone]}`}
-                />
-              </div>
-            </button>
-          </li>
-        ))}
+              </motion.li>
+            );
+          })}
+        </AnimatePresence>
       </ul>
     </section>
   );
 }
+
 
