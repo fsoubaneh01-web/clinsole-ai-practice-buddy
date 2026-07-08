@@ -405,7 +405,6 @@ function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number
           <TimelineWithCalendar compact />
 
           <div>
-          <div>
             <h3 className="text-sm font-semibold mb-2">Wound vision · Left heel</h3>
             <WoundVisionSlider />
           </div>
