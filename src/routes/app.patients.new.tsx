@@ -51,17 +51,17 @@ function NewPatient() {
           className="space-y-4 rounded-3xl border bg-surface p-6 shadow-soft"
           onSubmit={async (e) => {
             e.preventDefault();
-            const p = await addPatient({
+            const result = await addPatient({
               name: f.name, phone: f.phone, email: f.email, address: f.address, dob: f.dob,
               conditions: f.conditions.split(",").map((s) => s.trim()).filter(Boolean),
               diabetesStatus: f.diabetesStatus, allergies: f.allergies, notes: f.notes,
             });
-            if (!p) {
-              toast.error("Could not add patient. Check your plan limit or sign in again.");
+            if (result.error || !result.patient) {
+              toast.error(result.error || "Could not add patient.");
               return;
             }
             toast.success("Patient added");
-            nav({ to: "/app/patients/$id", params: { id: p.id } });
+            nav({ to: "/app/patients/$id", params: { id: result.patient.id } });
           }}
         >
           <Field label="Full name"><Input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
