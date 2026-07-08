@@ -19,21 +19,39 @@ export const Route = createFileRoute("/prototype")({
 });
 
 type Tab = "dashboard" | "patients" | "soap" | "schedule" | "business";
-type ScreenProps = { dark: boolean; onToggleTheme: () => void };
+type ScreenProps = {
+  dark: boolean;
+  onToggleTheme: () => void;
+  setTab: (t: Tab) => void;
+  sessionOpen: boolean;
+  onToggleSession: () => void;
+};
 
 function Prototype() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [dark, setDark] = useState(false);
+  const [sessionOpen, setSessionOpen] = useState(true);
+  const [micActive, setMicActive] = useState(true);
+  const [snackVisible, setSnackVisible] = useState(true);
+  const [notifCount, setNotifCount] = useState(2);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
     return () => document.documentElement.classList.remove("dark");
   }, [dark]);
 
+  const shared: ScreenProps = {
+    dark,
+    onToggleTheme: () => setDark((v) => !v),
+    setTab,
+    sessionOpen,
+    onToggleSession: () => setSessionOpen((v) => !v),
+  };
+
   const screens: Record<Tab, React.ReactNode> = {
-    dashboard: <Dashboard dark={dark} onToggleTheme={() => setDark((v) => !v)} />,
-    patients: <Patients dark={dark} onToggleTheme={() => setDark((v) => !v)} />,
-    soap: <SoapWorkspace dark={dark} onToggleTheme={() => setDark((v) => !v)} />,
+    dashboard: <Dashboard {...shared} />,
+    patients: <Patients {...shared} />,
+    soap: <SoapWorkspace {...shared} />,
     schedule: <Placeholder title="Schedule" subtitle="Upcoming visits and route planning" />,
     business: <Placeholder title="Business" subtitle="Revenue, expenses and monthly reports" />,
   };
@@ -53,10 +71,29 @@ function Prototype() {
           </motion.div>
         </AnimatePresence>
       </div>
-      <BottomNav tab={tab} setTab={setTab} />
+
+      {sessionOpen && tab !== "soap" && (
+        <RecordingWidget
+          micActive={micActive}
+          onToggleMic={() => setMicActive((v) => !v)}
+          onOpen={() => setTab("soap")}
+          onClose={() => setSessionOpen(false)}
+        />
+      )}
+
+      {snackVisible && notifCount > 0 && (
+        <Snackbar
+          count={notifCount}
+          onOpen={() => { setTab("soap"); setNotifCount(0); setSnackVisible(false); }}
+          onDismiss={() => setSnackVisible(false)}
+        />
+      )}
+
+      <BottomNav tab={tab} setTab={setTab} notifCount={notifCount} />
     </div>
   );
 }
+
 
 function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }) {
   return (
