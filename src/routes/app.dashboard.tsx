@@ -76,7 +76,9 @@ function Dashboard() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-semibold">{a.patientName}</div>
-                        <div className="truncate text-xs text-muted-foreground">{a.type} · {a.duration} min</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {a.type} · {a.duration} min{a.expectedFee > 0 ? ` · $${a.expectedFee}` : ""}
+                        </div>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </Link>
@@ -86,28 +88,62 @@ function Dashboard() {
             )}
           </Section>
 
-          <Section title="Upcoming follow-ups" href="/app/patients">
+          <Section title="Follow-ups due" href="/app/patients">
             {upcomingFU.length === 0 ? (
               <Empty text="No follow-ups on the horizon." />
             ) : (
               <ul className="space-y-2">
-                {upcomingFU.map((p) => (
-                  <li key={p.id}>
-                    <Link to="/app/patients/$id" params={{ id: p.id }} className="flex items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                        {p.name.split(" ").map((x) => x[0]).slice(0,2).join("")}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold">{p.name}</div>
-                        <div className="text-xs text-muted-foreground">Due {format(new Date(p.nextFollowUp!), "MMM d")}</div>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
+                {upcomingFU.map((p) => {
+                  const due = new Date(p.nextFollowUp!);
+                  const overdue = isPast(due) && !isToday(due);
+                  return (
+                    <li key={p.id}>
+                      <Link to="/app/patients/$id" params={{ id: p.id }} className="flex items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
+                        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-xs font-bold ${overdue ? "bg-destructive/15 text-destructive" : "bg-primary/10 text-primary"}`}>
+                          {p.name.split(" ").map((x) => x[0]).slice(0,2).join("")}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-semibold">{p.name}</div>
+                          <div className={`text-xs ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
+                            {overdue ? "Overdue · " : "Due "}{format(due, "MMM d")}
+                          </div>
+                        </div>
+                        <Bell className="h-4 w-4 text-muted-foreground" />
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Section>
         </div>
+
+        <Section title="Upcoming visits" href="/app/calendar" className="mt-8">
+          {upcoming.length === 0 ? (
+            <Empty text="No upcoming visits scheduled." />
+          ) : (
+            <ul className="grid gap-2 lg:grid-cols-2">
+              {upcoming.map((a) => (
+                <li key={a.id}>
+                  <Link to="/app/patients/$id" params={{ id: a.patientId }} className="flex items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
+                    <div className="grid h-12 w-14 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <span className="text-[10px] font-semibold uppercase">{format(new Date(a.date), "MMM")}</span>
+                      <span className="text-sm font-bold leading-none">{format(new Date(a.date), "d")}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold">{a.patientName}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {format(new Date(a.date), "EEE HH:mm")} · {a.type}
+                      </div>
+                    </div>
+                    {a.expectedFee > 0 && <div className="text-xs font-semibold text-success">${a.expectedFee}</div>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+
 
         <Section title="Quick actions" className="mt-8">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
