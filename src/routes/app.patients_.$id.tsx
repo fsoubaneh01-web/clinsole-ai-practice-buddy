@@ -17,7 +17,7 @@ import { ArrowLeft, CalendarPlus, ClipboardPlus, Mail, MapPin, Pencil, Phone, Sh
 import { useState } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/app/patients_/$id")({ component: PatientProfile });
+export const Route = createFileRoute("/app/patients/$id")({ component: PatientProfile });
 
 function PatientProfile() {
   const { id } = Route.useParams();
