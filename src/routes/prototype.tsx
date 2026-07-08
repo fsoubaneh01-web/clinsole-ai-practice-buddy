@@ -300,6 +300,7 @@ const DRAFTS = [
 
 /* ---------------- Patients ---------------- */
 function Patients({ dark, onToggleTheme }: ScreenProps) {
+
   const [selected, setSelected] = useState<string | null>(null);
   const patient = PATIENTS.find((p) => p.name === selected);
 
