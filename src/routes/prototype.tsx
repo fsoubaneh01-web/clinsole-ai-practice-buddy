@@ -761,10 +761,17 @@ const SEV_HOTSPOTS: SeverityHotspot[] = [
 ];
 
 const TONE_STYLE = {
-  red: { fill: "#DC2626", glow: "rgba(220,38,38,0.35)" },
-  blue: { fill: "#0EA5E9", glow: "rgba(14,165,233,0.35)" },
-  amber: { fill: "#DE8A44", glow: "rgba(222,138,68,0.35)" },
+  red: { fill: "#DC2626", glow: "rgba(220,38,38,0.45)", chip: "bg-[#DC2626] text-white" },
+  blue: { fill: "#0EA5E9", glow: "rgba(14,165,233,0.45)", chip: "bg-[#0369A1] text-white" },
+  amber: { fill: "#F5B94A", glow: "rgba(245,185,74,0.55)", chip: "bg-[#F5B94A] text-[#3B2A05]" },
 } as const;
+
+// Label chip anchor: which direction the pill sits relative to the dot, and callout text (optional).
+const HOTSPOT_UI: Record<string, { anchor: "left" | "right"; callout?: string }> = {
+  "l-1st-toe": { anchor: "left" },
+  "r-5th-toe": { anchor: "right" },
+  "r-heel": { anchor: "right", callout: "Heel fissure, last noted 07/03/26. Click to dictate observation." },
+};
 
 function FootGroup({ flip, children }: { flip: boolean; children: React.ReactNode }) {
   return <g transform={flip ? "translate(100,0) scale(-1,1)" : undefined}>{children}</g>;
