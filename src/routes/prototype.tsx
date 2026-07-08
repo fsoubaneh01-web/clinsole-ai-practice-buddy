@@ -818,14 +818,11 @@ function InteractiveFootMap() {
           {showAnatomy ? "Anatomy · On" : "Anatomy · Off"}
         </button>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {(["L", "R"] as const).map((side) => (
-          <div key={side} className="relative rounded-xl bg-[#F8FAFC] border border-[color:var(--border)] p-3">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{side === "L" ? "Left" : "Right"} · plantar</p>
-              <p className="text-[10px] text-muted-foreground/80">Tap dot</p>
-            </div>
-            <svg viewBox="0 0 100 200" className="w-full h-56">
+      <div className="relative rounded-2xl bg-[#EEF5F3] border border-[color:var(--border)] px-2 pt-3 pb-4">
+        <div className="grid grid-cols-2 gap-0">
+          {(["L", "R"] as const).map((side) => (
+            <div key={side} className="relative">
+              <svg viewBox="0 0 100 200" className="w-full h-64 block">
               <defs>
                 <linearGradient id={`skin-${side}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#FDE8D7" />
@@ -872,12 +869,10 @@ function InteractiveFootMap() {
                 </g>
               </FootGroup>
               <g style={{ opacity: showAnatomy ? 1 : 0, transition: "opacity 0.2s ease" }}>
-                <g fill="#0F172A" fontSize="4.4" fontWeight="600" opacity="0.75" textAnchor="middle" style={{ fontFamily: "inherit" }}>
+                <g fill="#0F172A" fontSize="4.4" fontWeight="600" opacity="0.7" textAnchor="middle" style={{ fontFamily: "inherit" }}>
                   <text x={side === "L" ? 42 : 58} y="26">Hallux</text>
                   <text x={side === "L" ? 12 : 88} y="55">D5</text>
                   <text x="50" y="92">Met heads</text>
-                  <text x={side === "L" ? 78 : 22} y="128" fontSize="3.8">Lateral</text>
-                  <text x={side === "L" ? 22 : 78} y="128" fontSize="3.8">Medial</text>
                   <text x="50" y="140">Arch</text>
                   <text x="50" y="182">Heel</text>
                 </g>
@@ -886,9 +881,10 @@ function InteractiveFootMap() {
             {SEV_HOTSPOTS.filter((h) => h.side === side).map((h) => {
               const t = TONE_STYLE[h.tone];
               const ui = HOTSPOT_UI[h.id] ?? { anchor: "right" as const };
-              const topStyle = `calc(2rem + ${(h.cy / 180) * 11}rem)`;
+              const topStyle = `calc(0.75rem + ${(h.cy / 200) * 16}rem)`;
               return (
                 <div key={h.id}>
+                  {/* Pulsing dot */}
                   <button
                     onMouseEnter={() => setOpenId(h.id)}
                     onFocus={() => setOpenId(h.id)}
@@ -896,24 +892,45 @@ function InteractiveFootMap() {
                     onTouchStart={() => setOpenId(h.id)}
                     onClick={(e) => { e.stopPropagation(); setOpenId(h.id); }}
                     aria-label={h.label}
-                    className="absolute z-10 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="absolute z-10 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center focus:outline-none focus:ring-2 focus:ring-primary/40"
                     style={{ left: `${h.cx}%`, top: topStyle }}
                   >
-                    <span className="pointer-events-none absolute h-8 w-8 rounded-full animate-ping" style={{ background: t.glow }} />
-                    <span className="pointer-events-none absolute h-5 w-5 rounded-full opacity-70" style={{ background: t.glow }} />
-                    <span className="pointer-events-none relative h-3 w-3 rounded-full border-2 border-white shadow-md" style={{ background: t.fill }} />
+                    <span
+                      className="pointer-events-none absolute h-9 w-9 rounded-full animate-ping"
+                      style={{ background: t.glow, animationDuration: "1.8s" }}
+                    />
+                    <span
+                      className="pointer-events-none absolute h-6 w-6 rounded-full"
+                      style={{ background: t.glow, filter: "blur(1px)" }}
+                    />
+                    <span
+                      className="pointer-events-none relative h-3.5 w-3.5 rounded-full border-2 border-white"
+                      style={{ background: t.fill, boxShadow: `0 0 0 1px ${t.fill}33, 0 2px 6px ${t.glow}` }}
+                    />
                   </button>
+
+                  {/* Thin connector line from dot down to label pill */}
+                  <span
+                    className="pointer-events-none absolute z-10 w-px bg-foreground/25"
+                    style={{
+                      left: `${h.cx}%`,
+                      top: `calc(${topStyle} + 0.35rem)`,
+                      height: "0.75rem",
+                    }}
+                  />
 
                   {/* Attached label pill */}
                   <div
                     className="pointer-events-none absolute z-20"
                     style={{
                       left: `${h.cx}%`,
-                      top: `calc(${topStyle} + 0.9rem)`,
-                      transform: ui.anchor === "left" ? "translateX(-92%)" : "translateX(-8%)",
+                      top: `calc(${topStyle} + 1.1rem)`,
+                      transform: ui.anchor === "left" ? "translateX(-88%)" : "translateX(-12%)",
                     }}
                   >
-                    <span className={`inline-block whitespace-nowrap rounded-md px-2 py-0.5 text-[10px] font-semibold shadow-md ${t.chip}`}>
+                    <span
+                      className={`inline-block whitespace-nowrap rounded-lg px-2 py-0.5 text-[10px] font-semibold leading-tight shadow-sm ring-1 ring-black/5 ${t.chip}`}
+                    >
                       {h.label.replace(" (Pulsing)", "").replace(" (Active)", "")}
                     </span>
                   </div>
@@ -921,25 +938,28 @@ function InteractiveFootMap() {
                   {/* Persistent callout tooltip for the amber heel hotspot */}
                   {ui.callout && (
                     <div
-                      className="pointer-events-none absolute z-20 w-40"
+                      className="pointer-events-none absolute z-30"
                       style={{
                         left: `${h.cx}%`,
-                        top: `calc(${topStyle} - 4.2rem)`,
-                        transform: "translateX(-50%)",
+                        top: `calc(${topStyle} - 5.25rem)`,
+                        transform: "translateX(-62%)",
+                        width: "10.5rem",
                       }}
                     >
-                      <div className="rounded-lg border border-[color:var(--border)] bg-white p-2 shadow-lg">
-                        <p className="text-[10px] leading-snug text-foreground/85">{ui.callout}</p>
-                        <div className="absolute left-1/2 -bottom-1.5 h-3 w-3 -translate-x-1/2 rotate-45 bg-white border-r border-b border-[color:var(--border)]" />
+                      <div className="relative rounded-xl border border-black/5 bg-white px-2.5 py-1.5 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.25)]">
+                        <p className="text-[10.5px] leading-snug text-foreground/85">{ui.callout}</p>
+                        <div className="absolute left-[62%] -bottom-1.5 h-3 w-3 -translate-x-1/2 rotate-45 bg-white border-r border-b border-black/5" />
                       </div>
                     </div>
                   )}
                 </div>
               );
             })}
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
       </div>
+
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         {SEV_HOTSPOTS.map((h) => {
