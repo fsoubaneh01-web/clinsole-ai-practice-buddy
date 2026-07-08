@@ -392,7 +392,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return { appointment: appt };
     },
     updateAppointment: async (aid, a) => {
-      const patch: Record<string, unknown> = {};
+      const patch: {
+        patient_id?: string; scheduled_at?: string; duration_min?: number;
+        visit_type?: string; location?: string | null; notes?: string | null;
+        expected_fee?: number; recurring?: string | null;
+      } = {};
       if (a.patientId !== undefined) patch.patient_id = a.patientId;
       if (a.date !== undefined) patch.scheduled_at = a.date;
       if (a.duration !== undefined) patch.duration_min = a.duration;
@@ -402,6 +406,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (a.expectedFee !== undefined) patch.expected_fee = a.expectedFee;
       if (a.recurring !== undefined) patch.recurring = a.recurring || null;
       const { error } = await supabase.from("appointments").update(patch).eq("id", aid);
+
       if (error) { console.error("updateAppointment", error); return { error: error.message }; }
       const name = a.patientId ? patients.find((p) => p.id === a.patientId)?.name : undefined;
       setAppointments((s) =>
