@@ -114,6 +114,21 @@ function SoapNote() {
                 <Label>Quick visit notes</Label>
                 <Textarea rows={8} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="What did you observe and do?" />
               </div>
+              {patient && (
+                latestAssessment ? (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs">
+                    <div className="mb-1 font-semibold text-primary">Attached: latest foot assessment</div>
+                    <div className="text-muted-foreground">{summarizeAssessment(latestAssessment)}</div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between rounded-xl border border-dashed bg-surface-muted p-3 text-xs">
+                    <span className="text-muted-foreground">No assessment on file for this patient.</span>
+                    <Link to="/app/assess" search={{ patientId: patient.id }} className="font-semibold text-primary hover:underline">
+                      New assessment
+                    </Link>
+                  </div>
+                )
+              )}
               <Button onClick={gen} disabled={loading || !patient || outOfCredit} className="w-full gradient-primary text-primary-foreground">
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</> : <><Sparkles className="mr-2 h-4 w-4" />Generate SOAP note</>}
               </Button>
