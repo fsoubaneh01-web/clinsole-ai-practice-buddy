@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          created_at: string
+          duration_min: number
+          expected_fee: number
+          id: string
+          location: string | null
+          notes: string | null
+          nurse_id: string
+          patient_id: string
+          recurring: string | null
+          reminder_sent: boolean
+          scheduled_at: string
+          updated_at: string
+          visit_type: string
+        }
+        Insert: {
+          created_at?: string
+          duration_min?: number
+          expected_fee?: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          nurse_id: string
+          patient_id: string
+          recurring?: string | null
+          reminder_sent?: boolean
+          scheduled_at: string
+          updated_at?: string
+          visit_type?: string
+        }
+        Update: {
+          created_at?: string
+          duration_min?: number
+          expected_fee?: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          nurse_id?: string
+          patient_id?: string
+          recurring?: string | null
+          reminder_sent?: boolean
+          scheduled_at?: string
+          updated_at?: string
+          visit_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null

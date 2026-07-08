@@ -1,16 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Container } from "@/components/AppShell";
 import { useStore, PLAN_LIMITS } from "@/lib/store";
-import { Calendar, Users, FileText, TrendingUp, ChevronRight, ClipboardPlus, Crown, Sparkles } from "lucide-react";
-import { format, isToday, isFuture } from "date-fns";
+import { Calendar, Users, FileText, TrendingUp, ChevronRight, ClipboardPlus, Crown, Sparkles, Bell } from "lucide-react";
+import { format, isToday, isFuture, isPast, addDays } from "date-fns";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
 function Dashboard() {
   const { nurse, patients, appointments, transactions } = useStore();
+  const now = new Date();
+  const in7 = addDays(now, 7);
   const today = appointments.filter((a) => isToday(new Date(a.date))).sort((a, b) => a.date.localeCompare(b.date));
-  const upcomingFU = patients.filter((p) => p.nextFollowUp && isFuture(new Date(p.nextFollowUp))).slice(0, 4);
-  const notesToDo = Math.max(0, today.length - 1);
+  const upcoming = appointments
+    .filter((a) => { const d = new Date(a.date); return d > now && !isToday(d); })
+    .slice(0, 5);
+  const expectedRevenue = appointments
+    .filter((a) => { const d = new Date(a.date); return d >= now && d <= in7; })
+    .reduce((s, a) => s + (a.expectedFee || 0), 0);
+  const followUpsDue = patients
+    .filter((p) => p.nextFollowUp && (isPast(new Date(p.nextFollowUp)) || new Date(p.nextFollowUp) <= in7))
+    .sort((a, b) => (a.nextFollowUp || "").localeCompare(b.nextFollowUp || ""));
+  const upcomingFU = followUpsDue.slice(0, 5);
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
   const revenue = transactions
     .filter((t) => t.type === "income" && new Date(t.date) >= monthStart)
@@ -46,10 +56,11 @@ function Dashboard() {
 
         <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
           <Stat icon={Calendar} label="Today's visits" value={today.length} tint="primary" />
-          <Stat icon={Users} label="Total patients" value={patients.length} tint="accent" />
-          <Stat icon={FileText} label="Notes to complete" value={notesToDo} tint="warning" />
-          <Stat icon={TrendingUp} label="This month" value={`$${revenue.toLocaleString()}`} tint="success" />
+          <Stat icon={Users} label="Follow-ups due" value={followUpsDue.length} tint="warning" />
+          <Stat icon={TrendingUp} label="Expected (7d)" value={`$${expectedRevenue.toLocaleString()}`} tint="accent" />
+          <Stat icon={FileText} label="This month" value={`$${revenue.toLocaleString()}`} tint="success" />
         </div>
+
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
           <Section title="Today's schedule" href="/app/calendar" className="lg:col-span-2">
@@ -65,7 +76,9 @@ function Dashboard() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-semibold">{a.patientName}</div>
-                        <div className="truncate text-xs text-muted-foreground">{a.type} · {a.duration} min</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {a.type} · {a.duration} min{a.expectedFee > 0 ? ` · $${a.expectedFee}` : ""}
+                        </div>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </Link>
@@ -75,28 +88,62 @@ function Dashboard() {
             )}
           </Section>
 
-          <Section title="Upcoming follow-ups" href="/app/patients">
+          <Section title="Follow-ups due" href="/app/patients">
             {upcomingFU.length === 0 ? (
               <Empty text="No follow-ups on the horizon." />
             ) : (
               <ul className="space-y-2">
-                {upcomingFU.map((p) => (
-                  <li key={p.id}>
-                    <Link to="/app/patients/$id" params={{ id: p.id }} className="flex items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                        {p.name.split(" ").map((x) => x[0]).slice(0,2).join("")}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold">{p.name}</div>
-                        <div className="text-xs text-muted-foreground">Due {format(new Date(p.nextFollowUp!), "MMM d")}</div>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
+                {upcomingFU.map((p) => {
+                  const due = new Date(p.nextFollowUp!);
+                  const overdue = isPast(due) && !isToday(due);
+                  return (
+                    <li key={p.id}>
+                      <Link to="/app/patients/$id" params={{ id: p.id }} className="flex items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
+                        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-xs font-bold ${overdue ? "bg-destructive/15 text-destructive" : "bg-primary/10 text-primary"}`}>
+                          {p.name.split(" ").map((x) => x[0]).slice(0,2).join("")}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-semibold">{p.name}</div>
+                          <div className={`text-xs ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
+                            {overdue ? "Overdue · " : "Due "}{format(due, "MMM d")}
+                          </div>
+                        </div>
+                        <Bell className="h-4 w-4 text-muted-foreground" />
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Section>
         </div>
+
+        <Section title="Upcoming visits" href="/app/calendar" className="mt-8">
+          {upcoming.length === 0 ? (
+            <Empty text="No upcoming visits scheduled." />
+          ) : (
+            <ul className="grid gap-2 lg:grid-cols-2">
+              {upcoming.map((a) => (
+                <li key={a.id}>
+                  <Link to="/app/patients/$id" params={{ id: a.patientId }} className="flex items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
+                    <div className="grid h-12 w-14 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <span className="text-[10px] font-semibold uppercase">{format(new Date(a.date), "MMM")}</span>
+                      <span className="text-sm font-bold leading-none">{format(new Date(a.date), "d")}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold">{a.patientName}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {format(new Date(a.date), "EEE HH:mm")} · {a.type}
+                      </div>
+                    </div>
+                    {a.expectedFee > 0 && <div className="text-xs font-semibold text-success">${a.expectedFee}</div>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+
 
         <Section title="Quick actions" className="mt-8">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

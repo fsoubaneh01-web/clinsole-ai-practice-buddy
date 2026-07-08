@@ -42,9 +42,12 @@ export type Appointment = {
   date: string;
   duration: number;
   type: string;
-  recurring?: "weekly" | "biweekly" | "monthly" | null;
+  location?: string;
   notes?: string;
+  expectedFee: number;
+  recurring?: "weekly" | "biweekly" | "monthly" | null;
 };
+
 
 export type Transaction = {
   id: string;
@@ -77,7 +80,6 @@ export const PLAN_LIMITS = {
 type LocalExtras = {
   nurse: Nurse | null;
   onboarded: boolean;
-  appointments: Appointment[];
   transactions: Transaction[];
   patientExtras: Record<string, { assessments: Assessment[]; treatments: Treatment[] }>;
 };
@@ -100,8 +102,9 @@ type Ctx = {
   updatePatient: (id: string, p: Partial<Patient>) => Promise<void>;
   deletePatient: (id: string) => Promise<void>;
   addTreatment: (patientId: string, t: Omit<Treatment, "id">) => void;
-  addAppointment: (a: Omit<Appointment, "id">) => void;
-  deleteAppointment: (id: string) => void;
+  addAppointment: (a: Omit<Appointment, "id" | "patientName">) => Promise<{ appointment?: Appointment; error?: string }>;
+  updateAppointment: (id: string, a: Partial<Omit<Appointment, "id" | "patientName">>) => Promise<{ error?: string }>;
+  deleteAppointment: (id: string) => Promise<void>;
   addTransaction: (t: Omit<Transaction, "id">) => void;
   upgradeToPremium: () => void;
   useAiCredit: () => boolean;
@@ -115,10 +118,10 @@ const localKey = (userId: string) => `clinsole-local-${userId}`;
 const emptyExtras: LocalExtras = {
   nurse: null,
   onboarded: false,
-  appointments: [],
   transactions: [],
   patientExtras: {},
 };
+
 
 const loadLocal = (userId: string): LocalExtras => {
   if (typeof window === "undefined") return emptyExtras;
@@ -165,11 +168,37 @@ const rowToPatient = (row: PatientRow, extras?: { assessments: Assessment[]; tre
   treatments: extras?.treatments ?? [],
 });
 
+type AppointmentRow = {
+  id: string;
+  patient_id: string;
+  scheduled_at: string;
+  duration_min: number;
+  visit_type: string;
+  location: string | null;
+  notes: string | null;
+  expected_fee: number | string;
+  recurring: string | null;
+};
+
+const rowToAppointment = (r: AppointmentRow, patientName: string): Appointment => ({
+  id: r.id,
+  patientId: r.patient_id,
+  patientName,
+  date: r.scheduled_at,
+  duration: r.duration_min,
+  type: r.visit_type,
+  location: r.location ?? undefined,
+  notes: r.notes ?? undefined,
+  expectedFee: typeof r.expected_fee === "string" ? parseFloat(r.expected_fee) : r.expected_fee,
+  recurring: (r.recurring as Appointment["recurring"]) ?? null,
+});
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [extras, setExtras] = useState<LocalExtras>(emptyExtras);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   // Auth session
   useEffect(() => {
@@ -183,33 +212,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Load local extras + patients on session change
+  // Load local extras + patients + appointments on session change
   useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) {
       setExtras(emptyExtras);
       setPatients([]);
+      setAppointments([]);
       return;
     }
     const local = loadLocal(userId);
-    // hydrate email from session if missing
     if (local.nurse && !local.nurse.email) local.nurse.email = session.user.email || "";
     setExtras(local);
 
     (async () => {
-      const { data, error } = await supabase
-        .from("patients")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) {
-        console.error("load patients", error);
-        return;
-      }
-      setPatients((data as PatientRow[]).map((r) => rowToPatient(r, local.patientExtras[r.id])));
+      const [pRes, aRes] = await Promise.all([
+        supabase.from("patients").select("*").order("created_at", { ascending: false }),
+        supabase.from("appointments").select("*").order("scheduled_at", { ascending: true }),
+      ]);
+      if (pRes.error) { console.error("load patients", pRes.error); return; }
+      const patientRows = pRes.data as PatientRow[];
+      const pList = patientRows.map((r) => rowToPatient(r, local.patientExtras[r.id]));
+      setPatients(pList);
+      const nameById = new Map(pList.map((p) => [p.id, p.name]));
+      if (aRes.error) { console.error("load appointments", aRes.error); return; }
+      setAppointments((aRes.data as AppointmentRow[]).map((r) => rowToAppointment(r, nameById.get(r.patient_id) ?? "Patient")));
     })();
   }, [session]);
 
-  // Persist local extras
   useEffect(() => {
     if (session?.user?.id) saveLocal(session.user.id, extras);
   }, [extras, session]);
@@ -229,7 +259,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     nurse: extras.nurse,
     onboarded: extras.onboarded,
     patients,
-    appointments: extras.appointments,
+    appointments,
     transactions: extras.transactions,
     ageOf,
 
@@ -249,6 +279,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     signOut: async () => {
       await supabase.auth.signOut();
       setPatients([]);
+      setAppointments([]);
       setExtras(emptyExtras);
     },
 
@@ -313,6 +344,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("patients").delete().eq("id", pid);
       if (error) { console.error("deletePatient", error); return; }
       setPatients((s) => s.filter((x) => x.id !== pid));
+      setAppointments((s) => s.filter((a) => a.patientId !== pid));
       setExtras((s) => {
         const { [pid]: _, ...rest } = s.patientExtras;
         return { ...s, patientExtras: rest };
@@ -332,10 +364,62 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }));
       setPatients((s) => s.map((x) => (x.id === pid ? { ...x, treatments: [treatment, ...x.treatments] } : x)));
     },
-    addAppointment: (a) =>
-      setExtras((s) => ({ ...s, appointments: [...s.appointments, { ...a, id: id() }] })),
-    deleteAppointment: (aid) =>
-      setExtras((s) => ({ ...s, appointments: s.appointments.filter((a) => a.id !== aid) })),
+    addAppointment: async (a) => {
+      const userId = session?.user?.id;
+      if (!userId) return { error: "You must be signed in." };
+      const { data, error } = await supabase
+        .from("appointments")
+        .insert({
+          nurse_id: userId,
+          patient_id: a.patientId,
+          scheduled_at: a.date,
+          duration_min: a.duration,
+          visit_type: a.type,
+          location: a.location || null,
+          notes: a.notes || null,
+          expected_fee: a.expectedFee,
+          recurring: a.recurring || null,
+        })
+        .select()
+        .single();
+      if (error || !data) {
+        console.error("addAppointment", error);
+        return { error: error?.message || "Failed to book appointment." };
+      }
+      const name = patients.find((p) => p.id === a.patientId)?.name ?? "Patient";
+      const appt = rowToAppointment(data as AppointmentRow, name);
+      setAppointments((s) => [...s, appt].sort((x, y) => x.date.localeCompare(y.date)));
+      return { appointment: appt };
+    },
+    updateAppointment: async (aid, a) => {
+      const patch: {
+        patient_id?: string; scheduled_at?: string; duration_min?: number;
+        visit_type?: string; location?: string | null; notes?: string | null;
+        expected_fee?: number; recurring?: string | null;
+      } = {};
+      if (a.patientId !== undefined) patch.patient_id = a.patientId;
+      if (a.date !== undefined) patch.scheduled_at = a.date;
+      if (a.duration !== undefined) patch.duration_min = a.duration;
+      if (a.type !== undefined) patch.visit_type = a.type;
+      if (a.location !== undefined) patch.location = a.location || null;
+      if (a.notes !== undefined) patch.notes = a.notes || null;
+      if (a.expectedFee !== undefined) patch.expected_fee = a.expectedFee;
+      if (a.recurring !== undefined) patch.recurring = a.recurring || null;
+      const { error } = await supabase.from("appointments").update(patch).eq("id", aid);
+
+      if (error) { console.error("updateAppointment", error); return { error: error.message }; }
+      const name = a.patientId ? patients.find((p) => p.id === a.patientId)?.name : undefined;
+      setAppointments((s) =>
+        s.map((x) => (x.id === aid ? { ...x, ...a, patientName: name ?? x.patientName } : x))
+          .sort((x, y) => x.date.localeCompare(y.date))
+      );
+      return {};
+    },
+    deleteAppointment: async (aid) => {
+      const { error } = await supabase.from("appointments").delete().eq("id", aid);
+      if (error) { console.error("deleteAppointment", error); return; }
+      setAppointments((s) => s.filter((a) => a.id !== aid));
+    },
     addTransaction: (t) =>
       setExtras((s) => ({ ...s, transactions: [{ ...t, id: id() }, ...s.transactions] })),
     upgradeToPremium: () =>
@@ -352,6 +436,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   return <StoreCtx.Provider value={ctx}>{children}</StoreCtx.Provider>;
 }
+
 
 export const useStore = () => {
   const c = useContext(StoreCtx);
