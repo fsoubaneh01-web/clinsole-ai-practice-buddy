@@ -1315,9 +1315,60 @@ function ShiftBriefing() {
 }
 
 /* ---------------- Wound Vision Before/After slider ---------------- */
-function WoundVisionSlider() {
+type WoundSnapshot = {
+  splitPct: number;
+  areaReducedPct: number;
+  visitLabel: string;
+  savedAt: string; // ISO
+};
+
+const WOUND_STORAGE_KEY = "clinsole:wound-vision";
+
+function loadWoundSnapshots(patient: string): WoundSnapshot[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(WOUND_STORAGE_KEY);
+    if (!raw) return [];
+    const all = JSON.parse(raw) as Record<string, WoundSnapshot[]>;
+    return Array.isArray(all[patient]) ? all[patient] : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveWoundSnapshot(patient: string, snap: WoundSnapshot) {
+  if (typeof window === "undefined") return;
+  const raw = window.localStorage.getItem(WOUND_STORAGE_KEY);
+  const all: Record<string, WoundSnapshot[]> = raw ? JSON.parse(raw) : {};
+  const list = Array.isArray(all[patient]) ? all[patient] : [];
+  all[patient] = [snap, ...list].slice(0, 10);
+  window.localStorage.setItem(WOUND_STORAGE_KEY, JSON.stringify(all));
+}
+
+function computeAreaReduced(pct: number): number {
+  // Split further right = more of the "after" image visible = greater healing shown.
+  // Map slider 20..90 → 0..38% reduction, clamped.
+  const raw = Math.round((pct - 20) * 0.55);
+  return Math.max(0, Math.min(60, raw));
+}
+
+function WoundVisionSlider({ patientName = "demo" }: { patientName?: string }) {
   const [pct, setPct] = useState(52);
+  const [snapshots, setSnapshots] = useState<WoundSnapshot[]>([]);
+  const [justSaved, setJustSaved] = useState(false);
+  const [visitLabel, setVisitLabel] = useState("Visit 12");
   const containerRef = useRef<HTMLDivElement>(null);
+  const areaReduced = computeAreaReduced(pct);
+
+  // Load persisted snapshots + restore last split for this patient
+  useEffect(() => {
+    const list = loadWoundSnapshots(patientName);
+    setSnapshots(list);
+    if (list[0]) {
+      setPct(list[0].splitPct);
+      setVisitLabel(list[0].visitLabel);
+    }
+  }, [patientName]);
 
   const setFromClientX = useCallback((clientX: number) => {
     const el = containerRef.current;
@@ -1336,51 +1387,125 @@ function WoundVisionSlider() {
     setFromClientX(e.clientX);
   };
 
+  const handleSave = () => {
+    const snap: WoundSnapshot = {
+      splitPct: Math.round(pct * 10) / 10,
+      areaReducedPct: areaReduced,
+      visitLabel: visitLabel.trim() || "Untitled visit",
+      savedAt: new Date().toISOString(),
+    };
+    saveWoundSnapshot(patientName, snap);
+    setSnapshots((prev) => [snap, ...prev].slice(0, 10));
+    setJustSaved(true);
+    window.setTimeout(() => setJustSaved(false), 1600);
+  };
+
+  const lastSaved = snapshots[0];
+
   return (
-    <div
-      ref={containerRef}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      className="relative w-full h-56 rounded-2xl overflow-hidden border border-[color:var(--border)] shadow-card select-none touch-none cursor-ew-resize bg-black"
-    >
-      {/* BEFORE (base layer) — inflamed wound */}
-      <div className="absolute inset-0">
-        <WoundImage variant="before" />
-        <span className="absolute top-2 left-2 rounded-full bg-black/55 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-white tracking-wider">
-          BEFORE · Wk 1
-        </span>
-      </div>
-
-      {/* AFTER (clipped overlay on the right) */}
-      <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${pct}%)` }}>
-        <WoundImage variant="after" />
-        <span className="absolute top-2 right-2 rounded-full bg-primary/85 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-white tracking-wider">
-          AFTER · Wk 6
-        </span>
-      </div>
-
-      {/* AI badge */}
-      <span className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-white/25 backdrop-blur-md border border-white/40 px-2.5 py-1 text-[10px] font-semibold text-white shadow-md">
-        <Eye size={11} /> AI Vision: Area reduced by 14%
-      </span>
-
-      {/* Divider + handle */}
+    <div className="space-y-2">
       <div
-        className="absolute inset-y-0 w-0.5 bg-white/90 shadow-[0_0_12px_rgba(255,255,255,0.7)] pointer-events-none"
-        style={{ left: `${pct}%` }}
-      />
-      <div
-        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-9 w-9 rounded-full bg-white shadow-lg border border-white grid place-items-center pointer-events-none"
-        style={{ left: `${pct}%` }}
+        ref={containerRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        className="relative w-full h-56 rounded-2xl overflow-hidden border border-[color:var(--border)] shadow-card select-none touch-none cursor-ew-resize bg-black"
       >
-        <div className="flex items-center gap-0.5 text-[#0F172A]">
-          <ChevronRight size={12} className="rotate-180" />
-          <ChevronRight size={12} />
+        <div className="absolute inset-0">
+          <WoundImage variant="before" />
+          <span className="absolute top-2 left-2 rounded-full bg-black/55 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-white tracking-wider">
+            BEFORE · Wk 1
+          </span>
+        </div>
+
+        <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${pct}%)` }}>
+          <WoundImage variant="after" />
+          <span className="absolute top-2 right-2 rounded-full bg-primary/85 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-white tracking-wider">
+            AFTER · {visitLabel}
+          </span>
+        </div>
+
+        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-white/25 backdrop-blur-md border border-white/40 px-2.5 py-1 text-[10px] font-semibold text-white shadow-md">
+          <Eye size={11} /> AI Vision: Area reduced by {areaReduced}%
+        </span>
+
+        <div
+          className="absolute inset-y-0 w-0.5 bg-white/90 shadow-[0_0_12px_rgba(255,255,255,0.7)] pointer-events-none"
+          style={{ left: `${pct}%` }}
+        />
+        <div
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-9 w-9 rounded-full bg-white shadow-lg border border-white grid place-items-center pointer-events-none"
+          style={{ left: `${pct}%` }}
+        >
+          <div className="flex items-center gap-0.5 text-[#0F172A]">
+            <ChevronRight size={12} className="rotate-180" />
+            <ChevronRight size={12} />
+          </div>
         </div>
       </div>
+
+      {/* Save controls */}
+      <div className="flex items-center gap-2">
+        <input
+          value={visitLabel}
+          onChange={(e) => setVisitLabel(e.target.value)}
+          placeholder="Visit label (e.g. Wk 6)"
+          className="flex-1 min-w-0 rounded-xl bg-card border border-[color:var(--border)] px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <button
+          onClick={handleSave}
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-3 py-2 text-xs font-semibold hover:opacity-90 transition"
+        >
+          <CheckCircle2 size={14} /> Save snapshot
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {justSaved && (
+          <motion.p
+            initial={{ opacity: 0, y: -2 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="text-[10px] text-primary font-semibold"
+          >
+            Saved · split {Math.round(pct)}% · area reduced {areaReduced}%
+          </motion.p>
+        )}
+      </AnimatePresence>
+
+      {snapshots.length > 0 && (
+        <div className="rounded-xl border border-[color:var(--border)] bg-[#F8FAFC] p-2.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              Saved snapshots · {patientName}
+            </p>
+            {lastSaved && (
+              <span className="text-[10px] text-muted-foreground">
+                Last: {new Date(lastSaved.savedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </div>
+          <ul className="space-y-1">
+            {snapshots.slice(0, 4).map((s) => (
+              <li key={s.savedAt}>
+                <button
+                  onClick={() => { setPct(s.splitPct); setVisitLabel(s.visitLabel); }}
+                  className="w-full flex items-center justify-between gap-2 rounded-lg bg-card border border-[color:var(--border)] px-2.5 py-1.5 text-[11px] hover:border-primary/40 transition"
+                >
+                  <span className="min-w-0 truncate font-medium">{s.visitLabel}</span>
+                  <span className="shrink-0 flex items-center gap-2">
+                    <span className="text-muted-foreground">split {Math.round(s.splitPct)}%</span>
+                    <span className="rounded-full bg-primary/10 text-primary px-1.5 py-0.5 font-semibold">−{s.areaReducedPct}%</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function WoundImage({ variant }: { variant: "before" | "after" }) {
   // Stylized SVG "photo" of a foot heel with a wound. Before = larger/red, After = smaller/pink.
