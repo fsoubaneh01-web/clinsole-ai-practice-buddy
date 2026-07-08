@@ -885,21 +885,56 @@ function InteractiveFootMap() {
             </svg>
             {SEV_HOTSPOTS.filter((h) => h.side === side).map((h) => {
               const t = TONE_STYLE[h.tone];
+              const ui = HOTSPOT_UI[h.id] ?? { anchor: "right" as const };
+              const topStyle = `calc(2rem + ${(h.cy / 180) * 11}rem)`;
               return (
-                <button
-                  key={h.id}
-                  onMouseEnter={() => setOpenId(h.id)}
-                  onFocus={() => setOpenId(h.id)}
-                  onPointerDown={() => setOpenId(h.id)}
-                  onTouchStart={() => setOpenId(h.id)}
-                  onClick={(e) => { e.stopPropagation(); setOpenId(h.id); }}
-                  aria-label={h.label}
-                  className="absolute z-10 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  style={{ left: `${h.cx}%`, top: `calc(2rem + ${(h.cy / 180) * 11}rem)` }}
-                >
-                  <span className="pointer-events-none absolute h-7 w-7 rounded-full animate-ping" style={{ background: t.glow }} />
-                  <span className="pointer-events-none relative h-3.5 w-3.5 rounded-full border-2 border-white shadow-md" style={{ background: t.fill }} />
-                </button>
+                <div key={h.id}>
+                  <button
+                    onMouseEnter={() => setOpenId(h.id)}
+                    onFocus={() => setOpenId(h.id)}
+                    onPointerDown={() => setOpenId(h.id)}
+                    onTouchStart={() => setOpenId(h.id)}
+                    onClick={(e) => { e.stopPropagation(); setOpenId(h.id); }}
+                    aria-label={h.label}
+                    className="absolute z-10 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    style={{ left: `${h.cx}%`, top: topStyle }}
+                  >
+                    <span className="pointer-events-none absolute h-8 w-8 rounded-full animate-ping" style={{ background: t.glow }} />
+                    <span className="pointer-events-none absolute h-5 w-5 rounded-full opacity-70" style={{ background: t.glow }} />
+                    <span className="pointer-events-none relative h-3 w-3 rounded-full border-2 border-white shadow-md" style={{ background: t.fill }} />
+                  </button>
+
+                  {/* Attached label pill */}
+                  <div
+                    className="pointer-events-none absolute z-20"
+                    style={{
+                      left: `${h.cx}%`,
+                      top: `calc(${topStyle} + 0.9rem)`,
+                      transform: ui.anchor === "left" ? "translateX(-92%)" : "translateX(-8%)",
+                    }}
+                  >
+                    <span className={`inline-block whitespace-nowrap rounded-md px-2 py-0.5 text-[10px] font-semibold shadow-md ${t.chip}`}>
+                      {h.label.replace(" (Pulsing)", "").replace(" (Active)", "")}
+                    </span>
+                  </div>
+
+                  {/* Persistent callout tooltip for the amber heel hotspot */}
+                  {ui.callout && (
+                    <div
+                      className="pointer-events-none absolute z-20 w-40"
+                      style={{
+                        left: `${h.cx}%`,
+                        top: `calc(${topStyle} - 4.2rem)`,
+                        transform: "translateX(-50%)",
+                      }}
+                    >
+                      <div className="rounded-lg border border-[color:var(--border)] bg-white p-2 shadow-lg">
+                        <p className="text-[10px] leading-snug text-foreground/85">{ui.callout}</p>
+                        <div className="absolute left-1/2 -bottom-1.5 h-3 w-3 -translate-x-1/2 rotate-45 bg-white border-r border-b border-[color:var(--border)]" />
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
