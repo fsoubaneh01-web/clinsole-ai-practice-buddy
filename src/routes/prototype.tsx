@@ -18,6 +18,7 @@ export const Route = createFileRoute("/prototype")({
 });
 
 type Tab = "dashboard" | "patients" | "soap" | "schedule" | "business";
+type ScreenProps = { dark: boolean; onToggleTheme: () => void };
 
 function Prototype() {
   const [tab, setTab] = useState<Tab>("dashboard");
