@@ -239,18 +239,22 @@ const DRAFTS = [
 ];
 
 /* ---------------- Patients ---------------- */
-function Patients() {
+function Patients({ dark, onToggleTheme }: ScreenProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const patient = PATIENTS.find((p) => p.name === selected);
 
   return (
     <div className="px-4 pt-6 space-y-4">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-semibold tracking-tight">Patients</h1>
-        <button className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium">
-          <Plus size={14} /> New
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle dark={dark} onToggle={onToggleTheme} />
+          <button className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium shadow-sm hover:shadow-md transition-shadow">
+            <Plus size={14} /> New
+          </button>
+        </div>
       </header>
+
 
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
