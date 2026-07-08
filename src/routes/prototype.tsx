@@ -606,7 +606,7 @@ function Placeholder({ title, subtitle }: { title: string; subtitle: string }) {
 }
 
 /* ---------------- Bottom nav ---------------- */
-function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
+function BottomNav({ tab, setTab, notifCount }: { tab: Tab; setTab: (t: Tab) => void; notifCount: number }) {
   const items: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "dashboard", label: "Dashboard", icon: <Home size={20} /> },
     { id: "patients", label: "Patients", icon: <Users size={20} /> },
@@ -619,14 +619,23 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
       <div className="mx-auto max-w-md grid grid-cols-5 px-2 pt-2 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
         {items.map((it) => {
           const active = tab === it.id;
+          const showBadge = it.id === "dashboard" && notifCount > 0;
           return (
             <button
               key={it.id}
               onClick={() => setTab(it.id)}
               className="relative flex flex-col items-center gap-1 py-1.5 text-[10px] font-medium"
             >
-              <span className={`h-9 w-14 grid place-items-center rounded-full transition ${active ? "bg-primary/12 text-primary" : "text-muted-foreground"}`}>
+              <span className={`relative h-9 w-14 grid place-items-center rounded-full transition ${active ? "bg-primary/12 text-primary" : "text-muted-foreground"}`}>
                 {it.icon}
+                {showBadge && (
+                  <span className="absolute top-0.5 right-3 flex h-4 w-4">
+                    <span className="absolute inset-0 rounded-full bg-[#0369A1] opacity-60 animate-ping" />
+                    <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#0369A1] text-[9px] font-bold text-white ring-2 ring-background">
+                      {notifCount}
+                    </span>
+                  </span>
+                )}
               </span>
               <span className={active ? "text-primary" : "text-muted-foreground"}>{it.label}</span>
             </button>
@@ -636,3 +645,276 @@ function BottomNav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
     </nav>
   );
 }
+
+/* ---------------- Session pill (header) ---------------- */
+function SessionPill({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full inline-flex items-center justify-between gap-3 rounded-full bg-card border border-[color:var(--border)] shadow-sm hover:shadow-md transition px-3 py-2"
+    >
+      <span className="inline-flex items-center gap-2 min-w-0">
+        <span className="relative shrink-0 h-7 w-7 rounded-full bg-primary/10 text-primary grid place-items-center">
+          <User size={14} />
+          <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-card animate-pulse" />
+        </span>
+        <span className="text-xs font-medium truncate">
+          Active Session: <span className="text-primary">Harold Whitaker</span>
+        </span>
+      </span>
+      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {open ? "Hide" : "Show"}
+      </span>
+    </button>
+  );
+}
+
+/* ---------------- Floating recording widget ---------------- */
+function RecordingWidget({
+  micActive, onToggleMic, onOpen, onClose,
+}: { micActive: boolean; onToggleMic: () => void; onOpen: () => void; onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ y: 80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 80, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 320, damping: 28 }}
+      className="fixed bottom-20 left-0 right-0 z-40 px-4"
+    >
+      <div className="mx-auto max-w-md rounded-2xl bg-card border border-[color:var(--border)] shadow-card p-3 flex items-center gap-3">
+        <button
+          onClick={onToggleMic}
+          aria-label={micActive ? "Pause recording" : "Resume recording"}
+          className={`shrink-0 h-11 w-11 rounded-full grid place-items-center text-white transition ${micActive ? "bg-primary shadow-[0_0_0_6px_rgba(14,165,233,0.15)]" : "bg-muted text-muted-foreground"}`}
+        >
+          {micActive ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
+        </button>
+        <button onClick={onOpen} className="min-w-0 flex-1 text-left">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">AI SOAP Note Draft</p>
+          <p className="text-xs font-semibold truncate">{micActive ? "In progress · Harold Whitaker" : "Paused · Harold Whitaker"}</p>
+          <MiniWave active={micActive} />
+        </button>
+        <button onClick={onClose} aria-label="Close" className="shrink-0 h-8 w-8 grid place-items-center rounded-full bg-muted text-muted-foreground hover:text-foreground">
+          <X size={14} />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function MiniWave({ active }: { active: boolean }) {
+  const bars = [6, 10, 14, 8, 16, 11, 18, 9, 13, 7, 15, 10, 12];
+  return (
+    <div className="mt-1 flex items-center gap-[2px] h-4">
+      {bars.map((h, i) => (
+        <span
+          key={i}
+          className="w-[2px] rounded-full bg-primary/70"
+          style={{
+            height: `${h}px`,
+            animation: active ? `wave 1s ease-in-out ${i * 55}ms infinite alternate` : "none",
+            opacity: active ? 1 : 0.35,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- Snackbar toast ---------------- */
+function Snackbar({ count, onOpen, onDismiss }: { count: number; onOpen: () => void; onDismiss: () => void }) {
+  return (
+    <motion.div
+      initial={{ y: 40, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 300, damping: 26, delay: 0.4 }}
+      className="fixed bottom-40 left-4 z-50"
+    >
+      <div className="inline-flex items-center gap-2 rounded-full bg-[#0F172A] text-white pl-3 pr-1 py-1 shadow-lg">
+        <button onClick={onOpen} className="inline-flex items-center gap-2 text-xs font-medium py-1.5 pr-1">
+          <Bell size={14} className="text-[#0EA5E9]" />
+          <span>{count} new notes to sign</span>
+        </button>
+        <button
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="h-7 w-7 grid place-items-center rounded-full hover:bg-white/10 text-white/70 hover:text-white"
+        >
+          <X size={12} />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ---------------- Interactive foot map (severity hotspots) ---------------- */
+type SeverityHotspot = {
+  id: string;
+  side: "L" | "R";
+  cx: number;
+  cy: number;
+  tone: "red" | "blue" | "amber";
+  label: string;
+  note: string;
+};
+
+const SEV_HOTSPOTS: SeverityHotspot[] = [
+  { id: "l-1st-toe", side: "L", cx: 68, cy: 22, tone: "red", label: "Callus — 1st Toe", note: "Hyperkeratotic lesion 4mm, dorsal aspect. Debrided 06/28/26. Reassess in 2 weeks." },
+  { id: "r-5th-toe", side: "R", cx: 78, cy: 30, tone: "blue", label: "Wound Care — 5th Toe", note: "Active superficial ulcer, granulating well. Dressing changed today. Continue silver foam Q48h." },
+  { id: "r-heel", side: "R", cx: 50, cy: 150, tone: "amber", label: "Dry Skin — Heel", note: "Heel fissure, last noted 07/03/26. Click to dictate observation." },
+];
+
+const TONE_STYLE = {
+  red: { fill: "#DC2626", glow: "rgba(220,38,38,0.35)" },
+  blue: { fill: "#0EA5E9", glow: "rgba(14,165,233,0.35)" },
+  amber: { fill: "#DE8A44", glow: "rgba(222,138,68,0.35)" },
+} as const;
+
+function InteractiveFootMap() {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const active = SEV_HOTSPOTS.find((h) => h.id === openId) || null;
+
+  return (
+    <div className="relative">
+      <div className="grid grid-cols-2 gap-3">
+        {(["L", "R"] as const).map((side) => (
+          <div key={side} className="rounded-xl bg-[#F8FAFC] border border-[color:var(--border)] p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{side === "L" ? "Left" : "Right"} · plantar</p>
+              <p className="text-[10px] text-muted-foreground/80">Tap dot</p>
+            </div>
+            <svg viewBox="0 0 100 180" className="w-full h-44">
+              <defs>
+                <linearGradient id={`skin-${side}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#FDE8D7" />
+                  <stop offset="100%" stopColor="#F5CDA8" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M50 8 C 72 8 82 30 80 60 C 78 90 88 118 82 145 C 78 168 60 176 50 176 C 40 176 22 168 18 145 C 12 118 22 90 20 60 C 18 30 28 8 50 8 Z"
+                fill={`url(#skin-${side})`}
+                stroke="#E2B48A"
+                strokeWidth="1.2"
+              />
+              {[
+                { cx: 50, r: 8 }, { cx: 32, r: 5.5 }, { cx: 68, r: 5.5 },
+                { cx: 22, r: 4.5 }, { cx: 78, r: 4.5 },
+              ].map((t, i) => (
+                <circle key={i} cx={t.cx} cy={i === 0 ? 10 : 14 + Math.abs(t.cx - 50) * 0.15} r={t.r} fill={`url(#skin-${side})`} stroke="#E2B48A" strokeWidth="1" />
+              ))}
+              {SEV_HOTSPOTS.filter((h) => h.side === side).map((h) => {
+                const t = TONE_STYLE[h.tone];
+                return (
+                  <g key={h.id} onClick={(e) => { e.stopPropagation(); setOpenId(openId === h.id ? null : h.id); }} style={{ cursor: "pointer" }}>
+                    <circle cx={h.cx} cy={h.cy} r="10" fill={t.glow}>
+                      <animate attributeName="r" values="6;12;6" dur="1.8s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.55;0.15;0.55" dur="1.8s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx={h.cx} cy={h.cy} r="4.5" fill={t.fill} stroke="white" strokeWidth="1.5" />
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {SEV_HOTSPOTS.map((h) => {
+          const t = TONE_STYLE[h.tone];
+          return (
+            <button
+              key={h.id}
+              onClick={() => setOpenId(openId === h.id ? null : h.id)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-card px-2 py-1 text-[10px] font-medium hover:shadow-sm transition"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inset-0 rounded-full opacity-60 animate-ping" style={{ background: t.fill }} />
+                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: t.fill }} />
+              </span>
+              {h.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence>
+        {active && (
+          <motion.div
+            key={active.id}
+            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+            className="mt-3 rounded-xl border border-[color:var(--border)] bg-card p-3 shadow-md"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full" style={{ background: TONE_STYLE[active.tone].fill }} />
+                  <p className="text-xs font-semibold truncate">{active.label}</p>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{active.note}</p>
+              </div>
+              <button onClick={() => setOpenId(null)} className="shrink-0 h-6 w-6 grid place-items-center rounded-full bg-muted text-muted-foreground">
+                <X size={12} />
+              </button>
+            </div>
+            <button className="mt-2 w-full rounded-lg bg-primary text-primary-foreground py-1.5 text-[11px] font-semibold">
+              Dictate observation
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ---------------- Care timeline ---------------- */
+type TimelineItem = { title: string; patient: string; date: string; progress: number; tone: "teal" | "amber" | "eucalyptus" };
+const TIMELINE: TimelineItem[] = [
+  { title: "Nail Care", patient: "Harold Whitaker", date: "Today · 09:15", progress: 100, tone: "eucalyptus" },
+  { title: "Ulcer Dressing Change", patient: "Harold Whitaker", date: "Today · 09:35", progress: 70, tone: "teal" },
+  { title: "Diabetic Foot Screen", patient: "Margaret Chen", date: "Tomorrow", progress: 30, tone: "amber" },
+  { title: "Callus Debridement", patient: "Priya Ramesh", date: "Fri · 11:00", progress: 10, tone: "teal" },
+];
+const BAR_TONE = {
+  teal: "bg-[#0EA5E9]",
+  amber: "bg-[#DE8A44]",
+  eucalyptus: "bg-[#059669]",
+} as const;
+
+function CareTimeline() {
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-2 px-0.5">
+        <h2 className="text-sm font-semibold">Patient Care Timeline</h2>
+        <span className="text-[11px] text-muted-foreground">This week</span>
+      </div>
+      <ul className="space-y-2">
+        {TIMELINE.map((t) => (
+          <li key={t.title + t.patient}>
+            <button className="w-full text-left rounded-2xl bg-card border border-[color:var(--border)] p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate">{t.patient} · {t.title}</p>
+                  <p className="text-[11px] text-muted-foreground">{t.date}</p>
+                </div>
+                <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">{t.progress}%</span>
+              </div>
+              <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${t.progress}%` }}
+                  transition={{ type: "spring", stiffness: 140, damping: 22 }}
+                  className={`h-full rounded-full ${BAR_TONE[t.tone]}`}
+                />
+              </div>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
