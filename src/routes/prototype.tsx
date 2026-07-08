@@ -1298,17 +1298,35 @@ function InteractiveFootMap() {
               </div>
 
               <div className="rounded-xl border border-[color:var(--border)] bg-[#F8FAFC] p-3">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Input</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+                  Condition · <span className="text-foreground/80 normal-case tracking-normal">{CONDITION_LABEL[dictate.condition]}</span>
+                </p>
                 <p className="text-sm text-foreground/85">
-                  Dictating for {dictate.side === "L" ? "Left" : "Right"} {dictate.label.split("—")[1]?.trim() || dictate.label}...
+                  Dictating for {dictate.side === "L" ? "Left" : "Right"} · {dictate.label.replace(" (Pulsing)", "").replace(" (Active)", "")}
                 </p>
               </div>
 
-              <div className="mt-3 rounded-xl border border-[color:var(--border)] bg-card p-3 min-h-[110px]">
-                <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1.5">AI generated note</p>
+              {/* Contextual dictation prompts */}
+              {soap && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {soap.prompts.map((p) => (
+                    <span key={p} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium px-2 py-0.5 border border-primary/20">
+                      <Sparkles size={10} /> {p}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-3 rounded-xl border border-[color:var(--border)] bg-card p-3 min-h-[160px]">
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[10px] uppercase tracking-wider text-primary font-semibold">AI SOAP draft · prefilled</p>
+                  {soap && (
+                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{CONDITION_LABEL[dictate.condition]} template</span>
+                  )}
+                </div>
                 {typing && (
                   <div className="flex items-center gap-1.5 py-2">
-                    <span className="text-xs text-muted-foreground">AI is typing</span>
+                    <span className="text-xs text-muted-foreground">Prefilling from {CONDITION_LABEL[dictate.condition]} template</span>
                     {[0, 1, 2].map((i) => (
                       <span
                         key={i}
@@ -1318,14 +1336,17 @@ function InteractiveFootMap() {
                     ))}
                   </div>
                 )}
-                {!typing && aiNote && (
-                  <motion.p
+                {!typing && soap && (
+                  <motion.div
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-sm text-foreground/85 leading-relaxed"
+                    className="space-y-1.5"
                   >
-                    {aiNote}
-                  </motion.p>
+                    <SoapRow letter="S" text={soap.s} />
+                    <SoapRow letter="O" text={soap.o} />
+                    <SoapRow letter="A" text={soap.a} />
+                    <SoapRow letter="P" text={soap.p} />
+                  </motion.div>
                 )}
               </div>
 
@@ -1337,7 +1358,7 @@ function InteractiveFootMap() {
                   Cancel
                 </button>
                 <button
-                  disabled={typing || !aiNote}
+                  disabled={typing || !soap}
                   onClick={() => setDictate(null)}
                   className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
                 >
