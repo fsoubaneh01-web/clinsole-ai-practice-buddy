@@ -140,7 +140,7 @@ function InsightBadge({ icon, label, tone }: { icon: React.ReactNode; label: str
 }
 
 /* ---------------- Dashboard ---------------- */
-function Dashboard({ dark, onToggleTheme, setTab, sessionOpen, onToggleSession }: ScreenProps) {
+function Dashboard({ dark, onToggleTheme, sessionOpen, onToggleSession }: ScreenProps) {
   return (
     <div className="px-4 pt-6 space-y-5">
       <header className="flex items-center justify-between gap-2">
@@ -377,7 +377,6 @@ const PATIENTS = [
 ];
 
 function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number]; onClose: () => void }) {
-  const [hotspot, setHotspot] = useState<null | { title: string; note: string }>(null);
   return (
     <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md flex items-end sm:items-center justify-center" onClick={onClose}>
       <div
@@ -401,6 +400,8 @@ function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number
             <InteractiveFootMap />
           </div>
 
+          <TimelineWithCalendar compact />
+
           <div>
             <h3 className="text-sm font-semibold mb-2">Progress gallery</h3>
             <div className="flex gap-3 overflow-x-auto -mx-5 px-5 pb-1">
@@ -419,69 +420,8 @@ function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number
           </div>
         </div>
 
-        {hotspot && (
-          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-md grid place-items-center p-6" onClick={() => setHotspot(null)}>
-            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-2xl bg-background p-5 shadow-card">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold">{hotspot.title}</h4>
-                <button onClick={() => setHotspot(null)} className="h-7 w-7 grid place-items-center rounded-full bg-muted"><X size={14} /></button>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{hotspot.note}</p>
-              <button className="mt-4 w-full rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium">Open full history</button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
-  );
-}
-
-function FootMap({ onHotspot }: { onHotspot: (h: { title: string; note: string }) => void }) {
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      {["Left", "Right"].map((side) => (
-        <div key={side} className="rounded-xl bg-[oklch(0.97_0.015_195)] border border-[color:var(--border)] p-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{side} · plantar</p>
-          <svg viewBox="0 0 100 180" className="w-full h-44">
-            <defs>
-              <linearGradient id={`f-${side}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="oklch(0.92 0.03 30)" />
-                <stop offset="100%" stopColor="oklch(0.86 0.04 25)" />
-              </linearGradient>
-            </defs>
-            {/* Foot outline */}
-            <path
-              d="M50 8 C 72 8 82 30 80 60 C 78 90 88 118 82 145 C 78 168 60 176 50 176 C 40 176 22 168 18 145 C 12 118 22 90 20 60 C 18 30 28 8 50 8 Z"
-              fill={`url(#f-${side})`}
-              stroke="oklch(0.72 0.06 25)"
-              strokeWidth="1.2"
-            />
-            {/* Toes */}
-            {[
-              { cx: 50, r: 8 }, { cx: 32, r: 5.5 }, { cx: 68, r: 5.5 },
-              { cx: 22, r: 4.5 }, { cx: 78, r: 4.5 },
-            ].map((t, i) => (
-              <circle key={i} cx={t.cx} cy={i === 0 ? 10 : 14 + Math.abs(t.cx - 50) * 0.15} r={t.r} fill={`url(#f-${side})`} stroke="oklch(0.72 0.06 25)" strokeWidth="1" />
-            ))}
-            {/* Hotspots */}
-            <Hotspot cx={50} cy={20} onClick={() => onHotspot({ title: `${side} great toe`, note: "Nail elongated, minimal subungual debris. Trimmed and cleared today. No erythema." })} />
-            <Hotspot cx={50} cy={155} onClick={() => onHotspot({ title: `${side} heel fissure`, note: "Mild erythema, skin intact but dry. Applying urea cream 20% twice daily." })} />
-            {side === "Right" && <Hotspot cx={70} cy={100} onClick={() => onHotspot({ title: "Lateral callus", note: "2mm hyperkeratosis over 5th MTP. Debrided; monitor at next visit." })} />}
-          </svg>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Hotspot({ cx, cy, onClick }: { cx: number; cy: number; onClick: () => void }) {
-  return (
-    <g onClick={onClick} style={{ cursor: "pointer" }}>
-      <circle cx={cx} cy={cy} r="8" fill="oklch(0.6 0.19 25 / 0.15)">
-        <animate attributeName="r" values="6;10;6" dur="2s" repeatCount="indefinite" />
-      </circle>
-      <circle cx={cx} cy={cy} r="4" fill="oklch(0.6 0.19 25)" stroke="white" strokeWidth="1.5" />
-    </g>
   );
 }
 
@@ -755,7 +695,7 @@ function Snackbar({ count, onOpen, onDismiss }: { count: number; onOpen: () => v
     >
       <div className="inline-flex items-center gap-2 rounded-full bg-[#0F172A] text-white pl-3 pr-1 py-1 shadow-lg">
         <button onClick={onOpen} className="inline-flex items-center gap-2 text-xs font-medium py-1.5 pr-1">
-          <Bell size={14} className="text-[#0EA5E9]" />
+          <span aria-hidden="true">🔔</span>
           <span>{count} new notes to sign</span>
         </button>
         <button
@@ -782,9 +722,9 @@ type SeverityHotspot = {
 };
 
 const SEV_HOTSPOTS: SeverityHotspot[] = [
-  { id: "l-1st-toe", side: "L", cx: 68, cy: 22, tone: "red", label: "Callus — 1st Toe", note: "Hyperkeratotic lesion 4mm, dorsal aspect. Debrided 06/28/26. Reassess in 2 weeks." },
-  { id: "r-5th-toe", side: "R", cx: 78, cy: 30, tone: "blue", label: "Wound Care — 5th Toe", note: "Active superficial ulcer, granulating well. Dressing changed today. Continue silver foam Q48h." },
-  { id: "r-heel", side: "R", cx: 50, cy: 150, tone: "amber", label: "Dry Skin — Heel", note: "Heel fissure, last noted 07/03/26. Click to dictate observation." },
+  { id: "l-1st-toe", side: "L", cx: 50, cy: 20, tone: "red", label: "Callus - 1st Toe (Pulsing)", note: "Hyperkeratotic lesion 4mm at left 1st toe. Debrided 06/28/26. Reassess in 2 weeks." },
+  { id: "r-5th-toe", side: "R", cx: 78, cy: 24, tone: "blue", label: "Wound Care - 5th Toe (Active)", note: "Active superficial ulcer at right 5th toe, granulating well. Dressing changed today. Continue silver foam Q48h." },
+  { id: "r-heel", side: "R", cx: 50, cy: 150, tone: "amber", label: "Dry Skin - Heel (Pulsing)", note: "Heel fissure, last noted 07/03/26. Click to dictate observation." },
 ];
 
 const TONE_STYLE = {
@@ -846,7 +786,16 @@ function InteractiveFootMap() {
               {SEV_HOTSPOTS.filter((h) => h.side === side).map((h) => {
                 const t = TONE_STYLE[h.tone];
                 return (
-                  <g key={h.id} onClick={(e) => { e.stopPropagation(); setOpenId(openId === h.id ? null : h.id); }} style={{ cursor: "pointer" }}>
+                  <g
+                    key={h.id}
+                    onMouseEnter={() => setOpenId(h.id)}
+                    onFocus={() => setOpenId(h.id)}
+                    onClick={(e) => { e.stopPropagation(); setOpenId(openId === h.id ? null : h.id); }}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={h.label}
+                    style={{ cursor: "pointer", outline: "none" }}
+                  >
                     <circle cx={h.cx} cy={h.cy} r="10" fill={t.glow}>
                       <animate attributeName="r" values="6;12;6" dur="1.8s" repeatCount="indefinite" />
                       <animate attributeName="opacity" values="0.55;0.15;0.55" dur="1.8s" repeatCount="indefinite" />
@@ -1046,7 +995,7 @@ function MiniCalendar({ selected, onSelect }: { selected: DayKey; onSelect: (d: 
   );
 }
 
-function TimelineWithCalendar() {
+function TimelineWithCalendar({ compact = false }: { compact?: boolean }) {
   const [day, setDay] = useState<DayKey>("mon");
   const [expanded, setExpanded] = useState<string | null>(null);
   const items = TIMELINE.filter((t) => t.day === day);
@@ -1057,7 +1006,7 @@ function TimelineWithCalendar() {
         <span className="text-[11px] text-muted-foreground">{items.length} events</span>
       </div>
       <div className="mb-3">
-        <MiniCalendar selected={day} onSelect={(d) => { setDay(d); setExpanded(null); }} />
+        {!compact && <MiniCalendar selected={day} onSelect={(d) => { setDay(d); setExpanded(null); }} />}
       </div>
       <ul className="space-y-2">
         <AnimatePresence initial={false}>
@@ -1073,7 +1022,7 @@ function TimelineWithCalendar() {
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ type: "spring", stiffness: 260, damping: 26 }}
               >
-                <div className="rounded-2xl bg-card border border-[color:var(--border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition overflow-hidden">
+                <div className="rounded-2xl bg-card border border-[color:var(--border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:bg-accent/25 active:translate-y-0 active:scale-[0.99] transition overflow-hidden">
                   <button
                     onClick={() => setExpanded(isOpen ? null : key)}
                     className="w-full text-left p-3"
