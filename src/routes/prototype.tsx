@@ -1038,20 +1038,28 @@ const DAYS: { key: DayKey; label: string; num: string }[] = [
 ];
 
 function MiniCalendar({ selected, onSelect }: { selected: DayKey; onSelect: (d: DayKey) => void }) {
+  const today: DayKey = "tue"; // demo: July 7, 2026
   return (
     <div className="flex items-center gap-2">
       {DAYS.map((d) => {
         const active = d.key === selected;
+        const isToday = d.key === today;
         return (
           <button
             key={d.key}
             onClick={() => onSelect(d.key)}
-            className={`flex flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 text-[10px] font-semibold transition ${
+            className={`relative flex flex-col items-center justify-center gap-0.5 rounded-2xl px-3 py-2 text-[10px] font-semibold transition ${
               active
                 ? "bg-[#0F172A] text-white shadow-md"
                 : "border border-[color:var(--border)] text-muted-foreground hover:text-foreground"
             }`}
           >
+            {isToday && (
+              <>
+                <span className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-primary/70 animate-pulse" />
+                <span className="pointer-events-none absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(14,165,233,0.9)]" />
+              </>
+            )}
             <span className="uppercase tracking-wider">{d.label}</span>
             <span className={`text-sm ${active ? "text-white" : "text-foreground"}`}>{d.num}</span>
           </button>
