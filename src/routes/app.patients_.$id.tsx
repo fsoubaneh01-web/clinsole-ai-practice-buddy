@@ -57,6 +57,9 @@ function PatientProfile() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="secondary" className="bg-white/15 text-primary-foreground hover:bg-white/25">
+                <Link to="/app/assess" search={{ patientId: p.id }}><Footprints className="mr-1 h-4 w-4" />Assess</Link>
+              </Button>
+              <Button asChild variant="secondary" className="bg-white/15 text-primary-foreground hover:bg-white/25">
                 <Link to="/app/soap" search={{ patientId: p.id } as never}><ClipboardPlus className="mr-1 h-4 w-4" />New SOAP</Link>
               </Button>
               <Button asChild variant="secondary" className="bg-white/15 text-primary-foreground hover:bg-white/25">
