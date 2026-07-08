@@ -538,6 +538,64 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (error) { console.error("deleteAppointment", error); return; }
       setAppointments((s) => s.filter((a) => a.id !== aid));
     },
+    addFootAssessment: async (a, photos) => {
+      const userId = session?.user?.id;
+      if (!userId) return { error: "You must be signed in." };
+      if (!a.patientId) return { error: "Choose a patient." };
+
+      const paths: string[] = [];
+      for (const file of photos) {
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const path = `${userId}/${a.patientId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("clinical-photos").upload(path, file, {
+          contentType: file.type || "image/jpeg",
+          upsert: false,
+        });
+        if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
+        paths.push(path);
+      }
+
+      const { data, error } = await supabase
+        .from("foot_assessments")
+        .insert({
+          nurse_id: userId,
+          patient_id: a.patientId,
+          left_foot: a.leftFoot, right_foot: a.rightFoot,
+          skin_dry: a.skinDry, skin_callus: a.skinCallus, skin_corns: a.skinCorns,
+          skin_fissures: a.skinFissures, skin_ulcer: a.skinUlcer, skin_infection: a.skinInfection,
+          nails_thickened: a.nailsThickened, nails_fungal: a.nailsFungal, nails_ingrown: a.nailsIngrown,
+          nails_trimmed: a.nailsTrimmed, nails_debrided: a.nailsDebrided,
+          pulses_present: a.pulsesPresent || null,
+          capillary_refill: a.capillaryRefill || null,
+          edema: a.edema || null,
+          skin_temperature: a.skinTemperature || null,
+          protective_sensation: a.protectiveSensation || null,
+          monofilament_findings: a.monofilamentFindings || null,
+          neuropathy_risk: a.neuropathyRisk || null,
+          risk_level: a.riskLevel,
+          notes: a.notes || null,
+          photo_urls: paths,
+        })
+        .select()
+        .single();
+      if (error || !data) {
+        console.error("addFootAssessment", error);
+        return { error: error?.message || "Failed to save assessment." };
+      }
+      const assessment = rowToFootAssessment(data as FootAssessmentRow);
+      setFootAssessments((s) => [assessment, ...s]);
+      return { assessment };
+    },
+    deleteFootAssessment: async (aid) => {
+      const target = footAssessments.find((x) => x.id === aid);
+      const { error } = await supabase.from("foot_assessments").delete().eq("id", aid);
+      if (error) { console.error("deleteFootAssessment", error); return; }
+      if (target?.photoPaths.length) {
+        await supabase.storage.from("clinical-photos").remove(target.photoPaths);
+      }
+      setFootAssessments((s) => s.filter((x) => x.id !== aid));
+    },
+
     addTransaction: (t) =>
       setExtras((s) => ({ ...s, transactions: [{ ...t, id: id() }, ...s.transactions] })),
     upgradeToPremium: () =>
