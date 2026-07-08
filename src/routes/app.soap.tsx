@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useStore, PLAN_LIMITS } from "@/lib/store";
+import { useStore, PLAN_LIMITS, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
