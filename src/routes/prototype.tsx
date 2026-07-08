@@ -405,6 +405,12 @@ function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number
           <TimelineWithCalendar compact />
 
           <div>
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Wound vision · Left heel</h3>
+            <WoundVisionSlider />
+          </div>
+
+          <div>
             <h3 className="text-sm font-semibold mb-2">Progress gallery</h3>
             <div className="flex gap-3 overflow-x-auto -mx-5 px-5 pb-1">
               {[1, 2, 3, 4].map((i) => (
