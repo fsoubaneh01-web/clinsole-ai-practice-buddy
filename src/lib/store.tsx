@@ -42,9 +42,12 @@ export type Appointment = {
   date: string;
   duration: number;
   type: string;
-  recurring?: "weekly" | "biweekly" | "monthly" | null;
+  location?: string;
   notes?: string;
+  expectedFee: number;
+  recurring?: "weekly" | "biweekly" | "monthly" | null;
 };
+
 
 export type Transaction = {
   id: string;
