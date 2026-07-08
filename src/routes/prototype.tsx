@@ -423,16 +423,20 @@ function Hotspot({ cx, cy, onClick }: { cx: number; cy: number; onClick: () => v
 }
 
 /* ---------------- SOAP Workspace ---------------- */
-function SoapWorkspace() {
+function SoapWorkspace({ dark, onToggleTheme }: ScreenProps) {
   return (
     <div className="pt-6 pb-32">
-      <div className="px-4 flex items-center justify-between mb-4">
-        <div>
+      <div className="px-4 flex items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-wider text-primary font-semibold">AI SOAP Workspace</p>
-          <h1 className="text-xl font-semibold tracking-tight">Harold Whitaker · Visit 12</h1>
+          <h1 className="text-xl font-semibold tracking-tight truncate">Harold Whitaker · Visit 12</h1>
         </div>
-        <span className="text-[10px] font-medium bg-accent text-accent-foreground rounded-full px-2 py-1">Draft</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <ThemeToggle dark={dark} onToggle={onToggleTheme} />
+          <span className="text-[10px] font-medium bg-accent text-accent-foreground rounded-full px-2 py-1">Draft</span>
+        </div>
       </div>
+
 
       {/* Transcription */}
       <div className="px-4">
