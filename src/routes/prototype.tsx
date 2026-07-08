@@ -108,9 +108,10 @@ function Dashboard() {
         <h2 className="text-sm font-semibold mb-2 px-0.5">Quick actions</h2>
         <div className="grid grid-cols-2 gap-3">
           <QuickAction icon={<FileText size={18} />} label="New SOAP Note" tint="teal" />
-          <QuickAction icon={<UserPlus size={18} />} label="Add Patient" tint="slate" />
+          <QuickAction icon={<UserPlus size={18} />} label="Add Patient" tint="oatmeal" />
           <QuickAction icon={<CalendarPlus size={18} />} label="Book Visit" tint="amber" />
-          <QuickAction icon={<Sparkles size={18} />} label="AI Assistant" tint="violet" />
+          <QuickAction icon={<Sparkles size={18} />} label="AI Assistant" tint="eucalyptus" />
+
         </div>
       </section>
 
