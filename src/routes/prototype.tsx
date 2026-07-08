@@ -795,7 +795,25 @@ const TONE_STYLE = {
 
 function InteractiveFootMap() {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [dictate, setDictate] = useState<SeverityHotspot | null>(null);
+  const [typing, setTyping] = useState(false);
+  const [aiNote, setAiNote] = useState<string | null>(null);
   const active = SEV_HOTSPOTS.find((h) => h.id === openId) || null;
+
+  function startDictation(h: SeverityHotspot) {
+    setDictate(h);
+    setAiNote(null);
+    setTyping(true);
+    window.setTimeout(() => {
+      setTyping(false);
+      setAiNote(
+        `Objective — ${h.label}: On plantar exam, findings consistent with prior visit. ` +
+        `Skin intact surrounding lesion, no purulent discharge or erythema tracking. ` +
+        `Sensation preserved with 10g monofilament. Photo captured; plan updated per protocol.`
+      );
+    }, 1500);
+  }
+
 
   return (
     <div className="relative">
