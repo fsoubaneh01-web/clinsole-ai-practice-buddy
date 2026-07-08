@@ -361,6 +361,7 @@ function Patients({ dark, onToggleTheme }: ScreenProps) {
                       </span>
                     );
                   })}
+                </div>
                 {p.name === "Priya Ramesh" && (
                   <div className="mt-2">
                     <div className="flex items-center justify-between mb-1">
@@ -378,7 +379,6 @@ function Patients({ dark, onToggleTheme }: ScreenProps) {
                     </div>
                   </div>
                 )}
-              </div>
               </div>
               <ChevronRight size={18} className="text-muted-foreground shrink-0" />
             </button>
