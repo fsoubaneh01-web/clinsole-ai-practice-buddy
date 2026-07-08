@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import {
   Activity, Plus, Square, FileText, UserPlus, CalendarPlus, Sparkles,
   Search, Home, Users, Stethoscope, Calendar, Wallet, ChevronRight,
   Camera, X, CheckCircle2, Mic, Edit3, Moon, Sun, Timer, Pause, Play, User,
+  ChevronDown, Flag, Briefcase, Eye,
 } from "lucide-react";
 
 
@@ -160,6 +161,7 @@ function Dashboard({ dark, onToggleTheme, sessionOpen, onToggleSession }: Screen
           </button>
         </div>
       </header>
+      <ShiftBriefing />
 
       <SessionPill open={sessionOpen} onToggle={onToggleSession} />
 
@@ -401,6 +403,11 @@ function PatientDrawer({ patient, onClose }: { patient: (typeof PATIENTS)[number
           </div>
 
           <TimelineWithCalendar compact />
+
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Wound vision · Left heel</h3>
+            <WoundVisionSlider />
+          </div>
 
           <div>
             <h3 className="text-sm font-semibold mb-2">Progress gallery</h3>
@@ -1081,54 +1088,56 @@ function TimelineWithCalendar({ compact = false }: { compact?: boolean }) {
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ type: "spring", stiffness: 260, damping: 26 }}
               >
-                <div className="rounded-2xl bg-card border border-[color:var(--border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:bg-accent/25 active:translate-y-0 active:scale-[0.99] transition overflow-hidden">
-                  <button
-                    onClick={() => setExpanded(isOpen ? null : key)}
-                    className="w-full text-left p-3"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">{t.patient} · {t.title}</p>
-                        <p className="text-[11px] text-muted-foreground">{t.date}</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-semibold text-muted-foreground">{t.progress}%</span>
-                        <motion.span
-                          animate={{ rotate: isOpen ? 180 : 0 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 24 }}
-                          className="h-6 w-6 grid place-items-center rounded-full bg-muted text-muted-foreground"
-                        >
-                          <ChevronRight size={14} className="rotate-90" />
-                        </motion.span>
-                      </div>
-                    </div>
-                    <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${t.progress}%` }}
-                        transition={{ type: "spring", stiffness: 140, damping: 22 }}
-                        className={`h-full rounded-full ${BAR_TONE[t.tone]}`}
-                      />
-                    </div>
-                  </button>
-                  <AnimatePresence initial={false}>
-                    {isOpen && (
-                      <motion.div
-                        key="details"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ type: "spring", stiffness: 260, damping: 28 }}
-                        className="overflow-hidden border-t border-[color:var(--border)] bg-[#F8FAFC]"
-                      >
-                        <div className="p-3 text-xs text-foreground/80 leading-relaxed">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Clinical detail</p>
-                          {t.details}
+                <SwipeCard>
+                  <div className="rounded-2xl bg-card border border-[color:var(--border)] shadow-sm hover:shadow-md hover:bg-accent/25 active:scale-[0.99] transition overflow-hidden">
+                    <button
+                      onClick={() => setExpanded(isOpen ? null : key)}
+                      className="w-full text-left p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate">{t.patient} · {t.title}</p>
+                          <p className="text-[11px] text-muted-foreground">{t.date}</p>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] font-semibold text-muted-foreground">{t.progress}%</span>
+                          <motion.span
+                            animate={{ rotate: isOpen ? 180 : 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                            className="h-6 w-6 grid place-items-center rounded-full bg-muted text-muted-foreground"
+                          >
+                            <ChevronRight size={14} className="rotate-90" />
+                          </motion.span>
+                        </div>
+                      </div>
+                      <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${t.progress}%` }}
+                          transition={{ type: "spring", stiffness: 140, damping: 22 }}
+                          className={`h-full rounded-full ${BAR_TONE[t.tone]}`}
+                        />
+                      </div>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          key="details"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ type: "spring", stiffness: 260, damping: 28 }}
+                          className="overflow-hidden border-t border-[color:var(--border)] bg-[#F8FAFC]"
+                        >
+                          <div className="p-3 text-xs text-foreground/80 leading-relaxed">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Clinical detail</p>
+                            {t.details}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </SwipeCard>
               </motion.li>
             );
           })}
@@ -1137,5 +1146,243 @@ function TimelineWithCalendar({ compact = false }: { compact?: boolean }) {
     </section>
   );
 }
+
+/* ---------------- Swipe reveal card ---------------- */
+function SwipeCard({ children }: { children: React.ReactNode }) {
+  const x = useMotionValue(0);
+  const rightOpacity = useTransform(x, [0, 40, 90], [0, 0.6, 1]);
+  const leftOpacity = useTransform(x, [-90, -40, 0], [1, 0.6, 0]);
+  const [action, setAction] = useState<null | "record" | "flag">(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  return (
+    <div ref={ref} className="relative overflow-hidden rounded-2xl">
+      {/* Right reveal: Quick Record (teal), shown when swiping right */}
+      <motion.div
+        style={{ opacity: rightOpacity }}
+        className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"
+      >
+        <span className="inline-flex items-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-3 py-2 text-xs font-semibold shadow-md">
+          <Mic size={14} /> Quick Record
+        </span>
+      </motion.div>
+      {/* Left reveal: Flag Risk (amber), shown when swiping left */}
+      <motion.div
+        style={{ opacity: leftOpacity }}
+        className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4"
+      >
+        <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#DE8A44] text-white px-3 py-2 text-xs font-semibold shadow-md">
+          <Flag size={14} /> Flag Risk
+        </span>
+      </motion.div>
+
+      <motion.div
+        drag="x"
+        style={{ x }}
+        dragConstraints={{ left: -110, right: 110 }}
+        dragElastic={0.15}
+        onDragEnd={(_, info) => {
+          if (info.offset.x > 70) setAction("record");
+          else if (info.offset.x < -70) setAction("flag");
+          x.set(0);
+          window.setTimeout(() => setAction(null), 1200);
+        }}
+        className="relative touch-pan-y"
+      >
+        {children}
+      </motion.div>
+
+      <AnimatePresence>
+        {action && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className={`pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-md ${
+              action === "record" ? "bg-primary" : "bg-[#DE8A44]"
+            }`}
+          >
+            {action === "record" ? "Recording started" : "Risk flagged"}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ---------------- AI Shift Briefing ---------------- */
+function ShiftBriefing() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full inline-flex items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-gradient-to-r from-[#E0F2FE] via-white to-[#FBEBD9]/60 px-3.5 py-2.5 shadow-sm hover:shadow-md transition"
+      >
+        <span className="inline-flex items-center gap-2 min-w-0">
+          <span className="h-7 w-7 shrink-0 rounded-xl bg-primary/15 text-primary grid place-items-center">
+            <Briefcase size={14} />
+          </span>
+          <span className="min-w-0 text-left">
+            <span className="block text-[10px] uppercase tracking-wider text-primary font-semibold leading-none">
+              <Sparkles size={10} className="inline -mt-0.5 mr-1" />AI Shift Briefing
+            </span>
+            <span className="block text-[11px] text-muted-foreground truncate mt-0.5">
+              Tap to view today's optimized plan
+            </span>
+          </span>
+        </span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} className="shrink-0 text-muted-foreground">
+          <ChevronDown size={16} />
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="briefing"
+            initial={{ opacity: 0, height: 0, y: -4 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -4 }}
+            transition={{ type: "spring", stiffness: 260, damping: 28 }}
+            className="overflow-hidden"
+          >
+            <div className="relative mt-2 overflow-hidden rounded-2xl border border-white/50 p-4 shadow-card"
+              style={{
+                background: "linear-gradient(135deg, rgba(14,165,233,0.85), rgba(15,23,42,0.85))",
+                backdropFilter: "blur(18px) saturate(140%)",
+              }}
+            >
+              <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
+              <div className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-[#DE8A44]/40 blur-3xl" />
+              <div className="relative">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/80 font-semibold">Today · At a glance</p>
+                <ul className="mt-2.5 space-y-2 text-sm text-white leading-snug">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#FBEBD9]" />
+                    <span><span className="font-semibold">3 high-risk diabetic</span> assessments queued.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#E0F2FE]" />
+                    <span>Total travel time optimized to <span className="font-semibold">18 mins</span>.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-white" />
+                    <span><span className="font-semibold">12 mins</span> avg charting time saved per patient.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ---------------- Wound Vision Before/After slider ---------------- */
+function WoundVisionSlider() {
+  const [pct, setPct] = useState(52);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const setFromClientX = useCallback((clientX: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const p = ((clientX - rect.left) / rect.width) * 100;
+    setPct(Math.max(2, Math.min(98, p)));
+  }, []);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    setFromClientX(e.clientX);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (e.buttons === 0) return;
+    setFromClientX(e.clientX);
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      className="relative w-full h-56 rounded-2xl overflow-hidden border border-[color:var(--border)] shadow-card select-none touch-none cursor-ew-resize bg-black"
+    >
+      {/* BEFORE (base layer) — inflamed wound */}
+      <div className="absolute inset-0">
+        <WoundImage variant="before" />
+        <span className="absolute top-2 left-2 rounded-full bg-black/55 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-white tracking-wider">
+          BEFORE · Wk 1
+        </span>
+      </div>
+
+      {/* AFTER (clipped overlay on the right) */}
+      <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${pct}%)` }}>
+        <WoundImage variant="after" />
+        <span className="absolute top-2 right-2 rounded-full bg-primary/85 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-white tracking-wider">
+          AFTER · Wk 6
+        </span>
+      </div>
+
+      {/* AI badge */}
+      <span className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-white/25 backdrop-blur-md border border-white/40 px-2.5 py-1 text-[10px] font-semibold text-white shadow-md">
+        <Eye size={11} /> AI Vision: Area reduced by 14%
+      </span>
+
+      {/* Divider + handle */}
+      <div
+        className="absolute inset-y-0 w-0.5 bg-white/90 shadow-[0_0_12px_rgba(255,255,255,0.7)] pointer-events-none"
+        style={{ left: `${pct}%` }}
+      />
+      <div
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-9 w-9 rounded-full bg-white shadow-lg border border-white grid place-items-center pointer-events-none"
+        style={{ left: `${pct}%` }}
+      >
+        <div className="flex items-center gap-0.5 text-[#0F172A]">
+          <ChevronRight size={12} className="rotate-180" />
+          <ChevronRight size={12} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WoundImage({ variant }: { variant: "before" | "after" }) {
+  // Stylized SVG "photo" of a foot heel with a wound. Before = larger/red, After = smaller/pink.
+  const woundColor = variant === "before" ? "#7A1F1F" : "#B36A6A";
+  const haloColor = variant === "before" ? "#DC2626" : "#DE8A44";
+  const woundR = variant === "before" ? 22 : 14;
+  const haloR = variant === "before" ? 34 : 22;
+  return (
+    <svg viewBox="0 0 300 220" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
+      <defs>
+        <radialGradient id={`skin-bg-${variant}`} cx="50%" cy="45%" r="75%">
+          <stop offset="0%" stopColor="#F4C9A6" />
+          <stop offset="70%" stopColor="#E1A278" />
+          <stop offset="100%" stopColor="#8A4E2E" />
+        </radialGradient>
+        <radialGradient id={`wound-${variant}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={woundColor} stopOpacity="0.95" />
+          <stop offset="100%" stopColor={woundColor} stopOpacity="0.2" />
+        </radialGradient>
+      </defs>
+      <rect width="300" height="220" fill={`url(#skin-bg-${variant})`} />
+      {/* skin texture streaks */}
+      <g opacity="0.25" stroke="#8A4E2E" strokeWidth="0.6" fill="none">
+        <path d="M0 60 Q 150 40 300 70" />
+        <path d="M0 110 Q 150 95 300 120" />
+        <path d="M0 160 Q 150 145 300 170" />
+      </g>
+      {/* halo / erythema */}
+      <circle cx="150" cy="110" r={haloR + 12} fill={haloColor} opacity="0.18" />
+      <circle cx="150" cy="110" r={haloR} fill={haloColor} opacity="0.32" />
+      {/* wound */}
+      <circle cx="150" cy="110" r={woundR} fill={`url(#wound-${variant})`} />
+      <circle cx="150" cy="110" r={woundR * 0.55} fill={woundColor} opacity="0.85" />
+    </svg>
+  );
+}
+
 
 
