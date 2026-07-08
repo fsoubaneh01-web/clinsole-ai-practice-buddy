@@ -146,12 +146,12 @@ function Waveform() {
   );
 }
 
-function QuickAction({ icon, label, tint }: { icon: React.ReactNode; label: string; tint: "teal" | "slate" | "amber" | "violet" }) {
+function QuickAction({ icon, label, tint }: { icon: React.ReactNode; label: string; tint: "teal" | "eucalyptus" | "amber" | "oatmeal" }) {
   const tints = {
-    teal: "bg-[oklch(0.94_0.05_195)] text-primary",
-    slate: "bg-[oklch(0.94_0.02_230)] text-[oklch(0.35_0.05_230)]",
-    amber: "bg-[oklch(0.95_0.06_75)] text-[oklch(0.45_0.12_65)]",
-    violet: "bg-[oklch(0.94_0.05_290)] text-[oklch(0.45_0.15_290)]",
+    teal: "bg-[color:var(--accent)] text-primary",
+    eucalyptus: "bg-[#E6F2EC] text-[#2E7D32]",
+    amber: "bg-[#FBEBD9] text-[#DE8A44]",
+    oatmeal: "bg-[#F5F1E8] text-[oklch(0.35_0.03_60)]",
   }[tint];
   return (
     <button className="rounded-2xl bg-card border border-[color:var(--border)] p-3.5 text-left shadow-card hover:-translate-y-0.5 active:translate-y-0 transition">
