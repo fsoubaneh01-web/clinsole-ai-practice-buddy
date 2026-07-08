@@ -1420,3 +1420,33 @@ function WoundImage({ variant }: { variant: "before" | "after" }) {
 
 
 
+
+/* ---------------- Dictating Notes tooltip ---------------- */
+function DictatingTooltip() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, type: "spring", stiffness: 260, damping: 24 }}
+      className="pointer-events-none absolute -top-3 right-4 z-10"
+    >
+      <div className="relative inline-flex items-center gap-1.5 rounded-full bg-[#0F172A] text-white pl-2 pr-2.5 py-1 shadow-lg">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inset-0 rounded-full bg-primary opacity-70 animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+        </span>
+        <span className="text-[10px] font-semibold tracking-wide">Dictating notes</span>
+        <span className="inline-flex items-end gap-[2px]">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="h-1 w-1 rounded-full bg-white/80"
+              style={{ animation: `wave 0.9s ease-in-out ${i * 150}ms infinite alternate` }}
+            />
+          ))}
+        </span>
+        <span className="absolute -bottom-1 right-4 h-2 w-2 rotate-45 bg-[#0F172A]" />
+      </div>
+    </motion.div>
+  );
+}
