@@ -4,8 +4,9 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   Activity, Plus, Square, FileText, UserPlus, CalendarPlus, Sparkles,
   Search, Home, Users, Stethoscope, Calendar, Wallet, ChevronRight,
-  Camera, X, CheckCircle2, Mic, Edit3, Moon, Sun, Timer,
+  Camera, X, CheckCircle2, Mic, Edit3, Moon, Sun, Timer, Bell, Pause, Play, User,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/prototype")({
   head: () => ({
