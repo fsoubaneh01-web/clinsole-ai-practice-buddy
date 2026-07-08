@@ -733,13 +733,19 @@ const TONE_STYLE = {
   amber: { fill: "#DE8A44", glow: "rgba(222,138,68,0.35)" },
 } as const;
 
+function FootGroup({ flip, children }: { flip: boolean; children: React.ReactNode }) {
+  return <g transform={flip ? "translate(100,0) scale(-1,1)" : undefined}>{children}</g>;
+}
+
 function InteractiveFootMap() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [dictate, setDictate] = useState<SeverityHotspot | null>(null);
   const [typing, setTyping] = useState(false);
   const [aiNote, setAiNote] = useState<string | null>(null);
-  const [anatomy, setAnatomy] = useState(true);
+  const [showAnatomy, setShowAnatomy] = useState<boolean>(true);
   const active = SEV_HOTSPOTS.find((h) => h.id === openId) || null;
+
+  const toggleAnatomy = useCallback(() => setShowAnatomy((v) => !v), []);
 
   function startDictation(h: SeverityHotspot) {
     setDictate(h);
@@ -761,15 +767,15 @@ function InteractiveFootMap() {
       <div className="mb-2 flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Plantar anatomy</p>
         <button
-          onClick={() => setAnatomy((v) => !v)}
+          onClick={toggleAnatomy}
           className={`text-[10px] font-semibold rounded-full border px-2 py-0.5 transition ${
-            anatomy
+            showAnatomy
               ? "bg-primary/10 text-primary border-primary/30"
               : "bg-card text-muted-foreground border-[color:var(--border)]"
           }`}
-          aria-pressed={anatomy}
+          aria-pressed={showAnatomy}
         >
-          {anatomy ? "Anatomy · On" : "Anatomy · Off"}
+          {showAnatomy ? "Anatomy · On" : "Anatomy · Off"}
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -786,57 +792,46 @@ function InteractiveFootMap() {
                   <stop offset="100%" stopColor="#F5CDA8" />
                 </linearGradient>
               </defs>
-              {(() => {
-                // Mirror for left foot so hallux (big toe) sits on the medial side.
-                const flip = side === "L";
-                const Group = ({ children }: { children: React.ReactNode }) => (
-                  <g transform={flip ? "translate(100,0) scale(-1,1)" : undefined}>{children}</g>
-                );
-                return (
-                  <Group>
-                    {/* Sole outline: heel (bottom) → lateral → ball → toes → medial arch → heel */}
-                    <path
-                      d="M 50 192
-                         C 32 192 22 180 22 164
-                         C 22 150 20 138 22 126
-                         C 24 112 26 100 30 88
-                         C 32 78 34 68 40 60
-                         C 46 52 50 46 56 44
-                         C 66 42 74 46 78 54
-                         C 82 62 82 74 80 84
-                         C 78 94 74 104 72 116
-                         C 70 128 72 142 74 156
-                         C 76 172 68 192 50 192 Z"
-                      fill={`url(#skin-${side})`}
-                      stroke="#C99976"
-                      strokeWidth="1.2"
-                      strokeLinejoin="round"
-                    />
-                    {/* Toes: hallux (big) + D2–D5 descending */}
-                    <ellipse cx="58" cy="28" rx="10" ry="12" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
-                    <ellipse cx="74" cy="34" rx="5.5" ry="7" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
-                    <ellipse cx="83" cy="42" rx="4.8" ry="6" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
-                    <ellipse cx="89" cy="52" rx="4.2" ry="5.2" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
-                    <ellipse cx="92" cy="63" rx="3.6" ry="4.6" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
-                    {/* Arch shading */}
-                    <path
-                      d="M 34 118 C 44 112 56 112 66 118 C 60 132 58 148 60 162 C 50 168 42 166 36 158 C 30 146 30 132 34 118 Z"
-                      fill="#F0BE96"
-                      opacity="0.55"
-                    />
-                    {anatomy && (
-                      <g>
-                        <g stroke="#0F172A" strokeWidth="0.4" strokeDasharray="1.5 1.5" opacity="0.35" fill="none">
-                          <path d="M28 74 Q 55 70 82 78" />
-                          <path d="M26 108 Q 55 104 80 112" />
-                          <path d="M28 158 Q 55 154 78 160" />
-                        </g>
-                      </g>
-                    )}
-                  </Group>
-                );
-              })()}
-              {anatomy && (
+              <FootGroup flip={side === "L"}>
+                {/* Sole outline: heel (bottom) → lateral → ball → toes → medial arch → heel */}
+                <path
+                  d="M 50 192
+                     C 32 192 22 180 22 164
+                     C 22 150 20 138 22 126
+                     C 24 112 26 100 30 88
+                     C 32 78 34 68 40 60
+                     C 46 52 50 46 56 44
+                     C 66 42 74 46 78 54
+                     C 82 62 82 74 80 84
+                     C 78 94 74 104 72 116
+                     C 70 128 72 142 74 156
+                     C 76 172 68 192 50 192 Z"
+                  fill={`url(#skin-${side})`}
+                  stroke="#C99976"
+                  strokeWidth="1.2"
+                  strokeLinejoin="round"
+                />
+                {/* Toes: hallux (big) + D2–D5 descending */}
+                <ellipse cx="58" cy="28" rx="10" ry="12" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                <ellipse cx="74" cy="34" rx="5.5" ry="7" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                <ellipse cx="83" cy="42" rx="4.8" ry="6" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                <ellipse cx="89" cy="52" rx="4.2" ry="5.2" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                <ellipse cx="92" cy="63" rx="3.6" ry="4.6" fill={`url(#skin-${side})`} stroke="#C99976" strokeWidth="1" />
+                {/* Arch shading */}
+                <path
+                  d="M 34 118 C 44 112 56 112 66 118 C 60 132 58 148 60 162 C 50 168 42 166 36 158 C 30 146 30 132 34 118 Z"
+                  fill="#F0BE96"
+                  opacity="0.55"
+                />
+                <g style={{ opacity: showAnatomy ? 1 : 0, transition: "opacity 0.2s ease" }}>
+                  <g stroke="#0F172A" strokeWidth="0.4" strokeDasharray="1.5 1.5" opacity="0.35" fill="none">
+                    <path d="M28 74 Q 55 70 82 78" />
+                    <path d="M26 108 Q 55 104 80 112" />
+                    <path d="M28 158 Q 55 154 78 160" />
+                  </g>
+                </g>
+              </FootGroup>
+              <g style={{ opacity: showAnatomy ? 1 : 0, transition: "opacity 0.2s ease" }}>
                 <g fill="#0F172A" fontSize="4.4" fontWeight="600" opacity="0.75" textAnchor="middle" style={{ fontFamily: "inherit" }}>
                   <text x={side === "L" ? 42 : 58} y="26">Hallux</text>
                   <text x={side === "L" ? 12 : 88} y="55">D5</text>
@@ -846,7 +841,7 @@ function InteractiveFootMap() {
                   <text x="50" y="140">Arch</text>
                   <text x="50" y="182">Heel</text>
                 </g>
-              )}
+              </g>
             </svg>
             {SEV_HOTSPOTS.filter((h) => h.side === side).map((h) => {
               const t = TONE_STYLE[h.tone];
