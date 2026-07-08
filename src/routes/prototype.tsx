@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import {
   Activity, Plus, Square, FileText, UserPlus, CalendarPlus, Sparkles,
   Search, Home, Users, Stethoscope, Calendar, Wallet, ChevronRight,
   Camera, X, CheckCircle2, Mic, Edit3, Moon, Sun, Timer, Pause, Play, User,
+  ChevronDown, Flag, Briefcase, Eye,
 } from "lucide-react";
 
 
