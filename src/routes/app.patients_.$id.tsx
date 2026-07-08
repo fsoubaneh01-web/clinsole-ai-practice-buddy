@@ -11,10 +11,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useStore, type DiabetesStatus } from "@/lib/store";
+import { useStore, type DiabetesStatus, type FootAssessment, summarizeAssessment } from "@/lib/store";
 import { format } from "date-fns";
-import { ArrowLeft, CalendarPlus, ClipboardPlus, Mail, MapPin, Pencil, Phone, ShieldAlert, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, CalendarPlus, ClipboardPlus, Footprints, Mail, MapPin, Pencil, Phone, ShieldAlert, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/patients_/$id")({ component: PatientProfile });
@@ -22,8 +22,9 @@ export const Route = createFileRoute("/app/patients_/$id")({ component: PatientP
 function PatientProfile() {
   const { id } = Route.useParams();
   const nav = useNavigate();
-  const { patients, ageOf, updatePatient, deletePatient } = useStore();
+  const { patients, ageOf, updatePatient, deletePatient, footAssessments, deleteFootAssessment } = useStore();
   const p = patients.find((x) => x.id === id);
+  const patientAssessments = footAssessments.filter((a) => a.patientId === id);
   const [editing, setEditing] = useState(false);
   if (!p) throw notFound();
 
