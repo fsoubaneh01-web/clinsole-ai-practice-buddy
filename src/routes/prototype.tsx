@@ -89,10 +89,11 @@ function InsightsRow() {
 
 function InsightBadge({ icon, label, tone }: { icon: React.ReactNode; label: string; tone: "teal" | "eucalyptus" | "amber" }) {
   const tones = {
-    teal: "bg-[color:var(--accent)] text-primary",
-    eucalyptus: "bg-[#E6F2EC] text-[#2E7D32]",
+    teal: "bg-[#E0F2FE] text-[#0369A1]",
+    eucalyptus: "bg-[#DBEAFE] text-[#0F172A]",
     amber: "bg-[#FBEBD9] text-[#DE8A44]",
   }[tone];
+
   return (
     <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm ${tones}`}>
       {icon} {label}
@@ -219,11 +220,12 @@ function Waveform() {
 
 function QuickAction({ icon, label, tint }: { icon: React.ReactNode; label: string; tint: "teal" | "eucalyptus" | "amber" | "oatmeal" }) {
   const tints = {
-    teal: "bg-[color:var(--accent)] text-primary",
-    eucalyptus: "bg-[#E6F2EC] text-[#2E7D32]",
+    teal: "bg-[#E0F2FE] text-[#0369A1]",
+    eucalyptus: "bg-[#DBEAFE] text-[#0F172A]",
     amber: "bg-[#FBEBD9] text-[#DE8A44]",
-    oatmeal: "bg-[#F5F1E8] text-[oklch(0.35_0.03_60)]",
+    oatmeal: "bg-[#F1F5F9] text-[#0F172A]",
   }[tint];
+
   return (
     <button className="rounded-2xl bg-card border border-[color:var(--border)] p-3.5 text-left shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition">
       <div className={`h-10 w-10 rounded-xl grid place-items-center ${tints}`}>{icon}</div>

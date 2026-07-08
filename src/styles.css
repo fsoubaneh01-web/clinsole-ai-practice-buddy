@@ -45,54 +45,55 @@
 :root {
   --radius: 1rem;
 
-  /* Organic Care palette
-     Primary Teal #099292 · Eucalyptus #2E7D32
-     Almond/Oatmeal canvas #FDFBF7 · White cards #FFFFFF · Warm Amber #DE8A44 */
+  /* Deep Healing palette
+     Primary Teal #0EA5E9 · Midnight Navy #0F172A
+     Canvas #F8FAFC · White cards #FFFFFF · Warm Amber #DE8A44 */
 
-  --background: #FDFBF7;
-  --foreground: oklch(0.24 0.02 60);
+  --background: #F8FAFC;
+  --foreground: #0F172A;
 
   --surface: #FFFFFF;
-  --surface-muted: #F5F1E8;
+  --surface-muted: #F1F5F9;
 
   --card: #FFFFFF;
-  --card-foreground: oklch(0.24 0.02 60);
+  --card-foreground: #0F172A;
   --popover: #FFFFFF;
-  --popover-foreground: oklch(0.24 0.02 60);
+  --popover-foreground: #0F172A;
 
-  /* Primary Teal #099292 */
-  --primary: #099292;
+  /* Primary Teal #0EA5E9 */
+  --primary: #0EA5E9;
   --primary-foreground: #FFFFFF;
 
-  /* Eucalyptus #2E7D32 for active/confirm */
-  --secondary: #2E7D32;
+  /* Midnight Navy for secondary/enterprise contrast */
+  --secondary: #0F172A;
   --secondary-foreground: #FFFFFF;
 
-  --muted: #F5F1E8;
-  --muted-foreground: oklch(0.5 0.02 70);
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
 
-  --accent: #E6F2EC;
-  --accent-foreground: #2E7D32;
+  --accent: #E0F2FE;
+  --accent-foreground: #0369A1;
 
-  --destructive: oklch(0.58 0.2 25);
+  --destructive: #DC2626;
   --destructive-foreground: #FFFFFF;
 
-  --success: #2E7D32;
+  --success: #059669;
   --success-foreground: #FFFFFF;
 
   /* Warm Amber #DE8A44 for alerts/risk */
   --warning: #DE8A44;
   --warning-foreground: #FFFFFF;
 
-  --border: oklch(0.9 0.012 75);
-  --input: oklch(0.93 0.012 75);
-  --ring: #099292;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #0EA5E9;
 
-  --gradient-primary: linear-gradient(135deg, #099292 0%, #2E7D32 100%);
-  --gradient-hero: linear-gradient(160deg, #099292 0%, #0B6B6B 55%, #2E7D32 100%);
+  --gradient-primary: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+  --gradient-hero: linear-gradient(160deg, #0EA5E9 0%, #0369A1 55%, #0F172A 100%);
 
-  --shadow-card: 0 1px 2px oklch(0.3 0.03 60 / 0.04), 0 8px 24px -12px oklch(0.3 0.05 60 / 0.10);
-  --shadow-soft: 0 2px 8px -2px oklch(0.3 0.03 60 / 0.08);
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
+  --shadow-soft: 0 2px 8px -2px rgb(15 23 42 / 0.08);
+
 }
 
 .dark {
