@@ -1,16 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Container } from "@/components/AppShell";
 import { useStore, PLAN_LIMITS } from "@/lib/store";
-import { Calendar, Users, FileText, TrendingUp, ChevronRight, ClipboardPlus, Crown, Sparkles } from "lucide-react";
-import { format, isToday, isFuture } from "date-fns";
+import { Calendar, Users, FileText, TrendingUp, ChevronRight, ClipboardPlus, Crown, Sparkles, Bell } from "lucide-react";
+import { format, isToday, isFuture, isPast, addDays } from "date-fns";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
 function Dashboard() {
   const { nurse, patients, appointments, transactions } = useStore();
+  const now = new Date();
+  const in7 = addDays(now, 7);
   const today = appointments.filter((a) => isToday(new Date(a.date))).sort((a, b) => a.date.localeCompare(b.date));
-  const upcomingFU = patients.filter((p) => p.nextFollowUp && isFuture(new Date(p.nextFollowUp))).slice(0, 4);
-  const notesToDo = Math.max(0, today.length - 1);
+  const upcoming = appointments
+    .filter((a) => { const d = new Date(a.date); return d > now && !isToday(d); })
+    .slice(0, 5);
+  const expectedRevenue = appointments
+    .filter((a) => { const d = new Date(a.date); return d >= now && d <= in7; })
+    .reduce((s, a) => s + (a.expectedFee || 0), 0);
+  const followUpsDue = patients
+    .filter((p) => p.nextFollowUp && (isPast(new Date(p.nextFollowUp)) || new Date(p.nextFollowUp) <= in7))
+    .sort((a, b) => (a.nextFollowUp || "").localeCompare(b.nextFollowUp || ""));
+  const upcomingFU = followUpsDue.slice(0, 5);
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
   const revenue = transactions
     .filter((t) => t.type === "income" && new Date(t.date) >= monthStart)
@@ -46,10 +56,11 @@ function Dashboard() {
 
         <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
           <Stat icon={Calendar} label="Today's visits" value={today.length} tint="primary" />
-          <Stat icon={Users} label="Total patients" value={patients.length} tint="accent" />
-          <Stat icon={FileText} label="Notes to complete" value={notesToDo} tint="warning" />
-          <Stat icon={TrendingUp} label="This month" value={`$${revenue.toLocaleString()}`} tint="success" />
+          <Stat icon={Users} label="Follow-ups due" value={followUpsDue.length} tint="warning" />
+          <Stat icon={TrendingUp} label="Expected (7d)" value={`$${expectedRevenue.toLocaleString()}`} tint="accent" />
+          <Stat icon={FileText} label="This month" value={`$${revenue.toLocaleString()}`} tint="success" />
         </div>
+
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
           <Section title="Today's schedule" href="/app/calendar" className="lg:col-span-2">
