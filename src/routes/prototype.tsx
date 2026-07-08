@@ -361,7 +361,24 @@ function Patients({ dark, onToggleTheme }: ScreenProps) {
                       </span>
                     );
                   })}
-                </div>
+                {p.name === "Priya Ramesh" && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Care plan</span>
+                      <span className="text-[10px] font-semibold text-primary">5 / 6 visits</span>
+                    </div>
+                    <div className="relative h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: "83%" }}
+                        transition={{ type: "spring", stiffness: 90, damping: 20, delay: 0.2 }}
+                        className="h-full rounded-full bg-gradient-to-r from-primary to-[#0369A1]"
+                      />
+                      <span className="absolute right-[17%] top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_8px_rgba(14,165,233,0.9)] animate-pulse" />
+                    </div>
+                  </div>
+                )}
+              </div>
               </div>
               <ChevronRight size={18} className="text-muted-foreground shrink-0" />
             </button>
