@@ -228,8 +228,10 @@ function Dashboard({ dark, onToggleTheme, setTab, sessionOpen, onToggleSession }
         </div>
       </section>
 
-      {/* Care timeline */}
-      <CareTimeline />
+      {/* Care timeline with day filter */}
+      <TimelineWithCalendar />
+
+
 
 
       {/* Quick actions */}
