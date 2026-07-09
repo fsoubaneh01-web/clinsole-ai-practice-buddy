@@ -8,6 +8,7 @@ import {
   ChevronDown, Flag, Briefcase, Eye,
   Lock, Wifi, WifiOff, ScanFace, Printer, Send, Download,
 } from "lucide-react";
+import { ClinicalDashboard } from "@/components/prototype/ClinicalDashboard";
 
 
 export const Route = createFileRoute("/prototype")({
@@ -53,7 +54,7 @@ function Prototype() {
   };
 
   const screens: Record<Tab, React.ReactNode> = {
-    dashboard: <Dashboard {...shared} />,
+    dashboard: <ClinicalDashboard />,
     patients: <Patients {...shared} />,
     soap: <SoapWorkspace {...shared} />,
     schedule: <Placeholder title="Schedule" subtitle="Upcoming visits and route planning" />,

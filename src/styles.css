@@ -91,6 +91,18 @@
   --gradient-primary: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
   --gradient-hero: linear-gradient(160deg, #0EA5E9 0%, #0369A1 55%, #0F172A 100%);
 
+  /* ClinSole clinical palette */
+  --clin-purple: #5B4BDB;
+  --clin-purple-soft: #EEEBFB;
+  --clin-blue: #3F8CFF;
+  --clin-blue-soft: #E5F0FF;
+  --clin-teal: #2CB1A1;
+  --clin-teal-soft: #DDF3EF;
+  --clin-amber: #F5A524;
+  --clin-red: #E5484D;
+  --gradient-clin: linear-gradient(135deg, #5B4BDB 0%, #3F8CFF 100%);
+
+
   --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
   --shadow-soft: 0 2px 8px -2px rgb(15 23 42 / 0.08);
 
