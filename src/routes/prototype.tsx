@@ -54,7 +54,7 @@ function Prototype() {
   };
 
   const screens: Record<Tab, React.ReactNode> = {
-    dashboard: <Dashboard {...shared} />,
+    dashboard: <ClinicalDashboard />,
     patients: <Patients {...shared} />,
     soap: <SoapWorkspace {...shared} />,
     schedule: <Placeholder title="Schedule" subtitle="Upcoming visits and route planning" />,
