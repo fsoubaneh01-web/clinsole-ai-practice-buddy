@@ -8,6 +8,7 @@ import {
   ChevronDown, Flag, Briefcase, Eye,
   Lock, Wifi, WifiOff, ScanFace, Printer, Send, Download,
 } from "lucide-react";
+import { ClinicalDashboard } from "@/components/prototype/ClinicalDashboard";
 
 
 export const Route = createFileRoute("/prototype")({
