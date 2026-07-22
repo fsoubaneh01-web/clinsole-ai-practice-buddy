@@ -43,70 +43,65 @@
 }
 
 :root {
-  --radius: 1rem;
+  --radius: 1.25rem;
 
-  /* Deep Healing palette
-     Primary Teal #0EA5E9 · Midnight Navy #0F172A
-     Canvas #F8FAFC · White cards #FFFFFF · Warm Amber #DE8A44 */
+  /* ClinSole AI — Premium clinical palette
+     Primary purple #6C4CF1 · Teal secondary #20C4B4
+     Canvas #F8F9FC · White cards · Amber alerts */
 
-  --background: #F8FAFC;
+  --background: #F8F9FC;
   --foreground: #0F172A;
 
   --surface: #FFFFFF;
-  --surface-muted: #F1F5F9;
+  --surface-muted: #F1F3F9;
 
   --card: #FFFFFF;
   --card-foreground: #0F172A;
   --popover: #FFFFFF;
   --popover-foreground: #0F172A;
 
-  /* Primary Teal #0EA5E9 */
-  --primary: #0EA5E9;
+  --primary: #6C4CF1;
   --primary-foreground: #FFFFFF;
 
-  /* Midnight Navy for secondary/enterprise contrast */
-  --secondary: #0F172A;
+  --secondary: #20C4B4;
   --secondary-foreground: #FFFFFF;
 
-  --muted: #F1F5F9;
+  --muted: #F1F3F9;
   --muted-foreground: #64748B;
 
-  --accent: #E0F2FE;
-  --accent-foreground: #0369A1;
+  --accent: #EEEBFB;
+  --accent-foreground: #4B34C9;
 
-  --destructive: #DC2626;
+  --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
-  --success: #059669;
+  --success: #10B981;
   --success-foreground: #FFFFFF;
 
-  /* Warm Amber #DE8A44 for alerts/risk */
-  --warning: #DE8A44;
+  --warning: #F59E0B;
   --warning-foreground: #FFFFFF;
 
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #0EA5E9;
+  --border: #E6E8F0;
+  --input: #E6E8F0;
+  --ring: #6C4CF1;
 
-  --gradient-primary: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
-  --gradient-hero: linear-gradient(160deg, #0EA5E9 0%, #0369A1 55%, #0F172A 100%);
+  --gradient-primary: linear-gradient(135deg, #6C4CF1 0%, #8B6FFF 100%);
+  --gradient-hero: linear-gradient(140deg, #6C4CF1 0%, #4B34C9 60%, #20C4B4 120%);
 
-  /* ClinSole clinical palette */
-  --clin-purple: #5B4BDB;
+  --clin-purple: #6C4CF1;
   --clin-purple-soft: #EEEBFB;
   --clin-blue: #3F8CFF;
   --clin-blue-soft: #E5F0FF;
-  --clin-teal: #2CB1A1;
-  --clin-teal-soft: #DDF3EF;
-  --clin-amber: #F5A524;
-  --clin-red: #E5484D;
-  --gradient-clin: linear-gradient(135deg, #5B4BDB 0%, #3F8CFF 100%);
+  --clin-teal: #20C4B4;
+  --clin-teal-soft: #DBF6F2;
+  --clin-amber: #F59E0B;
+  --clin-red: #EF4444;
+  --gradient-clin: linear-gradient(135deg, #6C4CF1 0%, #20C4B4 100%);
 
-
-  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
-  --shadow-soft: 0 2px 8px -2px rgb(15 23 42 / 0.08);
-
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 12px 32px -14px rgb(76 60 180 / 0.18);
+  --shadow-soft: 0 2px 10px -2px rgb(15 23 42 / 0.06);
 }
+
 
 .dark {
   --background: oklch(0.18 0.02 220);
