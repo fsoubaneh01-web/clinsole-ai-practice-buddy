@@ -416,6 +416,37 @@ export function FootAssessmentModule({
               </div>
             )}
 
+            {/* Clinical quick-assess: Pain · Skin · Callus */}
+            <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border bg-surface p-3 sm:grid-cols-3">
+              <FieldGroup label="Pain">
+                <div className="flex flex-wrap gap-1">
+                  {PAIN_LEVELS.map((p) => (
+                    <Chip key={p} active={pain === p} onClick={() => setPain(pain === p ? undefined : p)}>
+                      {p}
+                    </Chip>
+                  ))}
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Skin">
+                <div className="flex flex-wrap gap-1">
+                  {SKIN_OPTIONS.map((s) => (
+                    <Chip key={s} active={skin.includes(s)} onClick={() => toggleSkin(s)}>
+                      {s}
+                    </Chip>
+                  ))}
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Callus">
+                <div className="flex flex-wrap gap-1">
+                  {CALLUS_LEVELS.map((c) => (
+                    <Chip key={c} active={callus === c} onClick={() => setCallus(callus === c ? undefined : c)}>
+                      {c}
+                    </Chip>
+                  ))}
+                </div>
+              </FieldGroup>
+            </div>
+
             {/* Wound measurements */}
             <div className="mt-3 rounded-xl border bg-surface p-3">
               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
