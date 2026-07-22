@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { format, addDays } from "date-fns";
 import {
   Play, User, Footprints, Camera, Mic, FileText, DollarSign,
   BookOpen, CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight,
-  Loader2, Sparkles, X, Image as ImageIcon, Check,
+  Loader2, Sparkles, X, Image as ImageIcon, Check, Printer,
 } from "lucide-react";
 import { toast } from "sonner";
+
 
 import { AppShell, Container } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,45 @@ function VisitFlow() {
   const patient = patients.find((p) => p.id === pid);
   const latestAssessment = pid ? latestAssessmentFor(pid) : undefined;
 
+  // Auto-save draft per patient so nurses can move back/forward and resume.
+  const draftKey = pid ? `clinsole-visit-draft-${pid}` : null;
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (!draftKey || hydrated.current) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.stepIdx != null) setStepIdx(d.stepIdx);
+        if (d.observations) setObservations(d.observations);
+        if (d.dictation) setDictation(d.dictation);
+        if (d.soap) setSoap(d.soap);
+        if (d.fee) setFee(d.fee);
+        if (d.paymentMethod) setPaymentMethod(d.paymentMethod);
+        if (d.selectedTopics) setSelectedTopics(d.selectedTopics);
+        if (d.followupDate) setFollowupDate(d.followupDate);
+        if (d.followupTime) setFollowupTime(d.followupTime);
+        if (d.followupType) setFollowupType(d.followupType);
+        if (d.visitStartedAt) setVisitStartedAt(d.visitStartedAt);
+        toast.info("Resumed visit draft");
+      }
+    } catch {}
+    hydrated.current = true;
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftKey || !hydrated.current) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({
+        stepIdx, observations, dictation, soap, fee, paymentMethod,
+        selectedTopics, followupDate, followupTime, followupType, visitStartedAt,
+      }));
+    } catch {}
+  }, [draftKey, stepIdx, observations, dictation, soap, fee, paymentMethod,
+      selectedTopics, followupDate, followupTime, followupType, visitStartedAt]);
+
+  const progressPct = Math.round((stepIdx / (STEPS.length - 1)) * 100);
+
   const canAdvance = useMemo(() => {
     if (step.id === "start") return !!pid;
     if (step.id === "soap") return !!soap;
@@ -92,6 +132,60 @@ function VisitFlow() {
   const next = () => setStepIdx((i) => Math.min(i + 1, STEPS.length - 1));
   const prev = () => setStepIdx((i) => Math.max(i - 1, 0));
   const goto = (i: number) => setStepIdx(i);
+
+  const printSummary = () => {
+    if (!patient) return;
+    const w = window.open("", "_blank", "width=900,height=1000");
+    if (!w) return toast.error("Enable pop-ups to print the summary.");
+    const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
+    const obsRows = observations.map((o) =>
+      `<tr><td>${o.side === "L" ? "Left" : "Right"} ${esc(o.regionLabel)}</td><td>${esc(o.text || "—")}</td><td>${o.pain || "—"}</td></tr>`
+    ).join("") || `<tr><td colspan="3" style="color:#888">No findings recorded</td></tr>`;
+    const edu = EDUCATION_TOPICS.filter((t) => selectedTopics.includes(t.id))
+      .map((t) => `<li><strong>${esc(t.title)}</strong> — ${esc(t.body)}</li>`).join("");
+    const soapBlock = soap ? `
+      <h3>SOAP Note</h3>
+      <p><strong>Subjective:</strong> ${esc(soap.s)}</p>
+      <p><strong>Objective:</strong> ${esc(soap.o)}</p>
+      <p><strong>Assessment:</strong> ${esc(soap.a)}</p>
+      <p><strong>Plan:</strong> ${esc(soap.p)}</p>` : "";
+    const fu = format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d yyyy · HH:mm");
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Visit Summary — ${esc(patient.name)}</title>
+      <style>
+        body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111;max-width:780px;margin:32px auto;padding:0 24px}
+        h1{font-size:22px;margin:0 0 4px} h2{font-size:16px;margin:24px 0 8px;padding-bottom:4px;border-bottom:1px solid #ddd}
+        h3{font-size:14px;margin:16px 0 6px} .meta{color:#666;font-size:12px;margin-bottom:16px}
+        table{width:100%;border-collapse:collapse;margin:8px 0} td,th{text-align:left;padding:6px 8px;border-bottom:1px solid #eee;font-size:13px}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:13px}
+        .grid div span{color:#666;display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+        ul{padding-left:20px} .brand{color:#6C4CF1;font-weight:700}
+        @media print{body{margin:0}}
+      </style></head><body>
+      <div class="brand">ClinSole AI · Visit Summary</div>
+      <h1>${esc(patient.name)}</h1>
+      <div class="meta">${patient.dob ? `${ageOf(patient.dob)} yrs · ` : ""}${esc(patient.phone || "")}${nurse?.name ? ` · Nurse: ${esc(nurse.name)}` : ""}</div>
+      <h2>Visit</h2>
+      <div class="grid">
+        <div><span>Started</span>${visitStartedAt ? format(new Date(visitStartedAt), "EEE, MMM d · HH:mm") : "—"}</div>
+        <div><span>Completed</span>${format(new Date(), "EEE, MMM d · HH:mm")}</div>
+        <div><span>Diabetes</span>${patient.diabetesStatus === "none" ? "None" : patient.diabetesStatus.toUpperCase()}</div>
+        <div><span>Allergies</span>${esc(patient.allergies || "None on record")}</div>
+        <div><span>Fee</span>$${fee} (${esc(paymentMethod)})</div>
+        <div><span>Follow-up</span>${esc(followupType)} — ${fu}</div>
+      </div>
+      <h2>Foot Assessment Findings</h2>
+      <table><thead><tr><th>Region</th><th>Notes</th><th>Pain</th></tr></thead><tbody>${obsRows}</tbody></table>
+      <h2>Voice Dictation</h2>
+      <p>${esc(dictation) || '<span style="color:#888">No dictation recorded</span>'}</p>
+      <h2>Clinical Photos</h2>
+      <p>${photos.length} photo${photos.length === 1 ? "" : "s"} captured during visit.</p>
+      ${soapBlock ? `<h2>Clinical Note</h2>${soapBlock}` : ""}
+      ${edu ? `<h2>Patient Education Provided</h2><ul>${edu}</ul>` : ""}
+      <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
+      </body></html>`);
+    w.document.close();
+  };
+
 
   const addPhotoFile = (files: FileList | null) => {
     if (!files) return;
@@ -155,6 +249,7 @@ function VisitFlow() {
         expectedFee: fee,
         recurring: null,
       });
+      if (draftKey) try { localStorage.removeItem(draftKey); } catch {}
       toast.success("Visit completed and saved");
       navigate({ to: "/app/patients/$id", params: { id: patient.id } });
     } catch (e) {
@@ -167,6 +262,20 @@ function VisitFlow() {
   return (
     <AppShell title="Visit Flow">
       <Container className="py-6 lg:py-8">
+        {/* Progress bar */}
+        <div className="mb-4">
+          <div className="mb-1.5 flex items-center justify-between text-xs">
+            <span className="font-semibold text-foreground">{step.label}</span>
+            <span className="text-muted-foreground">Step {stepIdx + 1} of {STEPS.length} · {progressPct}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full gradient-primary transition-all duration-500 ease-out"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+
         {/* Stepper */}
         <div className="mb-6 overflow-x-auto">
           <ol className="flex min-w-max items-center gap-1.5">
@@ -200,6 +309,7 @@ function VisitFlow() {
             })}
           </ol>
         </div>
+
 
         {/* Step body */}
         <div className="min-h-[420px] rounded-3xl border bg-surface p-5 shadow-card lg:p-7">
@@ -276,9 +386,11 @@ function VisitFlow() {
               startedAt={visitStartedAt}
               education={selectedTopics.length}
               onFinish={finishVisit}
+              onPrint={printSummary}
               finishing={finishing}
             />
           )}
+
         </div>
 
         {/* Nav */}
@@ -642,7 +754,7 @@ function FollowupStep({ date, setDate, time, setTime, type, setType }: any) {
   );
 }
 
-function FinishStep({ patient, observations, photos, soap, fee, followup, startedAt, education, onFinish, finishing }: any) {
+function FinishStep({ patient, observations, photos, soap, fee, followup, startedAt, education, onFinish, onPrint, finishing }: any) {
   const rows = [
     { k: "Patient", v: patient.name },
     { k: "Started", v: startedAt ? format(new Date(startedAt), "HH:mm") : "—" },
@@ -670,14 +782,24 @@ function FinishStep({ patient, observations, photos, soap, fee, followup, starte
           </div>
         ))}
       </div>
-      <Button
-        size="lg"
-        disabled={!soap || finishing}
-        onClick={onFinish}
-        className="w-full gradient-primary text-primary-foreground"
-      >
-        {finishing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Finish & save visit</>}
-      </Button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button
+          size="lg"
+          variant="outline"
+          onClick={onPrint}
+          className="w-full sm:w-auto"
+        >
+          <Printer className="mr-2 h-4 w-4" /> Print summary
+        </Button>
+        <Button
+          size="lg"
+          disabled={!soap || finishing}
+          onClick={onFinish}
+          className="w-full flex-1 gradient-primary text-primary-foreground"
+        >
+          {finishing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Finish & save visit</>}
+        </Button>
+      </div>
       {!soap && <p className="text-xs text-warning">Generate a SOAP note before finishing.</p>}
     </div>
   );
