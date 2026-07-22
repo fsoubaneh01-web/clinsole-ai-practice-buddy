@@ -42,10 +42,7 @@ function Dashboard() {
     ? patients.find((p) => p.id === today[0].patientId) ?? patients[0]
     : patients[0];
 
-  const [footView, setFootView] = useState<FootView>("plantar");
-  const [selected, setSelected] = useState<{ side: FootSide; zone: ZoneId } | null>(null);
-  const [observations, setObservations] = useState<{ id: string; side: FootSide; zone: ZoneId; text: string; at: string }[]>([]);
-  const [draft, setDraft] = useState("");
+  const [observations, setObservations] = useState<FootObservation[]>([]);
 
   const alerts = useMemo(() => {
     const list: { id: string; kind: "risk" | "overdue" | "missing"; text: string; patientId?: string }[] = [];
@@ -70,14 +67,6 @@ function Dashboard() {
     [appointments, now],
   );
 
-  const saveObservation = () => {
-    if (!selected || !draft.trim()) return;
-    setObservations((prev) => [
-      { id: crypto.randomUUID(), side: selected.side, zone: selected.zone, text: draft.trim(), at: new Date().toISOString() },
-      ...prev,
-    ]);
-    setDraft("");
-  };
 
   return (
     <AppShell title="Dashboard">
