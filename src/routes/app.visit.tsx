@@ -782,14 +782,24 @@ function FinishStep({ patient, observations, photos, soap, fee, followup, starte
           </div>
         ))}
       </div>
-      <Button
-        size="lg"
-        disabled={!soap || finishing}
-        onClick={onFinish}
-        className="w-full gradient-primary text-primary-foreground"
-      >
-        {finishing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Finish & save visit</>}
-      </Button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button
+          size="lg"
+          variant="outline"
+          onClick={onPrint}
+          className="w-full sm:w-auto"
+        >
+          <Printer className="mr-2 h-4 w-4" /> Print summary
+        </Button>
+        <Button
+          size="lg"
+          disabled={!soap || finishing}
+          onClick={onFinish}
+          className="w-full flex-1 gradient-primary text-primary-foreground"
+        >
+          {finishing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : <><CheckCircle2 className="mr-2 h-4 w-4" />Finish & save visit</>}
+        </Button>
+      </div>
       {!soap && <p className="text-xs text-warning">Generate a SOAP note before finishing.</p>}
     </div>
   );
