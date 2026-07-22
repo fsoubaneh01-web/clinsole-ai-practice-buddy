@@ -1,30 +1,44 @@
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Camera, Send, Sparkles, FileText, X, Image as ImageIcon } from "lucide-react";
+import {
+  Mic, Camera, Send, Sparkles, FileText, X, Image as ImageIcon,
+  Ruler, History, BellRing, Stethoscope,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 /* ────────────────────────────────────────────────────────────
-   Anatomical foot assessment — SVG regions with legend colors
+   ClinSole AI — Interactive Foot Assessment
+   Anatomical (non-reflexology) clinical regions for foot-care nurses.
+   Plantar + dorsal views for both feet with per-region:
+     voice dictation · typed notes · photo upload ·
+     wound measurements · AI suggestions · treatment history ·
+     follow-up reminders.
    ──────────────────────────────────────────────────────────── */
 
 type FootSide = "L" | "R";
 type FootView = "plantar" | "dorsal";
 
 type RegionId =
-  | "hallux" | "toes" | "forefoot" | "metHeads"
+  | "hallux" | "toes" | "metHeads" | "forefoot"
   | "medArch" | "latArch" | "midfoot"
-  | "heel" | "medBorder" | "latBorder" | "ankle";
+  | "heelPlantar" | "heelMedial" | "heelLateral" | "heelPosterior"
+  | "medBorder" | "latBorder"
+  | "dorsalFoot" | "ankle";
 
-type RegionGroup = "toes" | "forefoot" | "arch" | "heel" | "lateral" | "medial" | "ankle";
+type RegionGroup =
+  | "toes" | "forefoot" | "arch" | "heel"
+  | "lateral" | "medial" | "dorsal" | "ankle";
 
 const LEGEND: { group: RegionGroup; label: string; color: string; ring: string }[] = [
-  { group: "toes",     label: "Toes",     color: "#A78BFA", ring: "#7C3AED" },
-  { group: "forefoot", label: "Forefoot", color: "#F472B6", ring: "#DB2777" },
-  { group: "arch",     label: "Arch",     color: "#FBBF24", ring: "#D97706" },
-  { group: "heel",     label: "Heel",     color: "#34D399", ring: "#059669" },
-  { group: "lateral",  label: "Lateral",  color: "#60A5FA", ring: "#2563EB" },
-  { group: "medial",   label: "Medial",   color: "#C4B5FD", ring: "#7C3AED" },
+  { group: "toes",     label: "Toes",          color: "#A78BFA", ring: "#7C3AED" },
+  { group: "forefoot", label: "Forefoot",      color: "#F472B6", ring: "#DB2777" },
+  { group: "arch",     label: "Arch / Midfoot",color: "#FBBF24", ring: "#D97706" },
+  { group: "heel",     label: "Heel",          color: "#34D399", ring: "#059669" },
+  { group: "lateral",  label: "Lateral",       color: "#60A5FA", ring: "#2563EB" },
+  { group: "medial",   label: "Medial",        color: "#C4B5FD", ring: "#7C3AED" },
+  { group: "dorsal",   label: "Dorsal",        color: "#FCA5A5", ring: "#DC2626" },
+  { group: "ankle",    label: "Ankle",         color: "#67E8F9", ring: "#0891B2" },
 ];
 
 const groupColor = (g: RegionGroup) => LEGEND.find((l) => l.group === g)?.color ?? "#E5E7EB";
@@ -32,19 +46,19 @@ const groupRing  = (g: RegionGroup) => LEGEND.find((l) => l.group === g)?.ring  
 
 type Region = { id: RegionId; label: string; group: RegionGroup; d: string };
 
-/* Right foot, plantar view — viewBox 220 × 520
-   Regions are drawn as filled shapes that tile the foot silhouette.        */
+/* Right foot, plantar view — viewBox 220 × 530
+   Regions tile the foot silhouette; heel is split into 4 clinical zones. */
 const PLANTAR_RIGHT: Region[] = [
   { id: "hallux", label: "Hallux", group: "toes",
     d: "M 55 20 Q 25 22 22 55 Q 22 100 32 135 Q 55 148 82 135 Q 90 100 88 55 Q 88 20 55 20 Z" },
-  { id: "toes", label: "Toes 2-5", group: "toes",
+  { id: "toes", label: "Toes 2–5", group: "toes",
     d: "M 96 30 Q 108 18 122 26 Q 128 60 124 130 L 96 130 Z \
         M 128 22 Q 142 12 154 22 Q 158 58 152 128 L 128 128 Z \
         M 158 26 Q 170 18 180 30 Q 182 62 174 128 L 158 128 Z \
         M 184 40 Q 196 40 200 62 Q 200 100 190 132 L 174 130 Q 180 96 180 68 Z" },
   { id: "metHeads", label: "Metatarsal heads", group: "forefoot",
     d: "M 32 138 Q 22 148 22 170 Q 24 195 40 205 L 180 205 Q 196 195 198 170 Q 198 148 188 138 Z" },
-  { id: "forefoot", label: "Forefoot", group: "forefoot",
+  { id: "forefoot", label: "Plantar forefoot", group: "forefoot",
     d: "M 22 205 Q 20 235 32 255 L 188 255 Q 200 235 198 205 Z" },
   { id: "medArch", label: "Medial arch", group: "arch",
     d: "M 32 255 Q 30 285 40 315 L 40 355 Q 22 355 20 320 Q 18 285 32 255 Z" },
@@ -58,34 +72,39 @@ const PLANTAR_RIGHT: Region[] = [
   { id: "latBorder", label: "Lateral border", group: "lateral",
     d: "M 188 138 L 200 138 L 198 255 L 188 255 Z \
         M 180 355 L 200 355 L 200 400 L 178 400 Z" },
-  { id: "heel", label: "Heel", group: "heel",
-    d: "M 40 355 L 158 355 L 178 400 Q 180 460 145 495 Q 110 510 75 495 Q 40 460 42 400 Z" },
-  { id: "ankle", label: "Ankle", group: "ankle",
-    d: "M 70 495 Q 78 512 110 512 Q 142 512 150 495 L 150 490 L 70 490 Z" },
+  /* Heel split: medial / lateral / plantar (weight-bearing) / posterior */
+  { id: "heelMedial", label: "Heel · medial", group: "heel",
+    d: "M 40 355 L 90 355 L 78 430 Q 60 435 46 420 Q 40 395 40 355 Z" },
+  { id: "heelLateral", label: "Heel · lateral", group: "heel",
+    d: "M 108 355 L 158 355 L 178 400 Q 178 425 158 432 Q 138 432 122 428 Z" },
+  { id: "heelPlantar", label: "Heel · plantar (weight-bearing)", group: "heel",
+    d: "M 78 430 Q 78 462 108 470 Q 140 465 158 432 Q 138 432 122 428 L 108 428 L 90 428 Q 84 428 78 430 Z" },
+  { id: "heelPosterior", label: "Heel · posterior (Achilles)", group: "heel",
+    d: "M 78 470 Q 82 500 110 510 Q 138 500 158 470 Q 140 478 110 480 Q 92 478 78 470 Z" },
 ];
 
-/* Dorsal view — narrower toes, tendon strip along top of foot */
+/* Dorsal view — dorsal foot as a broad region + ankle joint & borders */
 const DORSAL_RIGHT: Region[] = [
   { id: "hallux", label: "Hallux (nail)", group: "toes",
     d: "M 42 18 Q 25 20 25 50 Q 25 90 34 130 Q 55 142 78 130 Q 88 90 88 50 Q 88 18 42 18 Z" },
-  { id: "toes", label: "Toes 2-5 (nails)", group: "toes",
+  { id: "toes", label: "Toes 2–5 (nails)", group: "toes",
     d: "M 96 26 Q 108 14 122 22 Q 128 56 124 128 L 96 128 Z \
         M 128 20 Q 142 10 154 20 Q 158 54 152 126 L 128 126 Z \
         M 158 24 Q 170 16 180 28 Q 182 60 174 126 L 158 126 Z \
         M 184 38 Q 196 40 200 60 Q 200 98 190 130 L 174 128 Q 180 94 180 66 Z" },
   { id: "metHeads", label: "MTP joints", group: "forefoot",
     d: "M 32 135 Q 22 148 24 175 L 196 175 Q 198 148 188 135 Z" },
-  { id: "forefoot", label: "Dorsal forefoot", group: "forefoot",
-    d: "M 24 175 Q 24 220 40 250 L 180 250 Q 196 220 196 175 Z" },
+  { id: "dorsalFoot", label: "Dorsal foot", group: "dorsal",
+    d: "M 24 175 Q 24 240 40 305 L 180 305 Q 196 240 196 175 Z" },
   { id: "midfoot", label: "Dorsal midfoot", group: "arch",
-    d: "M 40 250 Q 42 300 55 355 L 165 355 Q 178 300 180 250 Z" },
+    d: "M 40 305 Q 42 335 55 355 L 165 355 Q 178 335 180 305 Z" },
   { id: "medBorder", label: "Medial border", group: "medial",
-    d: "M 22 135 L 32 135 L 40 250 L 22 250 Z \
-        M 22 250 L 40 250 L 55 355 L 30 355 Z" },
+    d: "M 22 135 L 32 135 L 40 305 L 22 305 Z \
+        M 22 305 L 40 305 L 55 355 L 30 355 Z" },
   { id: "latBorder", label: "Lateral border", group: "lateral",
-    d: "M 188 135 L 198 135 L 196 250 L 180 250 Z \
-        M 180 250 L 198 250 L 190 355 L 165 355 Z" },
-  { id: "heel", label: "Achilles / heel", group: "heel",
+    d: "M 188 135 L 198 135 L 196 305 L 180 305 Z \
+        M 180 305 L 198 305 L 190 355 L 165 355 Z" },
+  { id: "heelPosterior", label: "Achilles / posterior heel", group: "heel",
     d: "M 55 355 L 165 355 Q 176 405 165 460 Q 145 495 110 498 Q 75 495 55 460 Q 44 405 55 355 Z" },
   { id: "ankle", label: "Ankle joint", group: "ankle",
     d: "M 60 498 Q 78 514 110 514 Q 142 514 160 498 L 155 490 L 65 490 Z" },
@@ -97,10 +116,24 @@ const SUGGESTIONS_BY_GROUP: Record<RegionGroup, string[]> = {
   toes:     ["Onychomycosis noted", "Ingrown border · L side", "Interdigital maceration", "HAV deformity"],
   forefoot: ["Callus over 1st MTP", "Plantar hyperkeratosis", "Debrided to healthy tissue", "Pressure offloading advised"],
   arch:     ["Pes planus", "Pes cavus", "Plantar fasciitis tenderness", "Windlass test positive"],
-  heel:     ["Heel fissure — grade 2", "Emollient applied", "Cracked skin, no bleeding", "Achilles insertion tender"],
+  heel:     ["Heel fissure — grade 2", "Emollient applied", "Ulcer margin clean · granulating", "Achilles insertion tender"],
   lateral:  ["5th met head callus", "Tailor's bunion", "Lateral column pain", "Peroneal tendon intact"],
   medial:   ["Tinea pedis (medial)", "Bunion 1st MTP", "Posterior tib tendon intact", "Medial arch fatigue"],
+  dorsal:   ["Dorsal edema noted", "Extensor tendon prominent", "Skin intact · warm", "Neuropathic changes"],
   ankle:    ["Pulses palpable ×2", "Cap refill <3s", "1+ pitting edema", "Full ROM · no crepitus"],
+};
+
+const FOLLOWUP_PRESETS = [
+  { label: "3 d",  days: 3 },
+  { label: "1 wk", days: 7 },
+  { label: "2 wk", days: 14 },
+  { label: "1 mo", days: 30 },
+];
+
+export type WoundMeasurements = {
+  length?: number; // mm
+  width?: number;  // mm
+  depth?: number;  // mm
 };
 
 export type FootObservation = {
@@ -111,7 +144,9 @@ export type FootObservation = {
   regionLabel: string;
   group: RegionGroup;
   text: string;
-  photos: string[]; // object URLs
+  photos: string[];              // object URLs
+  measurements?: WoundMeasurements;
+  followUp?: string;             // ISO date
   at: string;
 };
 
@@ -133,10 +168,14 @@ export function FootAssessmentModule({
   const [draft, setDraft] = useState("");
   const [pendingPhotos, setPendingPhotos] = useState<string[]>([]);
   const [recording, setRecording] = useState(false);
+  const [wound, setWound] = useState<WoundMeasurements>({});
+  const [followUp, setFollowUp] = useState<string | undefined>();
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const recentForRegion = useMemo(
-    () => selected ? observations.find((o) => o.region === selected.region.id && o.side === selected.side) : undefined,
+  const regionHistory = useMemo(
+    () => selected
+      ? observations.filter((o) => o.region === selected.region.id && o.side === selected.side)
+      : [],
     [observations, selected],
   );
 
@@ -144,6 +183,8 @@ export function FootAssessmentModule({
     setSelected({ side, region });
     setDraft("");
     setPendingPhotos([]);
+    setWound({});
+    setFollowUp(undefined);
   };
 
   const handleFiles = (files: FileList | null) => {
@@ -152,8 +193,17 @@ export function FootAssessmentModule({
     setPendingPhotos((p) => [...p, ...urls].slice(0, 4));
   };
 
+  const setFollowUpDays = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    setFollowUp(d.toISOString());
+  };
+
+  const hasMeasurements = wound.length || wound.width || wound.depth;
+
   const save = () => {
-    if (!selected || (!draft.trim() && pendingPhotos.length === 0)) return;
+    if (!selected) return;
+    if (!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !followUp) return;
     onSave({
       id: crypto.randomUUID(),
       side: selected.side,
@@ -163,10 +213,14 @@ export function FootAssessmentModule({
       group: selected.region.group,
       text: draft.trim(),
       photos: pendingPhotos,
+      measurements: hasMeasurements ? wound : undefined,
+      followUp,
       at: new Date().toISOString(),
     });
     setDraft("");
     setPendingPhotos([]);
+    setWound({});
+    setFollowUp(undefined);
   };
 
   const suggestions = selected ? SUGGESTIONS_BY_GROUP[selected.region.group] : [];
@@ -234,7 +288,7 @@ export function FootAssessmentModule({
                   {selected.side} · {selected.region.label}
                 </span>
                 <span className="truncate text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Selected location · {view}
+                  Selected · {view}
                 </span>
               </div>
               <button onClick={() => setSelected(null)} className="rounded-full p-1 text-muted-foreground hover:bg-muted" aria-label="Close">
@@ -242,11 +296,27 @@ export function FootAssessmentModule({
               </button>
             </div>
 
-            {/* Recent observation */}
-            {recentForRegion && (
-              <div className="mt-3 rounded-xl border border-dashed bg-muted/40 p-3 text-xs">
-                <div className="font-semibold uppercase tracking-wider text-muted-foreground">Recent observation</div>
-                <div className="mt-1 text-foreground">{recentForRegion.text || "(photo only)"}</div>
+            {/* Treatment history */}
+            {regionHistory.length > 0 && (
+              <div className="mt-3 rounded-xl border border-dashed bg-muted/40 p-3">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <History className="h-3 w-3" /> Treatment history · {regionHistory.length}
+                </div>
+                <ul className="space-y-1.5">
+                  {regionHistory.slice(0, 3).map((h) => (
+                    <li key={h.id} className="text-xs text-foreground/85">
+                      <span className="mr-1 font-medium text-muted-foreground">
+                        {new Date(h.at).toLocaleDateString([], { month: "short", day: "numeric" })}:
+                      </span>
+                      {h.text || "(photo / measurement)"}
+                      {h.measurements && (
+                        <span className="ml-1 text-muted-foreground">
+                          · {h.measurements.length ?? "–"}×{h.measurements.width ?? "–"}×{h.measurements.depth ?? "–"} mm
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
@@ -317,6 +387,65 @@ export function FootAssessmentModule({
               </div>
             )}
 
+            {/* Wound measurements */}
+            <div className="mt-3 rounded-xl border bg-surface p-3">
+              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <Ruler className="h-3 w-3" /> Wound measurements (mm)
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {(["length", "width", "depth"] as const).map((k) => (
+                  <label key={k} className="block">
+                    <span className="text-[10px] capitalize text-muted-foreground">{k}</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      value={wound[k] ?? ""}
+                      onChange={(e) => setWound((w) => ({ ...w, [k]: e.target.value === "" ? undefined : Number(e.target.value) }))}
+                      placeholder="0"
+                      className="mt-0.5 w-full rounded-lg border bg-background px-2 py-1.5 text-sm outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Follow-up reminder */}
+            <div className="mt-3 rounded-xl border bg-surface p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <BellRing className="h-3 w-3" /> Follow-up reminder
+                </div>
+                {followUp && (
+                  <button onClick={() => setFollowUp(undefined)} className="text-[10px] text-muted-foreground hover:text-foreground">
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {FOLLOWUP_PRESETS.map((p) => (
+                  <button
+                    key={p.label}
+                    onClick={() => setFollowUpDays(p.days)}
+                    className="rounded-full border bg-background px-2.5 py-1 text-[11px] hover:border-primary/40 hover:text-primary"
+                  >
+                    +{p.label}
+                  </button>
+                ))}
+                <input
+                  type="date"
+                  value={followUp ? followUp.slice(0, 10) : ""}
+                  onChange={(e) => setFollowUp(e.target.value ? new Date(e.target.value).toISOString() : undefined)}
+                  className="ml-auto rounded-lg border bg-background px-2 py-1 text-xs outline-none focus:border-primary/40"
+                />
+              </div>
+              {followUp && (
+                <div className="mt-2 text-[11px] text-primary">
+                  Reminder set · {new Date(followUp).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}
+                </div>
+              )}
+            </div>
+
             {/* Actions */}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <div className="text-[11px] text-muted-foreground">Saves to today's assessment</div>
@@ -329,7 +458,7 @@ export function FootAssessmentModule({
                 <Button
                   size="sm"
                   onClick={save}
-                  disabled={!draft.trim() && pendingPhotos.length === 0}
+                  disabled={!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !followUp}
                   className="gradient-primary text-primary-foreground"
                 >
                   <Send className="mr-1 h-4 w-4" /> Save observation
@@ -343,7 +472,8 @@ export function FootAssessmentModule({
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="mt-4 rounded-2xl border border-dashed bg-muted/30 p-4 text-center text-xs text-muted-foreground"
           >
-            Tap any anatomical region to open the assessment panel.
+            <Stethoscope className="mx-auto mb-1 h-4 w-4 text-primary" />
+            Tap any anatomical region to open the clinical assessment panel.
           </motion.div>
         )}
       </AnimatePresence>
@@ -364,11 +494,25 @@ export function FootAssessmentModule({
               </span>
               <div className="min-w-0 flex-1">
                 {o.text && <p className="truncate">{o.text}</p>}
-                {o.photos.length > 0 && (
-                  <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <ImageIcon className="h-3 w-3" /> {o.photos.length} photo{o.photos.length === 1 ? "" : "s"}
-                  </div>
-                )}
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  {o.photos.length > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <ImageIcon className="h-3 w-3" /> {o.photos.length}
+                    </span>
+                  )}
+                  {o.measurements && (
+                    <span className="inline-flex items-center gap-1">
+                      <Ruler className="h-3 w-3" />
+                      {o.measurements.length ?? "–"}×{o.measurements.width ?? "–"}×{o.measurements.depth ?? "–"} mm
+                    </span>
+                  )}
+                  {o.followUp && (
+                    <span className="inline-flex items-center gap-1 text-primary">
+                      <BellRing className="h-3 w-3" />
+                      {new Date(o.followUp).toLocaleDateString([], { month: "short", day: "numeric" })}
+                    </span>
+                  )}
+                </div>
               </div>
               <span className="shrink-0 text-[11px] text-muted-foreground">
                 {new Date(o.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -394,7 +538,9 @@ function FootSvg({
   observations: FootObservation[];
 }) {
   const regions = REGIONS[view];
-  const observedIds = new Set(observations.filter((o) => o.side === side).map((o) => o.region));
+  const observedIds = new Set(
+    observations.filter((o) => o.side === side && o.view === view).map((o) => o.region),
+  );
   const outline =
     "M 55 15 Q 22 18 20 55 L 22 135 Q 15 150 18 205 Q 20 250 32 262 \
      Q 40 300 40 355 Q 22 400 42 470 Q 65 512 110 514 Q 155 512 178 470 \
@@ -441,13 +587,11 @@ function FootSvg({
                   strokeWidth={isSelected ? 2.5 : 1}
                   style={{ transition: "fill-opacity .2s, stroke-width .2s" }}
                 />
-                {/* Selection pulse */}
                 {isSelected && (
                   <path d={r.d} fill="none" stroke={ring} strokeWidth="2" opacity="0.5">
                     <animate attributeName="opacity" values="0.7;0;0.7" dur="1.8s" repeatCount="indefinite" />
                   </path>
                 )}
-                {/* Observed marker */}
                 {wasObserved && !isSelected && (
                   <path d={r.d} fill="none" stroke={ring} strokeWidth="1.5" strokeDasharray="3 3" opacity="0.7" />
                 )}
