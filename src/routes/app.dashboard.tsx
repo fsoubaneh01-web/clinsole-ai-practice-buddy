@@ -100,114 +100,20 @@ function Dashboard() {
 
         {/* Main grid */}
         <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
-          {/* Foot assessment panel */}
-          <section className="rounded-3xl border bg-surface p-5 shadow-card lg:col-span-2 lg:p-6">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-primary">Active session</div>
-                <h2 className="mt-0.5 truncate text-lg font-bold lg:text-xl">
-                  Foot assessment · {activePatient?.name ?? "No patient"}
-                </h2>
-                {activePatient && (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {activePatient.diabetesStatus !== "none" ? `${activePatient.diabetesStatus.toUpperCase()} · ` : ""}
-                    Last visit {activePatient.assessments[0] ? format(new Date(activePatient.assessments[0].date), "MMM d") : "—"}
-                  </p>
-                )}
-              </div>
-              <div className="flex shrink-0 rounded-full bg-muted p-1 text-xs font-medium">
-                {(["plantar", "dorsal"] as FootView[]).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setFootView(v)}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 capitalize transition-colors",
-                      footView === v ? "bg-surface text-primary shadow-soft" : "text-muted-foreground",
-                    )}
-                  >
-                    {v}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Foot assessment module */}
+          <div className="lg:col-span-2">
+            <FootAssessmentModule
+              patientName={activePatient?.name ?? "No patient"}
+              patientMeta={
+                activePatient
+                  ? `${activePatient.diabetesStatus !== "none" ? activePatient.diabetesStatus.toUpperCase() + " · " : ""}Last visit ${activePatient.assessments[0] ? format(new Date(activePatient.assessments[0].date), "MMM d") : "—"}`
+                  : undefined
+              }
+              observations={observations}
+              onSave={(o) => setObservations((prev) => [o, ...prev])}
+            />
+          </div>
 
-            {/* Feet */}
-            <div className="mt-5 grid grid-cols-2 gap-3 rounded-2xl bg-[color:var(--clin-teal-soft)]/50 p-4">
-              <FootDiagram side="L" view={footView} selected={selected} onSelect={(zone) => setSelected({ side: "L", zone })} />
-              <FootDiagram side="R" view={footView} selected={selected} onSelect={(zone) => setSelected({ side: "R", zone })} />
-            </div>
-
-            {/* Observation panel */}
-            <AnimatePresence>
-              {selected && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                  className="mt-4 rounded-2xl border bg-background p-4"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                        {selected.side} · {ZONES.find((z) => z.id === selected.zone)?.label}
-                      </span>
-                      <span className="text-muted-foreground">Add observation</span>
-                    </div>
-                    <button onClick={() => setSelected(null)} className="rounded-full p-1 text-muted-foreground hover:bg-muted">
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {SUGGESTIONS.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setDraft((d) => (d ? `${d}. ${s}` : s))}
-                        className="rounded-full border bg-surface px-2.5 py-1 text-[11px] text-muted-foreground hover:border-primary/30 hover:text-primary"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex items-end gap-2">
-                    <textarea
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      placeholder="Type or use chips above…"
-                      rows={2}
-                      className="min-h-[64px] flex-1 resize-none rounded-xl border bg-surface p-3 text-sm outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
-                    />
-                    <div className="flex flex-col gap-2">
-                      <button className="grid h-10 w-10 place-items-center rounded-xl bg-secondary text-secondary-foreground shadow-soft" aria-label="Dictate">
-                        <Mic className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={saveObservation}
-                        disabled={!draft.trim()}
-                        className="grid h-10 w-10 place-items-center rounded-xl gradient-primary text-primary-foreground shadow-soft disabled:opacity-40"
-                        aria-label="Save"
-                      >
-                        <Send className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Observations feed */}
-            {observations.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Session log</div>
-                {observations.map((o) => (
-                  <div key={o.id} className="flex gap-3 rounded-xl border bg-surface p-3 text-sm">
-                    <span className="shrink-0 rounded-full bg-secondary/10 px-2 py-0.5 text-[11px] font-bold text-secondary">
-                      {o.side} · {ZONES.find((z) => z.id === o.zone)?.label}
-                    </span>
-                    <p className="min-w-0 flex-1">{o.text}</p>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">{format(new Date(o.at), "HH:mm")}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
 
           {/* Right column: alerts + AI assistant */}
           <aside className="space-y-5">
