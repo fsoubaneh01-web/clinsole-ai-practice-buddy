@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { format, addDays } from "date-fns";
 import {
   Play, User, Footprints, Camera, Mic, FileText, DollarSign,
   BookOpen, CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight,
-  Loader2, Sparkles, X, Image as ImageIcon, Check,
+  Loader2, Sparkles, X, Image as ImageIcon, Check, Printer,
 } from "lucide-react";
 import { toast } from "sonner";
+
 
 import { AppShell, Container } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
