@@ -249,6 +249,7 @@ function VisitFlow() {
         expectedFee: fee,
         recurring: null,
       });
+      if (draftKey) try { localStorage.removeItem(draftKey); } catch {}
       toast.success("Visit completed and saved");
       navigate({ to: "/app/patients/$id", params: { id: patient.id } });
     } catch (e) {
