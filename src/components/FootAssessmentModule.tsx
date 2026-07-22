@@ -136,6 +136,10 @@ export type WoundMeasurements = {
   depth?: number;  // mm
 };
 
+export type PainLevel = "none" | "mild" | "moderate" | "severe";
+export type CallusLevel = "none" | "mild" | "moderate" | "severe";
+export type SkinCondition = "dry" | "moist" | "macerated";
+
 export type FootObservation = {
   id: string;
   side: FootSide;
@@ -146,9 +150,17 @@ export type FootObservation = {
   text: string;
   photos: string[];              // object URLs
   measurements?: WoundMeasurements;
+  pain?: PainLevel;
+  callus?: CallusLevel;
+  skin?: SkinCondition[];
   followUp?: string;             // ISO date
   at: string;
 };
+
+const PAIN_LEVELS: PainLevel[] = ["none", "mild", "moderate", "severe"];
+const CALLUS_LEVELS: CallusLevel[] = ["none", "mild", "moderate", "severe"];
+const SKIN_OPTIONS: SkinCondition[] = ["dry", "moist", "macerated"];
+
 
 export function FootAssessmentModule({
   patientName,
