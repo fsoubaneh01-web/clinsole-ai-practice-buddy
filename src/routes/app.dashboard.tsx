@@ -85,8 +85,13 @@ function Dashboard() {
               {today.length} visit{today.length === 1 ? "" : "s"} today · {followUpsDue.length} follow-up{followUpsDue.length === 1 ? "" : "s"} pending
             </p>
           </div>
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-soft lg:h-12 lg:w-12">
-            {(nurse?.name || nurse?.email || "N").slice(0, 2).toUpperCase()}
+          <div className="flex shrink-0 items-center gap-2">
+            <Button asChild size="sm" className="gradient-primary text-primary-foreground shadow-soft">
+              <Link to="/app/visit"><Sparkles className="mr-1 h-4 w-4" />Start Visit</Link>
+            </Button>
+            <div className="grid h-11 w-11 place-items-center rounded-full gradient-primary text-sm font-bold text-primary-foreground shadow-soft lg:h-12 lg:w-12">
+              {(nurse?.name || nurse?.email || "N").slice(0, 2).toUpperCase()}
+            </div>
           </div>
         </header>
 

@@ -15,6 +15,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppVisitRouteImport } from './routes/app.visit'
 import { Route as AppSubscriptionRouteImport } from './routes/app.subscription'
 import { Route as AppSoapRouteImport } from './routes/app.soap'
 import { Route as AppPatientsRouteImport } from './routes/app.patients'
@@ -55,6 +56,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppVisitRoute = AppVisitRouteImport.update({
+  id: '/visit',
+  path: '/visit',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppSubscriptionRoute = AppSubscriptionRouteImport.update({
   id: '/subscription',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
+  '/app/visit': typeof AppVisitRoute
   '/app/patients/$id': typeof AppPatientsIdRoute
   '/app/patients/new': typeof AppPatientsNewRoute
 }
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
+  '/app/visit': typeof AppVisitRoute
   '/app/patients/$id': typeof AppPatientsIdRoute
   '/app/patients/new': typeof AppPatientsNewRoute
 }
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
+  '/app/visit': typeof AppVisitRoute
   '/app/patients_/$id': typeof AppPatientsIdRoute
   '/app/patients_/new': typeof AppPatientsNewRoute
 }
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
+    | '/app/visit'
     | '/app/patients/$id'
     | '/app/patients/new'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
+    | '/app/visit'
     | '/app/patients/$id'
     | '/app/patients/new'
   id:
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
+    | '/app/visit'
     | '/app/patients_/$id'
     | '/app/patients_/new'
   fileRoutesById: FileRoutesById
@@ -271,6 +283,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/visit': {
+      id: '/app/visit'
+      path: '/visit'
+      fullPath: '/app/visit'
+      preLoaderRoute: typeof AppVisitRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/subscription': {
       id: '/app/subscription'
@@ -354,6 +373,7 @@ interface AppRouteChildren {
   AppPatientsRoute: typeof AppPatientsRoute
   AppSoapRoute: typeof AppSoapRoute
   AppSubscriptionRoute: typeof AppSubscriptionRoute
+  AppVisitRoute: typeof AppVisitRoute
   AppPatientsIdRoute: typeof AppPatientsIdRoute
   AppPatientsNewRoute: typeof AppPatientsNewRoute
 }
@@ -367,6 +387,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPatientsRoute: AppPatientsRoute,
   AppSoapRoute: AppSoapRoute,
   AppSubscriptionRoute: AppSubscriptionRoute,
+  AppVisitRoute: AppVisitRoute,
   AppPatientsIdRoute: AppPatientsIdRoute,
   AppPatientsNewRoute: AppPatientsNewRoute,
 }
@@ -384,13 +405,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
