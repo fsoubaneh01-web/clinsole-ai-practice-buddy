@@ -754,7 +754,7 @@ function FollowupStep({ date, setDate, time, setTime, type, setType }: any) {
   );
 }
 
-function FinishStep({ patient, observations, photos, soap, fee, followup, startedAt, education, onFinish, finishing }: any) {
+function FinishStep({ patient, observations, photos, soap, fee, followup, startedAt, education, onFinish, onPrint, finishing }: any) {
   const rows = [
     { k: "Patient", v: patient.name },
     { k: "Started", v: startedAt ? format(new Date(startedAt), "HH:mm") : "—" },
