@@ -181,6 +181,9 @@ export function FootAssessmentModule({
   const [pendingPhotos, setPendingPhotos] = useState<string[]>([]);
   const [recording, setRecording] = useState(false);
   const [wound, setWound] = useState<WoundMeasurements>({});
+  const [pain, setPain] = useState<PainLevel | undefined>();
+  const [callus, setCallus] = useState<CallusLevel | undefined>();
+  const [skin, setSkin] = useState<SkinCondition[]>([]);
   const [followUp, setFollowUp] = useState<string | undefined>();
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -196,6 +199,9 @@ export function FootAssessmentModule({
     setDraft("");
     setPendingPhotos([]);
     setWound({});
+    setPain(undefined);
+    setCallus(undefined);
+    setSkin([]);
     setFollowUp(undefined);
   };
 
@@ -205,6 +211,9 @@ export function FootAssessmentModule({
     setPendingPhotos((p) => [...p, ...urls].slice(0, 4));
   };
 
+  const toggleSkin = (s: SkinCondition) =>
+    setSkin((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+
   const setFollowUpDays = (days: number) => {
     const d = new Date();
     d.setDate(d.getDate() + days);
@@ -212,10 +221,11 @@ export function FootAssessmentModule({
   };
 
   const hasMeasurements = wound.length || wound.width || wound.depth;
+  const hasClinical = pain || callus || skin.length > 0;
 
   const save = () => {
     if (!selected) return;
-    if (!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !followUp) return;
+    if (!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !hasClinical && !followUp) return;
     onSave({
       id: crypto.randomUUID(),
       side: selected.side,
@@ -226,14 +236,21 @@ export function FootAssessmentModule({
       text: draft.trim(),
       photos: pendingPhotos,
       measurements: hasMeasurements ? wound : undefined,
+      pain,
+      callus,
+      skin: skin.length > 0 ? skin : undefined,
       followUp,
       at: new Date().toISOString(),
     });
     setDraft("");
     setPendingPhotos([]);
     setWound({});
+    setPain(undefined);
+    setCallus(undefined);
+    setSkin([]);
     setFollowUp(undefined);
   };
+
 
   const suggestions = selected ? SUGGESTIONS_BY_GROUP[selected.region.group] : [];
 
