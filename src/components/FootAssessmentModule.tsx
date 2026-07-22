@@ -136,6 +136,10 @@ export type WoundMeasurements = {
   depth?: number;  // mm
 };
 
+export type PainLevel = "none" | "mild" | "moderate" | "severe";
+export type CallusLevel = "none" | "mild" | "moderate" | "severe";
+export type SkinCondition = "dry" | "moist" | "macerated";
+
 export type FootObservation = {
   id: string;
   side: FootSide;
@@ -146,9 +150,17 @@ export type FootObservation = {
   text: string;
   photos: string[];              // object URLs
   measurements?: WoundMeasurements;
+  pain?: PainLevel;
+  callus?: CallusLevel;
+  skin?: SkinCondition[];
   followUp?: string;             // ISO date
   at: string;
 };
+
+const PAIN_LEVELS: PainLevel[] = ["none", "mild", "moderate", "severe"];
+const CALLUS_LEVELS: CallusLevel[] = ["none", "mild", "moderate", "severe"];
+const SKIN_OPTIONS: SkinCondition[] = ["dry", "moist", "macerated"];
+
 
 export function FootAssessmentModule({
   patientName,
@@ -169,6 +181,9 @@ export function FootAssessmentModule({
   const [pendingPhotos, setPendingPhotos] = useState<string[]>([]);
   const [recording, setRecording] = useState(false);
   const [wound, setWound] = useState<WoundMeasurements>({});
+  const [pain, setPain] = useState<PainLevel | undefined>();
+  const [callus, setCallus] = useState<CallusLevel | undefined>();
+  const [skin, setSkin] = useState<SkinCondition[]>([]);
   const [followUp, setFollowUp] = useState<string | undefined>();
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -184,6 +199,9 @@ export function FootAssessmentModule({
     setDraft("");
     setPendingPhotos([]);
     setWound({});
+    setPain(undefined);
+    setCallus(undefined);
+    setSkin([]);
     setFollowUp(undefined);
   };
 
@@ -193,6 +211,9 @@ export function FootAssessmentModule({
     setPendingPhotos((p) => [...p, ...urls].slice(0, 4));
   };
 
+  const toggleSkin = (s: SkinCondition) =>
+    setSkin((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+
   const setFollowUpDays = (days: number) => {
     const d = new Date();
     d.setDate(d.getDate() + days);
@@ -200,10 +221,11 @@ export function FootAssessmentModule({
   };
 
   const hasMeasurements = wound.length || wound.width || wound.depth;
+  const hasClinical = pain || callus || skin.length > 0;
 
   const save = () => {
     if (!selected) return;
-    if (!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !followUp) return;
+    if (!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !hasClinical && !followUp) return;
     onSave({
       id: crypto.randomUUID(),
       side: selected.side,
@@ -214,14 +236,21 @@ export function FootAssessmentModule({
       text: draft.trim(),
       photos: pendingPhotos,
       measurements: hasMeasurements ? wound : undefined,
+      pain,
+      callus,
+      skin: skin.length > 0 ? skin : undefined,
       followUp,
       at: new Date().toISOString(),
     });
     setDraft("");
     setPendingPhotos([]);
     setWound({});
+    setPain(undefined);
+    setCallus(undefined);
+    setSkin([]);
     setFollowUp(undefined);
   };
+
 
   const suggestions = selected ? SUGGESTIONS_BY_GROUP[selected.region.group] : [];
 
@@ -387,6 +416,37 @@ export function FootAssessmentModule({
               </div>
             )}
 
+            {/* Clinical quick-assess: Pain · Skin · Callus */}
+            <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border bg-surface p-3 sm:grid-cols-3">
+              <FieldGroup label="Pain">
+                <div className="flex flex-wrap gap-1">
+                  {PAIN_LEVELS.map((p) => (
+                    <Chip key={p} active={pain === p} onClick={() => setPain(pain === p ? undefined : p)}>
+                      {p}
+                    </Chip>
+                  ))}
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Skin">
+                <div className="flex flex-wrap gap-1">
+                  {SKIN_OPTIONS.map((s) => (
+                    <Chip key={s} active={skin.includes(s)} onClick={() => toggleSkin(s)}>
+                      {s}
+                    </Chip>
+                  ))}
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Callus">
+                <div className="flex flex-wrap gap-1">
+                  {CALLUS_LEVELS.map((c) => (
+                    <Chip key={c} active={callus === c} onClick={() => setCallus(callus === c ? undefined : c)}>
+                      {c}
+                    </Chip>
+                  ))}
+                </div>
+              </FieldGroup>
+            </div>
+
             {/* Wound measurements */}
             <div className="mt-3 rounded-xl border bg-surface p-3">
               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -458,7 +518,7 @@ export function FootAssessmentModule({
                 <Button
                   size="sm"
                   onClick={save}
-                  disabled={!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !followUp}
+                  disabled={!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !hasClinical && !followUp}
                   className="gradient-primary text-primary-foreground"
                 >
                   <Send className="mr-1 h-4 w-4" /> Save observation
@@ -604,5 +664,31 @@ function FootSvg({
         <path d={outline} fill="none" stroke="#8B7361" strokeWidth="1.2" strokeOpacity="0.6" pointerEvents="none" />
       </svg>
     </div>
+  );
+}
+
+function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-2 py-0.5 text-[11px] capitalize transition-colors",
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-background text-foreground/70 hover:border-primary/40 hover:text-primary",
+      )}
+    >
+      {children}
+    </button>
   );
 }
