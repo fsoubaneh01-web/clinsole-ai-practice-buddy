@@ -262,6 +262,20 @@ function VisitFlow() {
   return (
     <AppShell title="Visit Flow">
       <Container className="py-6 lg:py-8">
+        {/* Progress bar */}
+        <div className="mb-4">
+          <div className="mb-1.5 flex items-center justify-between text-xs">
+            <span className="font-semibold text-foreground">{step.label}</span>
+            <span className="text-muted-foreground">Step {stepIdx + 1} of {STEPS.length} · {progressPct}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full gradient-primary transition-all duration-500 ease-out"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+
         {/* Stepper */}
         <div className="mb-6 overflow-x-auto">
           <ol className="flex min-w-max items-center gap-1.5">
@@ -295,6 +309,7 @@ function VisitFlow() {
             })}
           </ol>
         </div>
+
 
         {/* Step body */}
         <div className="min-h-[420px] rounded-3xl border bg-surface p-5 shadow-card lg:p-7">
