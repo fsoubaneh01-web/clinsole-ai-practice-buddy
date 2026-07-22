@@ -386,9 +386,11 @@ function VisitFlow() {
               startedAt={visitStartedAt}
               education={selectedTopics.length}
               onFinish={finishVisit}
+              onPrint={printSummary}
               finishing={finishing}
             />
           )}
+
         </div>
 
         {/* Nav */}
