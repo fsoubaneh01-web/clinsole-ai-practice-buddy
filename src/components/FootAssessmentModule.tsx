@@ -518,7 +518,7 @@ export function FootAssessmentModule({
                 <Button
                   size="sm"
                   onClick={save}
-                  disabled={!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !followUp}
+                  disabled={!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !hasClinical && !followUp}
                   className="gradient-primary text-primary-foreground"
                 >
                   <Send className="mr-1 h-4 w-4" /> Save observation
