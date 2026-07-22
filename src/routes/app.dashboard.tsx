@@ -1,18 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { format, isToday, isPast, addDays, differenceInMinutes } from "date-fns";
 import {
-  Calendar, Users, FileText, TrendingUp, ChevronRight, Bell, Mic, Sparkles,
-  AlertTriangle, Activity, X, Send,
+  Calendar, Users, FileText, TrendingUp, ChevronRight, Bell, Sparkles,
+  AlertTriangle, Activity,
 } from "lucide-react";
 
 import { AppShell, Container } from "@/components/AppShell";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { FootAssessmentModule, type FootObservation } from "@/components/FootAssessmentModule";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
+
 
 type FootView = "plantar" | "dorsal";
 type FootSide = "L" | "R";
