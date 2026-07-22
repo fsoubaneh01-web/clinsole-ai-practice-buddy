@@ -15,29 +15,6 @@ import { FootAssessmentModule, type FootObservation } from "@/components/FootAss
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
 
-type FootView = "plantar" | "dorsal";
-type FootSide = "L" | "R";
-type ZoneId = "hallux" | "toes" | "metatarsals" | "arch" | "heel" | "lateral" | "medial" | "ankle";
-
-const ZONES: { id: ZoneId; label: string }[] = [
-  { id: "hallux", label: "Hallux" },
-  { id: "toes", label: "Toes 2-5" },
-  { id: "metatarsals", label: "Metatarsals" },
-  { id: "arch", label: "Arch" },
-  { id: "heel", label: "Heel" },
-  { id: "lateral", label: "Lateral" },
-  { id: "medial", label: "Medial" },
-  { id: "ankle", label: "Ankle" },
-];
-
-const SUGGESTIONS = [
-  "Callus 1st MTP · debrided",
-  "Dry skin heel · emollient applied",
-  "Ingrown nail hallux · trimmed",
-  "Wound bed 60% granulation",
-  "Pulses palpable, cap refill <3s",
-  "Neuropathy: monofilament absent",
-];
 
 function Dashboard() {
   const { nurse, patients, appointments, transactions, footAssessments } = useStore();
