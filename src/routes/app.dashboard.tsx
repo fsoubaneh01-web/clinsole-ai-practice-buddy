@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format, isToday, isPast, addDays, differenceInMinutes } from "date-fns";
 import {
   Calendar, Users, FileText, TrendingUp, ChevronRight, Bell, Mic, Sparkles,
-  AlertTriangle, Activity, Stethoscope, Plus, ClipboardList, X, Send,
+  AlertTriangle, Activity, X, Send,
 } from "lucide-react";
+
 import { AppShell, Container } from "@/components/AppShell";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
