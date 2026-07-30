@@ -20,7 +20,9 @@ import { FootAssessmentModule } from "@/components/FootAssessmentModule";
 import { useStore, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
 import { useServerFn } from "@tanstack/react-start";
+import { useDictation } from "@/hooks/use-dictation";
 import { cn } from "@/lib/utils";
+
 
 const searchSchema = z.object({ patientId: z.string().optional() });
 
