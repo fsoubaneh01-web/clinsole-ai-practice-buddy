@@ -73,9 +73,12 @@ export type Database = {
       foot_assessments: {
         Row: {
           assessed_at: string
+          callus_level: string | null
           capillary_refill: string | null
           created_at: string
           edema: string | null
+          follow_up_at: string | null
+          foot_view: string | null
           id: string
           left_foot: boolean
           monofilament_findings: string | null
@@ -87,13 +90,19 @@ export type Database = {
           neuropathy_risk: string | null
           notes: string | null
           nurse_id: string
+          pain_level: string | null
           patient_id: string
           photo_urls: string[]
           protective_sensation: string | null
           pulses_present: string | null
+          region: string | null
+          region_group: string | null
+          region_label: string | null
           right_foot: boolean
           risk_level: string
+          side: string | null
           skin_callus: boolean
+          skin_conditions: string[]
           skin_corns: boolean
           skin_dry: boolean
           skin_fissures: boolean
@@ -101,12 +110,18 @@ export type Database = {
           skin_temperature: string | null
           skin_ulcer: boolean
           updated_at: string
+          wound_depth_mm: number | null
+          wound_length_mm: number | null
+          wound_width_mm: number | null
         }
         Insert: {
           assessed_at?: string
+          callus_level?: string | null
           capillary_refill?: string | null
           created_at?: string
           edema?: string | null
+          follow_up_at?: string | null
+          foot_view?: string | null
           id?: string
           left_foot?: boolean
           monofilament_findings?: string | null
@@ -118,13 +133,19 @@ export type Database = {
           neuropathy_risk?: string | null
           notes?: string | null
           nurse_id: string
+          pain_level?: string | null
           patient_id: string
           photo_urls?: string[]
           protective_sensation?: string | null
           pulses_present?: string | null
+          region?: string | null
+          region_group?: string | null
+          region_label?: string | null
           right_foot?: boolean
           risk_level?: string
+          side?: string | null
           skin_callus?: boolean
+          skin_conditions?: string[]
           skin_corns?: boolean
           skin_dry?: boolean
           skin_fissures?: boolean
@@ -132,12 +153,18 @@ export type Database = {
           skin_temperature?: string | null
           skin_ulcer?: boolean
           updated_at?: string
+          wound_depth_mm?: number | null
+          wound_length_mm?: number | null
+          wound_width_mm?: number | null
         }
         Update: {
           assessed_at?: string
+          callus_level?: string | null
           capillary_refill?: string | null
           created_at?: string
           edema?: string | null
+          follow_up_at?: string | null
+          foot_view?: string | null
           id?: string
           left_foot?: boolean
           monofilament_findings?: string | null
@@ -149,13 +176,19 @@ export type Database = {
           neuropathy_risk?: string | null
           notes?: string | null
           nurse_id?: string
+          pain_level?: string | null
           patient_id?: string
           photo_urls?: string[]
           protective_sensation?: string | null
           pulses_present?: string | null
+          region?: string | null
+          region_group?: string | null
+          region_label?: string | null
           right_foot?: boolean
           risk_level?: string
+          side?: string | null
           skin_callus?: boolean
+          skin_conditions?: string[]
           skin_corns?: boolean
           skin_dry?: boolean
           skin_fissures?: boolean
@@ -163,6 +196,9 @@ export type Database = {
           skin_temperature?: string | null
           skin_ulcer?: boolean
           updated_at?: string
+          wound_depth_mm?: number | null
+          wound_length_mm?: number | null
+          wound_width_mm?: number | null
         }
         Relationships: [
           {

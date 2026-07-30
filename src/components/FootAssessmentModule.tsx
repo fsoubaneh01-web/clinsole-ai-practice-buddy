@@ -1,11 +1,21 @@
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import {
   Mic, Camera, Send, Sparkles, FileText, X, Image as ImageIcon,
-  Ruler, History, BellRing, Stethoscope,
+  Ruler, History, BellRing, Stethoscope, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  useStore,
+  type FootAssessment,
+  type PainLevel,
+  type CallusLevel,
+  type SkinCondition,
+  type WoundMeasurements,
+} from "@/lib/store";
+
 
 /* ────────────────────────────────────────────────────────────
    ClinSole AI — Interactive Foot Assessment
@@ -130,62 +140,42 @@ const FOLLOWUP_PRESETS = [
   { label: "1 mo", days: 30 },
 ];
 
-export type WoundMeasurements = {
-  length?: number; // mm
-  width?: number;  // mm
-  depth?: number;  // mm
-};
-
-export type PainLevel = "none" | "mild" | "moderate" | "severe";
-export type CallusLevel = "none" | "mild" | "moderate" | "severe";
-export type SkinCondition = "dry" | "moist" | "macerated";
-
-export type FootObservation = {
-  id: string;
-  side: FootSide;
-  view: FootView;
-  region: RegionId;
-  regionLabel: string;
-  group: RegionGroup;
-  text: string;
-  photos: string[];              // object URLs
-  measurements?: WoundMeasurements;
-  pain?: PainLevel;
-  callus?: CallusLevel;
-  skin?: SkinCondition[];
-  followUp?: string;             // ISO date
-  at: string;
-};
-
 const PAIN_LEVELS: PainLevel[] = ["none", "mild", "moderate", "severe"];
 const CALLUS_LEVELS: CallusLevel[] = ["none", "mild", "moderate", "severe"];
 const SKIN_OPTIONS: SkinCondition[] = ["dry", "moist", "macerated"];
 
+type PendingPhoto = { file: File; url: string };
 
 export function FootAssessmentModule({
+  patientId,
   patientName,
   patientMeta,
-  observations,
-  onSave,
   onGenerateSoap,
 }: {
+  patientId?: string;
   patientName: string;
   patientMeta?: string;
-  observations: FootObservation[];
-  onSave: (obs: FootObservation) => void;
   onGenerateSoap?: () => void;
 }) {
+  const { footAssessments, addFootObservation } = useStore();
   const [view, setView] = useState<FootView>("plantar");
   const [selected, setSelected] = useState<{ side: FootSide; region: Region } | null>(null);
   const [draft, setDraft] = useState("");
-  const [pendingPhotos, setPendingPhotos] = useState<string[]>([]);
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
   const [recording, setRecording] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [wound, setWound] = useState<WoundMeasurements>({});
   const [pain, setPain] = useState<PainLevel | undefined>();
   const [callus, setCallus] = useState<CallusLevel | undefined>();
   const [skin, setSkin] = useState<SkinCondition[]>([]);
   const [followUp, setFollowUp] = useState<string | undefined>();
   const fileInput = useRef<HTMLInputElement>(null);
+
+  /* Persisted, region-scoped observations for this patient */
+  const observations = useMemo(
+    () => footAssessments.filter((a) => a.region && (!patientId || a.patientId === patientId)),
+    [footAssessments, patientId],
+  );
 
   const regionHistory = useMemo(
     () => selected
@@ -194,10 +184,9 @@ export function FootAssessmentModule({
     [observations, selected],
   );
 
-  const handleSelect = (side: FootSide, region: Region) => {
-    setSelected({ side, region });
+  const resetPanel = () => {
     setDraft("");
-    setPendingPhotos([]);
+    setPendingPhotos((p) => { p.forEach((x) => URL.revokeObjectURL(x.url)); return []; });
     setWound({});
     setPain(undefined);
     setCallus(undefined);
@@ -205,10 +194,15 @@ export function FootAssessmentModule({
     setFollowUp(undefined);
   };
 
+  const handleSelect = (side: FootSide, region: Region) => {
+    setSelected({ side, region });
+    resetPanel();
+  };
+
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
-    const urls = Array.from(files).slice(0, 4).map((f) => URL.createObjectURL(f));
-    setPendingPhotos((p) => [...p, ...urls].slice(0, 4));
+    const next = Array.from(files).slice(0, 4).map((file) => ({ file, url: URL.createObjectURL(file) }));
+    setPendingPhotos((p) => [...p, ...next].slice(0, 4));
   };
 
   const toggleSkin = (s: SkinCondition) =>
@@ -223,33 +217,34 @@ export function FootAssessmentModule({
   const hasMeasurements = wound.length || wound.width || wound.depth;
   const hasClinical = pain || callus || skin.length > 0;
 
-  const save = () => {
-    if (!selected) return;
+  const save = async () => {
+    if (!selected || saving) return;
     if (!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !hasClinical && !followUp) return;
-    onSave({
-      id: crypto.randomUUID(),
-      side: selected.side,
-      view,
-      region: selected.region.id,
-      regionLabel: selected.region.label,
-      group: selected.region.group,
-      text: draft.trim(),
-      photos: pendingPhotos,
-      measurements: hasMeasurements ? wound : undefined,
-      pain,
-      callus,
-      skin: skin.length > 0 ? skin : undefined,
-      followUp,
-      at: new Date().toISOString(),
-    });
-    setDraft("");
-    setPendingPhotos([]);
-    setWound({});
-    setPain(undefined);
-    setCallus(undefined);
-    setSkin([]);
-    setFollowUp(undefined);
+    if (!patientId) { toast.error("Choose a patient before saving an observation."); return; }
+    setSaving(true);
+    const res = await addFootObservation(
+      {
+        patientId,
+        side: selected.side,
+        view,
+        region: selected.region.id,
+        regionLabel: selected.region.label,
+        group: selected.region.group,
+        text: draft.trim(),
+        measurements: hasMeasurements ? wound : undefined,
+        pain,
+        callus,
+        skin: skin.length > 0 ? skin : undefined,
+        followUp,
+      },
+      pendingPhotos.map((p) => p.file),
+    );
+    setSaving(false);
+    if (res.error) { toast.error(res.error); return; }
+    toast.success(`Saved · ${selected.side} ${selected.region.label}`);
+    resetPanel();
   };
+
 
 
   const suggestions = selected ? SUGGESTIONS_BY_GROUP[selected.region.group] : [];
@@ -335,9 +330,9 @@ export function FootAssessmentModule({
                   {regionHistory.slice(0, 3).map((h) => (
                     <li key={h.id} className="text-xs text-foreground/85">
                       <span className="mr-1 font-medium text-muted-foreground">
-                        {new Date(h.at).toLocaleDateString([], { month: "short", day: "numeric" })}:
+                        {new Date(h.date).toLocaleDateString([], { month: "short", day: "numeric" })}:
                       </span>
-                      {h.text || "(photo / measurement)"}
+                      {h.notes || "(photo / measurement)"}
                       {h.measurements && (
                         <span className="ml-1 text-muted-foreground">
                           · {h.measurements.length ?? "–"}×{h.measurements.width ?? "–"}×{h.measurements.depth ?? "–"} mm
@@ -408,9 +403,9 @@ export function FootAssessmentModule({
             {/* Pending photos */}
             {pendingPhotos.length > 0 && (
               <div className="mt-2 flex gap-2">
-                {pendingPhotos.map((src) => (
-                  <div key={src} className="relative h-14 w-14 overflow-hidden rounded-lg border">
-                    <img src={src} alt="" className="h-full w-full object-cover" />
+                {pendingPhotos.map((p) => (
+                  <div key={p.url} className="relative h-14 w-14 overflow-hidden rounded-lg border">
+                    <img src={p.url} alt="" className="h-full w-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -548,16 +543,16 @@ export function FootAssessmentModule({
             <div key={o.id} className="flex items-start gap-3 rounded-xl border bg-surface p-3 text-sm">
               <span
                 className="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
-                style={{ background: groupRing(o.group) }}
+                style={{ background: groupRing((o.regionGroup ?? "skin") as RegionGroup) }}
               >
                 {o.side} · {o.regionLabel}
               </span>
               <div className="min-w-0 flex-1">
-                {o.text && <p className="truncate">{o.text}</p>}
+                {o.notes && <p className="truncate">{o.notes}</p>}
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                  {o.photos.length > 0 && (
+                  {o.photoPaths.length > 0 && (
                     <span className="inline-flex items-center gap-1">
-                      <ImageIcon className="h-3 w-3" /> {o.photos.length}
+                      <ImageIcon className="h-3 w-3" /> {o.photoPaths.length}
                     </span>
                   )}
                   {o.measurements && (
@@ -575,7 +570,7 @@ export function FootAssessmentModule({
                 </div>
               </div>
               <span className="shrink-0 text-[11px] text-muted-foreground">
-                {new Date(o.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {new Date(o.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </span>
             </div>
           ))}
@@ -595,7 +590,7 @@ function FootSvg({
   side: FootSide; view: FootView;
   selected: { side: FootSide; region: Region } | null;
   onSelect: (side: FootSide, region: Region) => void;
-  observations: FootObservation[];
+  observations: FootAssessment[];
 }) {
   const regions = REGIONS[view];
   const observedIds = new Set(

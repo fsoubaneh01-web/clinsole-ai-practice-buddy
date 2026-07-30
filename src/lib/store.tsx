@@ -23,6 +23,13 @@ export type Patient = {
 
 export type RiskLevel = "low" | "moderate" | "high";
 
+export type FootSide = "L" | "R";
+export type FootView = "plantar" | "dorsal";
+export type PainLevel = "none" | "mild" | "moderate" | "severe";
+export type CallusLevel = "none" | "mild" | "moderate" | "severe";
+export type SkinCondition = "dry" | "moist" | "macerated";
+export type WoundMeasurements = { length?: number; width?: number; depth?: number };
+
 export type FootAssessment = {
   id: string;
   patientId: string;
@@ -43,9 +50,40 @@ export type FootAssessment = {
   riskLevel: RiskLevel;
   notes: string;
   photoPaths: string[];
+  /* Per-region clinical observation fields (null for whole-foot assessments) */
+  side?: FootSide;
+  view?: FootView;
+  region?: string;
+  regionLabel?: string;
+  regionGroup?: string;
+  pain?: PainLevel;
+  callus?: CallusLevel;
+  skin?: SkinCondition[];
+  measurements?: WoundMeasurements;
+  followUp?: string;
 };
 
-export type FootAssessmentInput = Omit<FootAssessment, "id" | "date" | "photoPaths">;
+export type FootAssessmentInput = Omit<
+  FootAssessment,
+  | "id" | "date" | "photoPaths" | "side" | "view" | "region" | "regionLabel"
+  | "regionGroup" | "pain" | "callus" | "skin" | "measurements" | "followUp"
+>;
+
+export type FootObservationInput = {
+  patientId: string;
+  side: FootSide;
+  view: FootView;
+  region: string;
+  regionLabel: string;
+  group: string;
+  text: string;
+  pain?: PainLevel;
+  callus?: CallusLevel;
+  skin?: SkinCondition[];
+  measurements?: WoundMeasurements;
+  followUp?: string;
+};
+
 
 export type Assessment = {
   id: string;
@@ -134,6 +172,8 @@ type Ctx = {
   updateAppointment: (id: string, a: Partial<Omit<Appointment, "id" | "patientName">>) => Promise<{ error?: string }>;
   deleteAppointment: (id: string) => Promise<void>;
   addFootAssessment: (a: FootAssessmentInput, photos: File[]) => Promise<{ assessment?: FootAssessment; error?: string }>;
+  addFootObservation: (o: FootObservationInput, photos: File[]) => Promise<{ assessment?: FootAssessment; error?: string }>;
+  uploadClinicalPhotos: (patientId: string, files: File[]) => Promise<{ paths?: string[]; error?: string }>;
   deleteFootAssessment: (id: string) => Promise<void>;
   getPhotoUrl: (path: string) => Promise<string | null>;
   latestAssessmentFor: (patientId: string) => FootAssessment | undefined;
@@ -245,28 +285,59 @@ type FootAssessmentRow = {
   risk_level: string;
   notes: string | null;
   photo_urls: string[] | null;
+  side: string | null;
+  foot_view: string | null;
+  region: string | null;
+  region_label: string | null;
+  region_group: string | null;
+  pain_level: string | null;
+  callus_level: string | null;
+  skin_conditions: string[] | null;
+  wound_length_mm: number | string | null;
+  wound_width_mm: number | string | null;
+  wound_depth_mm: number | string | null;
+  follow_up_at: string | null;
 };
 
-const rowToFootAssessment = (r: FootAssessmentRow): FootAssessment => ({
-  id: r.id,
-  patientId: r.patient_id,
-  date: r.assessed_at,
-  leftFoot: r.left_foot, rightFoot: r.right_foot,
-  skinDry: r.skin_dry, skinCallus: r.skin_callus, skinCorns: r.skin_corns,
-  skinFissures: r.skin_fissures, skinUlcer: r.skin_ulcer, skinInfection: r.skin_infection,
-  nailsThickened: r.nails_thickened, nailsFungal: r.nails_fungal, nailsIngrown: r.nails_ingrown,
-  nailsTrimmed: r.nails_trimmed, nailsDebrided: r.nails_debrided,
-  pulsesPresent: r.pulses_present ?? "",
-  capillaryRefill: r.capillary_refill ?? "",
-  edema: r.edema ?? "",
-  skinTemperature: r.skin_temperature ?? "",
-  protectiveSensation: r.protective_sensation ?? "",
-  monofilamentFindings: r.monofilament_findings ?? "",
-  neuropathyRisk: r.neuropathy_risk ?? "",
-  riskLevel: (r.risk_level as RiskLevel) || "low",
-  notes: r.notes ?? "",
-  photoPaths: r.photo_urls ?? [],
-});
+const num = (v: number | string | null) =>
+  v === null || v === "" ? undefined : typeof v === "string" ? parseFloat(v) : v;
+
+const rowToFootAssessment = (r: FootAssessmentRow): FootAssessment => {
+  const length = num(r.wound_length_mm);
+  const width = num(r.wound_width_mm);
+  const depth = num(r.wound_depth_mm);
+  const hasWound = length !== undefined || width !== undefined || depth !== undefined;
+  return {
+    id: r.id,
+    patientId: r.patient_id,
+    date: r.assessed_at,
+    leftFoot: r.left_foot, rightFoot: r.right_foot,
+    skinDry: r.skin_dry, skinCallus: r.skin_callus, skinCorns: r.skin_corns,
+    skinFissures: r.skin_fissures, skinUlcer: r.skin_ulcer, skinInfection: r.skin_infection,
+    nailsThickened: r.nails_thickened, nailsFungal: r.nails_fungal, nailsIngrown: r.nails_ingrown,
+    nailsTrimmed: r.nails_trimmed, nailsDebrided: r.nails_debrided,
+    pulsesPresent: r.pulses_present ?? "",
+    capillaryRefill: r.capillary_refill ?? "",
+    edema: r.edema ?? "",
+    skinTemperature: r.skin_temperature ?? "",
+    protectiveSensation: r.protective_sensation ?? "",
+    monofilamentFindings: r.monofilament_findings ?? "",
+    neuropathyRisk: r.neuropathy_risk ?? "",
+    riskLevel: (r.risk_level as RiskLevel) || "low",
+    notes: r.notes ?? "",
+    photoPaths: r.photo_urls ?? [],
+    side: (r.side as FootSide) ?? undefined,
+    view: (r.foot_view as FootView) ?? undefined,
+    region: r.region ?? undefined,
+    regionLabel: r.region_label ?? undefined,
+    regionGroup: r.region_group ?? undefined,
+    pain: (r.pain_level as PainLevel) ?? undefined,
+    callus: (r.callus_level as CallusLevel) ?? undefined,
+    skin: (r.skin_conditions as SkinCondition[] | null)?.length ? (r.skin_conditions as SkinCondition[]) : undefined,
+    measurements: hasWound ? { length, width, depth } : undefined,
+    followUp: r.follow_up_at ?? undefined,
+  };
+};
 
 export function summarizeAssessment(a: FootAssessment): string {
   const parts: string[] = [];
@@ -538,6 +609,76 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (error) { console.error("deleteAppointment", error); return; }
       setAppointments((s) => s.filter((a) => a.id !== aid));
     },
+    uploadClinicalPhotos: async (patientId, files) => {
+      const userId = session?.user?.id;
+      if (!userId) return { error: "You must be signed in." };
+      const paths: string[] = [];
+      for (const file of files) {
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const path = `${userId}/${patientId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("clinical-photos").upload(path, file, {
+          contentType: file.type || "image/jpeg",
+          upsert: false,
+        });
+        if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
+        paths.push(path);
+      }
+      return { paths };
+    },
+    addFootObservation: async (o, photos) => {
+      const userId = session?.user?.id;
+      if (!userId) return { error: "You must be signed in." };
+      if (!o.patientId) return { error: "Choose a patient." };
+
+      const paths: string[] = [];
+      for (const file of photos) {
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const path = `${userId}/${o.patientId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("clinical-photos").upload(path, file, {
+          contentType: file.type || "image/jpeg",
+          upsert: false,
+        });
+        if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
+        paths.push(path);
+      }
+
+      const severe = o.pain === "severe" || o.callus === "severe";
+      const moderate = o.pain === "moderate" || o.callus === "moderate";
+      const { data, error } = await supabase
+        .from("foot_assessments")
+        .insert({
+          nurse_id: userId,
+          patient_id: o.patientId,
+          left_foot: o.side === "L",
+          right_foot: o.side === "R",
+          skin_dry: !!o.skin?.includes("dry"),
+          skin_callus: !!o.callus && o.callus !== "none",
+          risk_level: severe ? "high" : moderate ? "moderate" : "low",
+          notes: o.text || null,
+          photo_urls: paths,
+          side: o.side,
+          foot_view: o.view,
+          region: o.region,
+          region_label: o.regionLabel,
+          region_group: o.group,
+          pain_level: o.pain ?? null,
+          callus_level: o.callus ?? null,
+          skin_conditions: o.skin ?? [],
+          wound_length_mm: o.measurements?.length ?? null,
+          wound_width_mm: o.measurements?.width ?? null,
+          wound_depth_mm: o.measurements?.depth ?? null,
+          follow_up_at: o.followUp ?? null,
+        })
+        .select()
+        .single();
+      if (error || !data) {
+        console.error("addFootObservation", error);
+        return { error: error?.message || "Failed to save observation." };
+      }
+      const assessment = rowToFootAssessment(data as FootAssessmentRow);
+      setFootAssessments((s) => [assessment, ...s]);
+      return { assessment };
+    },
     addFootAssessment: async (a, photos) => {
       const userId = session?.user?.id;
       if (!userId) return { error: "You must be signed in." };
@@ -554,6 +695,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
         paths.push(path);
       }
+
 
       const { data, error } = await supabase
         .from("foot_assessments")

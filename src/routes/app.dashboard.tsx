@@ -10,7 +10,7 @@ import { AppShell, Container } from "@/components/AppShell";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { FootAssessmentModule, type FootObservation } from "@/components/FootAssessmentModule";
+import { FootAssessmentModule } from "@/components/FootAssessmentModule";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
@@ -42,7 +42,11 @@ function Dashboard() {
     ? patients.find((p) => p.id === today[0].patientId) ?? patients[0]
     : patients[0];
 
-  const [observations, setObservations] = useState<FootObservation[]>([]);
+
+  const observations = useMemo(
+    () => footAssessments.filter((a) => a.region && a.patientId === activePatient?.id),
+    [footAssessments, activePatient?.id],
+  );
 
   const alerts = useMemo(() => {
     const list: { id: string; kind: "risk" | "overdue" | "missing"; text: string; patientId?: string }[] = [];
@@ -114,8 +118,7 @@ function Dashboard() {
                   ? `${activePatient.diabetesStatus !== "none" ? activePatient.diabetesStatus.toUpperCase() + " · " : ""}Last visit ${activePatient.assessments[0] ? format(new Date(activePatient.assessments[0].date), "MMM d") : "—"}`
                   : undefined
               }
-              observations={observations}
-              onSave={(o) => setObservations((prev) => [o, ...prev])}
+              patientId={activePatient?.id}
             />
           </div>
 
