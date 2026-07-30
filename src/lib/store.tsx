@@ -23,6 +23,13 @@ export type Patient = {
 
 export type RiskLevel = "low" | "moderate" | "high";
 
+export type FootSide = "L" | "R";
+export type FootView = "plantar" | "dorsal";
+export type PainLevel = "none" | "mild" | "moderate" | "severe";
+export type CallusLevel = "none" | "mild" | "moderate" | "severe";
+export type SkinCondition = "dry" | "moist" | "macerated";
+export type WoundMeasurements = { length?: number; width?: number; depth?: number };
+
 export type FootAssessment = {
   id: string;
   patientId: string;
@@ -43,9 +50,40 @@ export type FootAssessment = {
   riskLevel: RiskLevel;
   notes: string;
   photoPaths: string[];
+  /* Per-region clinical observation fields (null for whole-foot assessments) */
+  side?: FootSide;
+  view?: FootView;
+  region?: string;
+  regionLabel?: string;
+  regionGroup?: string;
+  pain?: PainLevel;
+  callus?: CallusLevel;
+  skin?: SkinCondition[];
+  measurements?: WoundMeasurements;
+  followUp?: string;
 };
 
-export type FootAssessmentInput = Omit<FootAssessment, "id" | "date" | "photoPaths">;
+export type FootAssessmentInput = Omit<
+  FootAssessment,
+  | "id" | "date" | "photoPaths" | "side" | "view" | "region" | "regionLabel"
+  | "regionGroup" | "pain" | "callus" | "skin" | "measurements" | "followUp"
+>;
+
+export type FootObservationInput = {
+  patientId: string;
+  side: FootSide;
+  view: FootView;
+  region: string;
+  regionLabel: string;
+  group: string;
+  text: string;
+  pain?: PainLevel;
+  callus?: CallusLevel;
+  skin?: SkinCondition[];
+  measurements?: WoundMeasurements;
+  followUp?: string;
+};
+
 
 export type Assessment = {
   id: string;
