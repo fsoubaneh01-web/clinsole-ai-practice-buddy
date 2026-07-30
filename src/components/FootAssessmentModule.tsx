@@ -1,11 +1,21 @@
 import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import {
   Mic, Camera, Send, Sparkles, FileText, X, Image as ImageIcon,
-  Ruler, History, BellRing, Stethoscope,
+  Ruler, History, BellRing, Stethoscope, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  useStore,
+  type FootAssessment,
+  type PainLevel,
+  type CallusLevel,
+  type SkinCondition,
+  type WoundMeasurements,
+} from "@/lib/store";
+
 
 /* ────────────────────────────────────────────────────────────
    ClinSole AI — Interactive Foot Assessment
