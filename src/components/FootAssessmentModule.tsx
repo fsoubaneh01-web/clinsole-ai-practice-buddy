@@ -6,6 +6,8 @@ import {
   Ruler, History, BellRing, Stethoscope, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDictation } from "@/hooks/use-dictation";
+
 import { Button } from "@/components/ui/button";
 import {
   useStore,
