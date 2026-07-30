@@ -574,10 +574,19 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
   );
 }
 
-function DictationStep({ value, onChange, observations }: {
-  value: string; onChange: (v: string) => void; observations: { id: string }[];
+function DictationStep({ value, onChange, observations, visitId }: {
+  value: string; onChange: (v: string) => void; observations: { id: string }[]; visitId?: string;
 }) {
-  const [recording, setRecording] = useState(false);
+  const { status, error, seconds, supported, toggle } = useDictation({
+    visitId,
+    onTranscript: (text) => {
+      onChange(value ? `${value.trim()} ${text}` : text);
+      toast.success("Transcript added");
+    },
+  });
+  const recording = status === "recording";
+  const busy = status === "transcribing" || status === "requesting";
+
   return (
     <div className="space-y-5">
       <div>
@@ -586,16 +595,25 @@ function DictationStep({ value, onChange, observations }: {
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <Button
-          onClick={() => { setRecording((r) => !r); toast.info(recording ? "Recording stopped" : "Recording…"); }}
+          onClick={toggle}
+          disabled={busy || !supported}
           className={cn("gap-2", recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground")}
         >
-          <Mic className={cn("h-4 w-4", recording && "animate-pulse")} />
-          {recording ? "Stop" : "Start dictation"}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className={cn("h-4 w-4", recording && "animate-pulse")} />}
+          {status === "transcribing" ? "Transcribing…"
+            : status === "requesting" ? "Requesting mic…"
+            : recording ? `Stop (${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")})`
+            : "Start dictation"}
         </Button>
         <span className="text-xs text-muted-foreground">
           {observations.length} finding{observations.length === 1 ? "" : "s"} from foot assessment will be included.
         </span>
       </div>
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+          {error}
+        </div>
+      )}
       <Textarea
         rows={10}
         value={value}
@@ -605,6 +623,7 @@ function DictationStep({ value, onChange, observations }: {
     </div>
   );
 }
+
 
 function SoapStep({ soap, setSoap, loading, onGenerate, hasContext }: {
   soap: { s: string; o: string; a: string; p: string } | null;
