@@ -130,62 +130,42 @@ const FOLLOWUP_PRESETS = [
   { label: "1 mo", days: 30 },
 ];
 
-export type WoundMeasurements = {
-  length?: number; // mm
-  width?: number;  // mm
-  depth?: number;  // mm
-};
-
-export type PainLevel = "none" | "mild" | "moderate" | "severe";
-export type CallusLevel = "none" | "mild" | "moderate" | "severe";
-export type SkinCondition = "dry" | "moist" | "macerated";
-
-export type FootObservation = {
-  id: string;
-  side: FootSide;
-  view: FootView;
-  region: RegionId;
-  regionLabel: string;
-  group: RegionGroup;
-  text: string;
-  photos: string[];              // object URLs
-  measurements?: WoundMeasurements;
-  pain?: PainLevel;
-  callus?: CallusLevel;
-  skin?: SkinCondition[];
-  followUp?: string;             // ISO date
-  at: string;
-};
-
 const PAIN_LEVELS: PainLevel[] = ["none", "mild", "moderate", "severe"];
 const CALLUS_LEVELS: CallusLevel[] = ["none", "mild", "moderate", "severe"];
 const SKIN_OPTIONS: SkinCondition[] = ["dry", "moist", "macerated"];
 
+type PendingPhoto = { file: File; url: string };
 
 export function FootAssessmentModule({
+  patientId,
   patientName,
   patientMeta,
-  observations,
-  onSave,
   onGenerateSoap,
 }: {
+  patientId?: string;
   patientName: string;
   patientMeta?: string;
-  observations: FootObservation[];
-  onSave: (obs: FootObservation) => void;
   onGenerateSoap?: () => void;
 }) {
+  const { footAssessments, addFootObservation } = useStore();
   const [view, setView] = useState<FootView>("plantar");
   const [selected, setSelected] = useState<{ side: FootSide; region: Region } | null>(null);
   const [draft, setDraft] = useState("");
-  const [pendingPhotos, setPendingPhotos] = useState<string[]>([]);
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
   const [recording, setRecording] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [wound, setWound] = useState<WoundMeasurements>({});
   const [pain, setPain] = useState<PainLevel | undefined>();
   const [callus, setCallus] = useState<CallusLevel | undefined>();
   const [skin, setSkin] = useState<SkinCondition[]>([]);
   const [followUp, setFollowUp] = useState<string | undefined>();
   const fileInput = useRef<HTMLInputElement>(null);
+
+  /* Persisted, region-scoped observations for this patient */
+  const observations = useMemo(
+    () => footAssessments.filter((a) => a.region && (!patientId || a.patientId === patientId)),
+    [footAssessments, patientId],
+  );
 
   const regionHistory = useMemo(
     () => selected
@@ -194,10 +174,9 @@ export function FootAssessmentModule({
     [observations, selected],
   );
 
-  const handleSelect = (side: FootSide, region: Region) => {
-    setSelected({ side, region });
+  const resetPanel = () => {
     setDraft("");
-    setPendingPhotos([]);
+    setPendingPhotos((p) => { p.forEach((x) => URL.revokeObjectURL(x.url)); return []; });
     setWound({});
     setPain(undefined);
     setCallus(undefined);
@@ -205,10 +184,15 @@ export function FootAssessmentModule({
     setFollowUp(undefined);
   };
 
+  const handleSelect = (side: FootSide, region: Region) => {
+    setSelected({ side, region });
+    resetPanel();
+  };
+
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
-    const urls = Array.from(files).slice(0, 4).map((f) => URL.createObjectURL(f));
-    setPendingPhotos((p) => [...p, ...urls].slice(0, 4));
+    const next = Array.from(files).slice(0, 4).map((file) => ({ file, url: URL.createObjectURL(file) }));
+    setPendingPhotos((p) => [...p, ...next].slice(0, 4));
   };
 
   const toggleSkin = (s: SkinCondition) =>
@@ -223,33 +207,34 @@ export function FootAssessmentModule({
   const hasMeasurements = wound.length || wound.width || wound.depth;
   const hasClinical = pain || callus || skin.length > 0;
 
-  const save = () => {
-    if (!selected) return;
+  const save = async () => {
+    if (!selected || saving) return;
     if (!draft.trim() && pendingPhotos.length === 0 && !hasMeasurements && !hasClinical && !followUp) return;
-    onSave({
-      id: crypto.randomUUID(),
-      side: selected.side,
-      view,
-      region: selected.region.id,
-      regionLabel: selected.region.label,
-      group: selected.region.group,
-      text: draft.trim(),
-      photos: pendingPhotos,
-      measurements: hasMeasurements ? wound : undefined,
-      pain,
-      callus,
-      skin: skin.length > 0 ? skin : undefined,
-      followUp,
-      at: new Date().toISOString(),
-    });
-    setDraft("");
-    setPendingPhotos([]);
-    setWound({});
-    setPain(undefined);
-    setCallus(undefined);
-    setSkin([]);
-    setFollowUp(undefined);
+    if (!patientId) { toast.error("Choose a patient before saving an observation."); return; }
+    setSaving(true);
+    const res = await addFootObservation(
+      {
+        patientId,
+        side: selected.side,
+        view,
+        region: selected.region.id,
+        regionLabel: selected.region.label,
+        group: selected.region.group,
+        text: draft.trim(),
+        measurements: hasMeasurements ? wound : undefined,
+        pain,
+        callus,
+        skin: skin.length > 0 ? skin : undefined,
+        followUp,
+      },
+      pendingPhotos.map((p) => p.file),
+    );
+    setSaving(false);
+    if (res.error) { toast.error(res.error); return; }
+    toast.success(`Saved · ${selected.side} ${selected.region.label}`);
+    resetPanel();
   };
+
 
 
   const suggestions = selected ? SUGGESTIONS_BY_GROUP[selected.region.group] : [];
