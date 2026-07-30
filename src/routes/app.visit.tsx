@@ -350,6 +350,7 @@ function VisitFlow() {
 
           {step.id === "assessment" && patient && (
             <FootAssessmentModule
+              patientId={pid}
               patientName={patient.name}
               patientMeta={`${patient.diabetesStatus !== "none" ? patient.diabetesStatus.toUpperCase() + " · " : ""}${observations.length} observation${observations.length === 1 ? "" : "s"}`}
               observations={observations}

@@ -43,6 +43,11 @@ function Dashboard() {
     : patients[0];
 
 
+  const observations = useMemo(
+    () => footAssessments.filter((a) => a.region && a.patientId === activePatient?.id),
+    [footAssessments, activePatient?.id],
+  );
+
   const alerts = useMemo(() => {
     const list: { id: string; kind: "risk" | "overdue" | "missing"; text: string; patientId?: string }[] = [];
     for (const p of patients) {
