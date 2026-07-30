@@ -330,9 +330,9 @@ export function FootAssessmentModule({
                   {regionHistory.slice(0, 3).map((h) => (
                     <li key={h.id} className="text-xs text-foreground/85">
                       <span className="mr-1 font-medium text-muted-foreground">
-                        {new Date(h.at).toLocaleDateString([], { month: "short", day: "numeric" })}:
+                        {new Date(h.date).toLocaleDateString([], { month: "short", day: "numeric" })}:
                       </span>
-                      {h.text || "(photo / measurement)"}
+                      {h.notes || "(photo / measurement)"}
                       {h.measurements && (
                         <span className="ml-1 text-muted-foreground">
                           · {h.measurements.length ?? "–"}×{h.measurements.width ?? "–"}×{h.measurements.depth ?? "–"} mm
@@ -403,9 +403,9 @@ export function FootAssessmentModule({
             {/* Pending photos */}
             {pendingPhotos.length > 0 && (
               <div className="mt-2 flex gap-2">
-                {pendingPhotos.map((src) => (
-                  <div key={src} className="relative h-14 w-14 overflow-hidden rounded-lg border">
-                    <img src={src} alt="" className="h-full w-full object-cover" />
+                {pendingPhotos.map((p) => (
+                  <div key={p.url} className="relative h-14 w-14 overflow-hidden rounded-lg border">
+                    <img src={p.url} alt="" className="h-full w-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -543,16 +543,16 @@ export function FootAssessmentModule({
             <div key={o.id} className="flex items-start gap-3 rounded-xl border bg-surface p-3 text-sm">
               <span
                 className="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
-                style={{ background: groupRing(o.group) }}
+                style={{ background: groupRing(o.regionGroup ?? "") }}
               >
                 {o.side} · {o.regionLabel}
               </span>
               <div className="min-w-0 flex-1">
-                {o.text && <p className="truncate">{o.text}</p>}
+                {o.notes && <p className="truncate">{o.notes}</p>}
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                  {o.photos.length > 0 && (
+                  {o.photoPaths.length > 0 && (
                     <span className="inline-flex items-center gap-1">
-                      <ImageIcon className="h-3 w-3" /> {o.photos.length}
+                      <ImageIcon className="h-3 w-3" /> {o.photoPaths.length}
                     </span>
                   )}
                   {o.measurements && (
@@ -570,7 +570,7 @@ export function FootAssessmentModule({
                 </div>
               </div>
               <span className="shrink-0 text-[11px] text-muted-foreground">
-                {new Date(o.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {new Date(o.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </span>
             </div>
           ))}
@@ -590,7 +590,7 @@ function FootSvg({
   side: FootSide; view: FootView;
   selected: { side: FootSide; region: Region } | null;
   onSelect: (side: FootSide, region: Region) => void;
-  observations: FootObservation[];
+  observations: FootAssessment[];
 }) {
   const regions = REGIONS[view];
   const observedIds = new Set(
