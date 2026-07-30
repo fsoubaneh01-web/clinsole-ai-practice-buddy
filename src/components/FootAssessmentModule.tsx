@@ -162,7 +162,12 @@ export function FootAssessmentModule({
   const [selected, setSelected] = useState<{ side: FootSide; region: Region } | null>(null);
   const [draft, setDraft] = useState("");
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
-  const [recording, setRecording] = useState(false);
+  const dictation = useDictation({
+    visitId: patientId,
+    onTranscript: (text) => setDraft((d) => (d ? `${d.trim()} ${text}` : text)),
+  });
+  const recording = dictation.status === "recording";
+
   const [saving, setSaving] = useState(false);
   const [wound, setWound] = useState<WoundMeasurements>({});
   const [pain, setPain] = useState<PainLevel | undefined>();
