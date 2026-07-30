@@ -6,6 +6,8 @@ import {
   Ruler, History, BellRing, Stethoscope, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDictation } from "@/hooks/use-dictation";
+
 import { Button } from "@/components/ui/button";
 import {
   useStore,
@@ -162,7 +164,12 @@ export function FootAssessmentModule({
   const [selected, setSelected] = useState<{ side: FootSide; region: Region } | null>(null);
   const [draft, setDraft] = useState("");
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
-  const [recording, setRecording] = useState(false);
+  const dictation = useDictation({
+    visitId: patientId,
+    onTranscript: (text) => setDraft((d) => (d ? `${d.trim()} ${text}` : text)),
+  });
+  const recording = dictation.status === "recording";
+
   const [saving, setSaving] = useState(false);
   const [wound, setWound] = useState<WoundMeasurements>({});
   const [pain, setPain] = useState<PainLevel | undefined>();
@@ -367,21 +374,30 @@ export function FootAssessmentModule({
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder={recording ? "Listening…" : "Type or dictate observation for this region"}
+                placeholder={
+                  recording ? "Listening…"
+                    : dictation.status === "transcribing" ? "Transcribing…"
+                    : "Type or dictate observation for this region"
+                }
                 rows={3}
                 className="min-h-[76px] flex-1 resize-none rounded-xl border bg-surface p-3 text-sm outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
               />
               <div className="flex flex-col gap-2">
                 <button
-                  onClick={() => setRecording((r) => !r)}
+                  onClick={dictation.toggle}
+                  disabled={dictation.status === "transcribing" || dictation.status === "requesting" || !dictation.supported}
                   className={cn(
-                    "grid h-10 w-10 place-items-center rounded-xl shadow-soft transition-colors",
+                    "grid h-10 w-10 place-items-center rounded-xl shadow-soft transition-colors disabled:opacity-60",
                     recording ? "bg-destructive text-white animate-pulse" : "bg-secondary text-secondary-foreground",
                   )}
                   aria-label="Voice dictation"
+                  title={recording ? `Stop recording (${dictation.seconds}s)` : "Voice dictation"}
                 >
-                  <Mic className="h-4 w-4" />
+                  {dictation.status === "transcribing" || dictation.status === "requesting"
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Mic className="h-4 w-4" />}
                 </button>
+
                 <button
                   onClick={() => fileInput.current?.click()}
                   className="grid h-10 w-10 place-items-center rounded-xl bg-muted text-foreground shadow-soft hover:bg-muted/70"
@@ -399,6 +415,14 @@ export function FootAssessmentModule({
                 />
               </div>
             </div>
+
+            {dictation.error && (
+              <div className="mt-2 rounded-xl border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+                {dictation.error}
+              </div>
+            )}
+
+
 
             {/* Pending photos */}
             {pendingPhotos.length > 0 && (

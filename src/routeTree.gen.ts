@@ -20,6 +20,7 @@ import { Route as AppSubscriptionRouteImport } from './routes/app.subscription'
 import { Route as AppSoapRouteImport } from './routes/app.soap'
 import { Route as AppPatientsRouteImport } from './routes/app.patients'
 import { Route as AppIncomeRouteImport } from './routes/app.income'
+import { Route as AppDictationUsageRouteImport } from './routes/app.dictation-usage'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppCalendarRouteImport } from './routes/app.calendar'
 import { Route as AppAssistantRouteImport } from './routes/app.assistant'
@@ -82,6 +83,11 @@ const AppIncomeRoute = AppIncomeRouteImport.update({
   path: '/income',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDictationUsageRoute = AppDictationUsageRouteImport.update({
+  id: '/dictation-usage',
+  path: '/dictation-usage',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/app/assistant': typeof AppAssistantRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/dictation-usage': typeof AppDictationUsageRoute
   '/app/income': typeof AppIncomeRoute
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/app/assistant': typeof AppAssistantRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/dictation-usage': typeof AppDictationUsageRoute
   '/app/income': typeof AppIncomeRoute
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/app/assistant': typeof AppAssistantRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/dictation-usage': typeof AppDictationUsageRoute
   '/app/income': typeof AppIncomeRoute
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/app/assistant'
     | '/app/calendar'
     | '/app/dashboard'
+    | '/app/dictation-usage'
     | '/app/income'
     | '/app/patients'
     | '/app/soap'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/app/assistant'
     | '/app/calendar'
     | '/app/dashboard'
+    | '/app/dictation-usage'
     | '/app/income'
     | '/app/patients'
     | '/app/soap'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/app/assistant'
     | '/app/calendar'
     | '/app/dashboard'
+    | '/app/dictation-usage'
     | '/app/income'
     | '/app/patients'
     | '/app/soap'
@@ -319,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIncomeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/dictation-usage': {
+      id: '/app/dictation-usage'
+      path: '/dictation-usage'
+      fullPath: '/app/dictation-usage'
+      preLoaderRoute: typeof AppDictationUsageRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/dashboard': {
       id: '/app/dashboard'
       path: '/dashboard'
@@ -369,6 +388,7 @@ interface AppRouteChildren {
   AppAssistantRoute: typeof AppAssistantRoute
   AppCalendarRoute: typeof AppCalendarRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppDictationUsageRoute: typeof AppDictationUsageRoute
   AppIncomeRoute: typeof AppIncomeRoute
   AppPatientsRoute: typeof AppPatientsRoute
   AppSoapRoute: typeof AppSoapRoute
@@ -383,6 +403,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAssistantRoute: AppAssistantRoute,
   AppCalendarRoute: AppCalendarRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppDictationUsageRoute: AppDictationUsageRoute,
   AppIncomeRoute: AppIncomeRoute,
   AppPatientsRoute: AppPatientsRoute,
   AppSoapRoute: AppSoapRoute,
