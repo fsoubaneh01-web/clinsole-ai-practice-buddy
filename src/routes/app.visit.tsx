@@ -363,7 +363,7 @@ function VisitFlow() {
           )}
 
           {step.id === "dictation" && (
-            <DictationStep value={dictation} onChange={setDictation} observations={observations} />
+            <DictationStep value={dictation} onChange={setDictation} observations={observations} visitId={pid ? `${pid}:${visitStartedAt ?? ""}` : undefined} />
           )}
 
           {step.id === "soap" && (
