@@ -543,7 +543,7 @@ export function FootAssessmentModule({
             <div key={o.id} className="flex items-start gap-3 rounded-xl border bg-surface p-3 text-sm">
               <span
                 className="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
-                style={{ background: groupRing(o.regionGroup ?? "") }}
+                style={{ background: groupRing((o.regionGroup ?? "skin") as RegionGroup) }}
               >
                 {o.side} · {o.regionLabel}
               </span>

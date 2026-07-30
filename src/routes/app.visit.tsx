@@ -353,8 +353,6 @@ function VisitFlow() {
               patientId={pid}
               patientName={patient.name}
               patientMeta={`${patient.diabetesStatus !== "none" ? patient.diabetesStatus.toUpperCase() + " · " : ""}${observations.length} observation${observations.length === 1 ? "" : "s"}`}
-              observations={observations}
-              onSave={(o) => setObservations((prev) => [o, ...prev])}
             />
           )}
 
