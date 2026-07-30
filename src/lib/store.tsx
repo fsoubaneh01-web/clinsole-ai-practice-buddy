@@ -283,28 +283,59 @@ type FootAssessmentRow = {
   risk_level: string;
   notes: string | null;
   photo_urls: string[] | null;
+  side: string | null;
+  foot_view: string | null;
+  region: string | null;
+  region_label: string | null;
+  region_group: string | null;
+  pain_level: string | null;
+  callus_level: string | null;
+  skin_conditions: string[] | null;
+  wound_length_mm: number | string | null;
+  wound_width_mm: number | string | null;
+  wound_depth_mm: number | string | null;
+  follow_up_at: string | null;
 };
 
-const rowToFootAssessment = (r: FootAssessmentRow): FootAssessment => ({
-  id: r.id,
-  patientId: r.patient_id,
-  date: r.assessed_at,
-  leftFoot: r.left_foot, rightFoot: r.right_foot,
-  skinDry: r.skin_dry, skinCallus: r.skin_callus, skinCorns: r.skin_corns,
-  skinFissures: r.skin_fissures, skinUlcer: r.skin_ulcer, skinInfection: r.skin_infection,
-  nailsThickened: r.nails_thickened, nailsFungal: r.nails_fungal, nailsIngrown: r.nails_ingrown,
-  nailsTrimmed: r.nails_trimmed, nailsDebrided: r.nails_debrided,
-  pulsesPresent: r.pulses_present ?? "",
-  capillaryRefill: r.capillary_refill ?? "",
-  edema: r.edema ?? "",
-  skinTemperature: r.skin_temperature ?? "",
-  protectiveSensation: r.protective_sensation ?? "",
-  monofilamentFindings: r.monofilament_findings ?? "",
-  neuropathyRisk: r.neuropathy_risk ?? "",
-  riskLevel: (r.risk_level as RiskLevel) || "low",
-  notes: r.notes ?? "",
-  photoPaths: r.photo_urls ?? [],
-});
+const num = (v: number | string | null) =>
+  v === null || v === "" ? undefined : typeof v === "string" ? parseFloat(v) : v;
+
+const rowToFootAssessment = (r: FootAssessmentRow): FootAssessment => {
+  const length = num(r.wound_length_mm);
+  const width = num(r.wound_width_mm);
+  const depth = num(r.wound_depth_mm);
+  const hasWound = length !== undefined || width !== undefined || depth !== undefined;
+  return {
+    id: r.id,
+    patientId: r.patient_id,
+    date: r.assessed_at,
+    leftFoot: r.left_foot, rightFoot: r.right_foot,
+    skinDry: r.skin_dry, skinCallus: r.skin_callus, skinCorns: r.skin_corns,
+    skinFissures: r.skin_fissures, skinUlcer: r.skin_ulcer, skinInfection: r.skin_infection,
+    nailsThickened: r.nails_thickened, nailsFungal: r.nails_fungal, nailsIngrown: r.nails_ingrown,
+    nailsTrimmed: r.nails_trimmed, nailsDebrided: r.nails_debrided,
+    pulsesPresent: r.pulses_present ?? "",
+    capillaryRefill: r.capillary_refill ?? "",
+    edema: r.edema ?? "",
+    skinTemperature: r.skin_temperature ?? "",
+    protectiveSensation: r.protective_sensation ?? "",
+    monofilamentFindings: r.monofilament_findings ?? "",
+    neuropathyRisk: r.neuropathy_risk ?? "",
+    riskLevel: (r.risk_level as RiskLevel) || "low",
+    notes: r.notes ?? "",
+    photoPaths: r.photo_urls ?? [],
+    side: (r.side as FootSide) ?? undefined,
+    view: (r.foot_view as FootView) ?? undefined,
+    region: r.region ?? undefined,
+    regionLabel: r.region_label ?? undefined,
+    regionGroup: r.region_group ?? undefined,
+    pain: (r.pain_level as PainLevel) ?? undefined,
+    callus: (r.callus_level as CallusLevel) ?? undefined,
+    skin: (r.skin_conditions as SkinCondition[] | null)?.length ? (r.skin_conditions as SkinCondition[]) : undefined,
+    measurements: hasWound ? { length, width, depth } : undefined,
+    followUp: r.follow_up_at ?? undefined,
+  };
+};
 
 export function summarizeAssessment(a: FootAssessment): string {
   const parts: string[] = [];
