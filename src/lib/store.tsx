@@ -607,6 +607,76 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (error) { console.error("deleteAppointment", error); return; }
       setAppointments((s) => s.filter((a) => a.id !== aid));
     },
+    uploadClinicalPhotos: async (patientId, files) => {
+      const userId = session?.user?.id;
+      if (!userId) return { error: "You must be signed in." };
+      const paths: string[] = [];
+      for (const file of files) {
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const path = `${userId}/${patientId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("clinical-photos").upload(path, file, {
+          contentType: file.type || "image/jpeg",
+          upsert: false,
+        });
+        if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
+        paths.push(path);
+      }
+      return { paths };
+    },
+    addFootObservation: async (o, photos) => {
+      const userId = session?.user?.id;
+      if (!userId) return { error: "You must be signed in." };
+      if (!o.patientId) return { error: "Choose a patient." };
+
+      const paths: string[] = [];
+      for (const file of photos) {
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const path = `${userId}/${o.patientId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("clinical-photos").upload(path, file, {
+          contentType: file.type || "image/jpeg",
+          upsert: false,
+        });
+        if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
+        paths.push(path);
+      }
+
+      const severe = o.pain === "severe" || o.callus === "severe";
+      const moderate = o.pain === "moderate" || o.callus === "moderate";
+      const { data, error } = await supabase
+        .from("foot_assessments")
+        .insert({
+          nurse_id: userId,
+          patient_id: o.patientId,
+          left_foot: o.side === "L",
+          right_foot: o.side === "R",
+          skin_dry: !!o.skin?.includes("dry"),
+          skin_callus: !!o.callus && o.callus !== "none",
+          risk_level: severe ? "high" : moderate ? "moderate" : "low",
+          notes: o.text || null,
+          photo_urls: paths,
+          side: o.side,
+          foot_view: o.view,
+          region: o.region,
+          region_label: o.regionLabel,
+          region_group: o.group,
+          pain_level: o.pain ?? null,
+          callus_level: o.callus ?? null,
+          skin_conditions: o.skin ?? [],
+          wound_length_mm: o.measurements?.length ?? null,
+          wound_width_mm: o.measurements?.width ?? null,
+          wound_depth_mm: o.measurements?.depth ?? null,
+          follow_up_at: o.followUp ?? null,
+        })
+        .select()
+        .single();
+      if (error || !data) {
+        console.error("addFootObservation", error);
+        return { error: error?.message || "Failed to save observation." };
+      }
+      const assessment = rowToFootAssessment(data as FootAssessmentRow);
+      setFootAssessments((s) => [assessment, ...s]);
+      return { assessment };
+    },
     addFootAssessment: async (a, photos) => {
       const userId = session?.user?.id;
       if (!userId) return { error: "You must be signed in." };
@@ -623,6 +693,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
         paths.push(path);
       }
+
 
       const { data, error } = await supabase
         .from("foot_assessments")
