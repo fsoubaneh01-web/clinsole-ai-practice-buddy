@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FootAssessmentModule, type FootObservation } from "@/components/FootAssessmentModule";
+import { FootAssessmentModule } from "@/components/FootAssessmentModule";
 import { useStore, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -59,15 +59,14 @@ function VisitFlow() {
   const { patientId } = Route.useSearch();
   const navigate = useNavigate();
   const {
-    patients, nurse, ageOf, latestAssessmentFor,
+    patients, nurse, ageOf, latestAssessmentFor, footAssessments, uploadClinicalPhotos,
     addTreatment, addTransaction, addAppointment,
   } = useStore();
   const generate = useServerFn(generateSoapNote);
 
   const [stepIdx, setStepIdx] = useState(0);
   const [pid, setPid] = useState(patientId || patients[0]?.id || "");
-  const [observations, setObservations] = useState<FootObservation[]>([]);
-  const [photos, setPhotos] = useState<{ id: string; url: string; note: string }[]>([]);
+  const [photos, setPhotos] = useState<{ id: string; url: string; path?: string; uploading?: boolean; note: string }[]>([]);
   const [dictation, setDictation] = useState("");
   const [soap, setSoap] = useState<{ s: string; o: string; a: string; p: string } | null>(null);
   const [soapLoading, setSoapLoading] = useState(false);
@@ -79,6 +78,13 @@ function VisitFlow() {
   const [followupType, setFollowupType] = useState("Foot care follow-up");
   const [visitStartedAt, setVisitStartedAt] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
+
+  const observations = useMemo(
+    () => footAssessments.filter(
+      (a) => a.region && a.patientId === pid && (!visitStartedAt || a.date >= visitStartedAt),
+    ),
+    [footAssessments, pid, visitStartedAt],
+  );
 
   const step = STEPS[stepIdx];
   const patient = patients.find((p) => p.id === pid);
@@ -94,7 +100,6 @@ function VisitFlow() {
       if (raw) {
         const d = JSON.parse(raw);
         if (d.stepIdx != null) setStepIdx(d.stepIdx);
-        if (d.observations) setObservations(d.observations);
         if (d.dictation) setDictation(d.dictation);
         if (d.soap) setSoap(d.soap);
         if (d.fee) setFee(d.fee);
@@ -114,11 +119,11 @@ function VisitFlow() {
     if (!draftKey || !hydrated.current) return;
     try {
       localStorage.setItem(draftKey, JSON.stringify({
-        stepIdx, observations, dictation, soap, fee, paymentMethod,
+        stepIdx, dictation, soap, fee, paymentMethod,
         selectedTopics, followupDate, followupTime, followupType, visitStartedAt,
       }));
     } catch {}
-  }, [draftKey, stepIdx, observations, dictation, soap, fee, paymentMethod,
+  }, [draftKey, stepIdx, dictation, soap, fee, paymentMethod,
       selectedTopics, followupDate, followupTime, followupType, visitStartedAt]);
 
   const progressPct = Math.round((stepIdx / (STEPS.length - 1)) * 100);
@@ -139,7 +144,7 @@ function VisitFlow() {
     if (!w) return toast.error("Enable pop-ups to print the summary.");
     const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
     const obsRows = observations.map((o) =>
-      `<tr><td>${o.side === "L" ? "Left" : "Right"} ${esc(o.regionLabel)}</td><td>${esc(o.text || "—")}</td><td>${o.pain || "—"}</td></tr>`
+      `<tr><td>${o.side === "L" ? "Left" : "Right"} ${esc(o.regionLabel ?? "Region")}</td><td>${esc(o.notes || "—")}</td><td>${o.pain || "—"}</td></tr>`
     ).join("") || `<tr><td colspan="3" style="color:#888">No findings recorded</td></tr>`;
     const edu = EDUCATION_TOPICS.filter((t) => selectedTopics.includes(t.id))
       .map((t) => `<li><strong>${esc(t.title)}</strong> — ${esc(t.body)}</li>`).join("");
@@ -187,12 +192,23 @@ function VisitFlow() {
   };
 
 
-  const addPhotoFile = (files: FileList | null) => {
+  const addPhotoFile = async (files: FileList | null) => {
     if (!files) return;
-    Array.from(files).forEach((f) => {
+    if (!pid) { toast.error("Select a patient first."); return; }
+    for (const f of Array.from(files)) {
+      const id = crypto.randomUUID();
       const url = URL.createObjectURL(f);
-      setPhotos((p) => [{ id: crypto.randomUUID(), url, note: "" }, ...p]);
-    });
+      setPhotos((p) => [{ id, url, note: "", uploading: true }, ...p]);
+      const res = await uploadClinicalPhotos(pid, [f]);
+      if (res.error || !res.paths?.[0]) {
+        toast.error(res.error || "Photo upload failed.");
+        URL.revokeObjectURL(url);
+        setPhotos((p) => p.filter((x) => x.id !== id));
+        continue;
+      }
+      setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, path: res.paths![0] } : x)));
+      URL.revokeObjectURL(url);
+    }
   };
 
   const generateSoap = async () => {
@@ -202,7 +218,7 @@ function VisitFlow() {
       const age = ageOf(patient.dob);
       const obsSummary = observations
         .slice(0, 6)
-        .map((o) => `${o.side === "L" ? "Left" : "Right"} ${o.regionLabel}: ${o.text || "noted"}${o.pain ? ` · pain ${o.pain}` : ""}`)
+        .map((o) => `${o.side === "L" ? "Left" : "Right"} ${o.regionLabel ?? "Region"}: ${o.notes || "noted"}${o.pain ? ` · pain ${o.pain}` : ""}`)
         .join("; ");
       const brief = [
         dictation.trim(),
@@ -507,7 +523,7 @@ function InfoCard({ label, value }: { label: string; value: string }) {
 }
 
 function PhotosStep({ photos, onAdd, onRemove, onNote }: {
-  photos: { id: string; url: string; note: string }[];
+  photos: { id: string; url: string; path?: string; uploading?: boolean; note: string }[];
   onAdd: (files: FileList | null) => void;
   onRemove: (id: string) => void;
   onNote: (id: string, note: string) => void;
@@ -560,7 +576,7 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
 }
 
 function DictationStep({ value, onChange, observations }: {
-  value: string; onChange: (v: string) => void; observations: FootObservation[];
+  value: string; onChange: (v: string) => void; observations: { id: string }[];
 }) {
   const [recording, setRecording] = useState(false);
   return (
