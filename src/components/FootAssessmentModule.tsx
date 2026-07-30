@@ -416,6 +416,14 @@ export function FootAssessmentModule({
               </div>
             </div>
 
+            {dictation.error && (
+              <div className="mt-2 rounded-xl border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+                {dictation.error}
+              </div>
+            )}
+
+
+
             {/* Pending photos */}
             {pendingPhotos.length > 0 && (
               <div className="mt-2 flex gap-2">
