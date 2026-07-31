@@ -66,7 +66,7 @@ function AssessPage() {
     setBusy(false);
     if (res.error) { toast.error(res.error); return; }
     toast.success("Assessment saved to visit history");
-    nav({ to: "/app/patients_/$id", params: { id: patient.id } });
+    nav({ to: "/app/patients/$id", params: { id: patient.id } });
   };
 
   return (
