@@ -385,13 +385,17 @@ export function FootAssessmentModule({
               <div className="flex flex-col gap-2">
                 <button
                   onClick={dictation.toggle}
-                  disabled={dictation.status === "transcribing" || dictation.status === "requesting" || !dictation.supported}
+                  disabled={dictation.status === "transcribing" || dictation.status === "requesting" || !dictation.supported || dictation.limitReached}
                   className={cn(
                     "grid h-10 w-10 place-items-center rounded-xl shadow-soft transition-colors disabled:opacity-60",
                     recording ? "bg-destructive text-white animate-pulse" : "bg-secondary text-secondary-foreground",
                   )}
                   aria-label="Voice dictation"
-                  title={recording ? `Stop recording (${dictation.seconds}s)` : "Voice dictation"}
+                  title={
+                    dictation.limitReached
+                      ? dictation.limitMessage ?? "Dictation limit reached"
+                      : recording ? `Stop recording (${dictation.seconds}s)` : "Voice dictation"
+                  }
                 >
                   {dictation.status === "transcribing" || dictation.status === "requesting"
                     ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -416,11 +420,18 @@ export function FootAssessmentModule({
               </div>
             </div>
 
-            {dictation.error && (
+            {dictation.limitMessage && (
+              <div className="mt-2 rounded-xl border border-warning/40 bg-warning/10 p-2 text-xs text-foreground">
+                {dictation.limitMessage}
+              </div>
+            )}
+
+            {dictation.error && !dictation.limitReached && (
               <div className="mt-2 rounded-xl border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
                 {dictation.error}
               </div>
             )}
+
 
 
 

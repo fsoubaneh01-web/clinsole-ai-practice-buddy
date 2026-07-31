@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { transcribeDictation } from "@/lib/dictation.functions";
+import { getDictationQuota } from "@/lib/dictation-quota.functions";
+import { DICTATION_LIMIT_MESSAGE, clientMonthlyMinuteLimit } from "@/lib/dictation-limits";
+
 
 export type DictationStatus = "idle" | "requesting" | "recording" | "transcribing" | "error";
 
@@ -24,10 +27,37 @@ export function useDictation(opts: {
 }) {
   const { visitId, onTranscript } = opts;
   const transcribe = useServerFn(transcribeDictation);
+  const fetchQuota = useServerFn(getDictationQuota);
 
   const [status, setStatus] = useState<DictationStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
+  const [quota, setQuota] = useState<{
+    usedMinutes: number; limitMinutes: number; remainingMinutes: number; limitReached: boolean;
+  }>({
+    usedMinutes: 0,
+    limitMinutes: clientMonthlyMinuteLimit(),
+    remainingMinutes: clientMonthlyMinuteLimit(),
+    limitReached: false,
+  });
+
+  const refreshQuota = useCallback(async () => {
+    try {
+      const q = await fetchQuota();
+      setQuota({
+        usedMinutes: q.usedMinutes,
+        limitMinutes: q.limitMinutes,
+        remainingMinutes: q.remainingMinutes,
+        limitReached: q.limitReached,
+      });
+      return q.limitReached;
+    } catch {
+      return false; // never block dictation because the quota check failed
+    }
+  }, [fetchQuota]);
+
+  useEffect(() => { void refreshQuota(); }, [refreshQuota]);
+
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -54,7 +84,13 @@ export function useDictation(opts: {
       setError("This browser doesn't support microphone recording. Please type your notes instead.");
       return;
     }
+    if (quota.limitReached || (await refreshQuota())) {
+      setStatus("error");
+      setError(DICTATION_LIMIT_MESSAGE);
+      return;
+    }
     setStatus("requesting");
+
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -114,6 +150,8 @@ export function useDictation(opts: {
             ? e.message
             : "Transcription failed — check your connection. You can type your notes below instead.",
         );
+      } finally {
+        void refreshQuota();
       }
     };
 
@@ -131,7 +169,7 @@ export function useDictation(opts: {
       500,
     );
     setStatus("recording");
-  }, [supported, cleanup, transcribe, visitId, onTranscript]);
+  }, [supported, cleanup, transcribe, visitId, onTranscript, quota.limitReached, refreshQuota]);
 
   const stop = useCallback(() => {
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
@@ -142,5 +180,21 @@ export function useDictation(opts: {
     else if (status !== "transcribing" && status !== "requesting") void start();
   }, [status, start, stop]);
 
-  return { status, error, seconds, supported, start, stop, toggle, clearError: () => setError(null) };
+  return {
+    status,
+    error,
+    seconds,
+    supported,
+    start,
+    stop,
+    toggle,
+    clearError: () => setError(null),
+    limitReached: quota.limitReached,
+    limitMessage: quota.limitReached ? DICTATION_LIMIT_MESSAGE : null,
+    usedMinutes: quota.usedMinutes,
+    limitMinutes: quota.limitMinutes,
+    remainingMinutes: quota.remainingMinutes,
+    refreshQuota,
+  };
+
 }

@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  DEFAULT_MONTHLY_MINUTE_LIMIT,
+  DICTATION_LIMIT_MESSAGE,
+  monthStartIso,
+  parseLimitNumber,
+} from "./dictation-limits";
 
 const InputSchema = z.object({
   /** Base64-encoded audio payload (no data: prefix). */
@@ -14,6 +20,21 @@ export const transcribeDictation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data, context }) => {
+    // Authoritative monthly cap check (the client also blocks the mic button).
+    const limitMinutes = parseLimitNumber(
+      process.env['DICTATION_MONTHLY_MINUTE_LIMIT'],
+      DEFAULT_MONTHLY_MINUTE_LIMIT,
+    );
+    const { data: usageRows, error: usageError } = await context.supabase
+      .from("dictation_usage")
+      .select("duration_seconds")
+      .eq("user_id", context.userId)
+      .gte("created_at", monthStartIso());
+    if (usageError) throw new Error(usageError.message);
+    const usedMinutes =
+      (usageRows ?? []).reduce((s, r) => s + Number(r.duration_seconds ?? 0), 0) / 60;
+    if (usedMinutes >= limitMinutes) throw new Error(DICTATION_LIMIT_MESSAGE);
+
     const { transcribeMedicalAudio, estimateCost, mediaFormatFor, base64ToBytes } =
       await import("./dictation.server");
 
@@ -30,5 +51,9 @@ export const transcribeDictation = createServerFn({ method: "POST" })
       estimated_cost,
     });
 
+    const { checkGlobalSpendCap } = await import("./dictation-spend.server");
+    await checkGlobalSpendCap();
+
     return { transcript, durationSeconds: data.durationSeconds, estimatedCost: estimated_cost };
   });
+
