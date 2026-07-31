@@ -150,6 +150,8 @@ export function useDictation(opts: {
             ? e.message
             : "Transcription failed — check your connection. You can type your notes below instead.",
         );
+      } finally {
+        void refreshQuota();
       }
     };
 
@@ -167,7 +169,7 @@ export function useDictation(opts: {
       500,
     );
     setStatus("recording");
-  }, [supported, cleanup, transcribe, visitId, onTranscript]);
+  }, [supported, cleanup, transcribe, visitId, onTranscript, quota.limitReached, refreshQuota]);
 
   const stop = useCallback(() => {
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
@@ -178,5 +180,21 @@ export function useDictation(opts: {
     else if (status !== "transcribing" && status !== "requesting") void start();
   }, [status, start, stop]);
 
-  return { status, error, seconds, supported, start, stop, toggle, clearError: () => setError(null) };
+  return {
+    status,
+    error,
+    seconds,
+    supported,
+    start,
+    stop,
+    toggle,
+    clearError: () => setError(null),
+    limitReached: quota.limitReached,
+    limitMessage: quota.limitReached ? DICTATION_LIMIT_MESSAGE : null,
+    usedMinutes: quota.usedMinutes,
+    limitMinutes: quota.limitMinutes,
+    remainingMinutes: quota.remainingMinutes,
+    refreshQuota,
+  };
+
 }
