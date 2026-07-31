@@ -579,13 +579,14 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
 function DictationStep({ value, onChange, observations, visitId }: {
   value: string; onChange: (v: string) => void; observations: { id: string }[]; visitId?: string;
 }) {
-  const { status, error, seconds, supported, toggle } = useDictation({
-    visitId,
-    onTranscript: (text) => {
-      onChange(value ? `${value.trim()} ${text}` : text);
-      toast.success("Transcript added");
-    },
-  });
+  const { status, error, seconds, supported, toggle, limitReached, limitMessage, usedMinutes, limitMinutes } =
+    useDictation({
+      visitId,
+      onTranscript: (text) => {
+        onChange(value ? `${value.trim()} ${text}` : text);
+        toast.success("Transcript added");
+      },
+    });
   const recording = status === "recording";
   const busy = status === "transcribing" || status === "requesting";
 
@@ -598,7 +599,7 @@ function DictationStep({ value, onChange, observations, visitId }: {
       <div className="flex flex-wrap items-center gap-3">
         <Button
           onClick={toggle}
-          disabled={busy || !supported}
+          disabled={busy || !supported || limitReached}
           className={cn("gap-2", recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground")}
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className={cn("h-4 w-4", recording && "animate-pulse")} />}
@@ -610,12 +611,21 @@ function DictationStep({ value, onChange, observations, visitId }: {
         <span className="text-xs text-muted-foreground">
           {observations.length} finding{observations.length === 1 ? "" : "s"} from foot assessment will be included.
         </span>
+        <span className="text-xs text-muted-foreground">
+          {usedMinutes.toFixed(1)} / {limitMinutes} min this month
+        </span>
       </div>
-      {error && (
+      {limitMessage && (
+        <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
+          {limitMessage}
+        </div>
+      )}
+      {error && !limitReached && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
           {error}
         </div>
       )}
+
       <Textarea
         rows={10}
         value={value}
