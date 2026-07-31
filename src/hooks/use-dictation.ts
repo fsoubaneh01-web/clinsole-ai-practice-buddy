@@ -27,10 +27,37 @@ export function useDictation(opts: {
 }) {
   const { visitId, onTranscript } = opts;
   const transcribe = useServerFn(transcribeDictation);
+  const fetchQuota = useServerFn(getDictationQuota);
 
   const [status, setStatus] = useState<DictationStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
+  const [quota, setQuota] = useState<{
+    usedMinutes: number; limitMinutes: number; remainingMinutes: number; limitReached: boolean;
+  }>({
+    usedMinutes: 0,
+    limitMinutes: clientMonthlyMinuteLimit(),
+    remainingMinutes: clientMonthlyMinuteLimit(),
+    limitReached: false,
+  });
+
+  const refreshQuota = useCallback(async () => {
+    try {
+      const q = await fetchQuota();
+      setQuota({
+        usedMinutes: q.usedMinutes,
+        limitMinutes: q.limitMinutes,
+        remainingMinutes: q.remainingMinutes,
+        limitReached: q.limitReached,
+      });
+      return q.limitReached;
+    } catch {
+      return false; // never block dictation because the quota check failed
+    }
+  }, [fetchQuota]);
+
+  useEffect(() => { void refreshQuota(); }, [refreshQuota]);
+
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
