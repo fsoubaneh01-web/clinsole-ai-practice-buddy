@@ -84,7 +84,13 @@ export function useDictation(opts: {
       setError("This browser doesn't support microphone recording. Please type your notes instead.");
       return;
     }
+    if (quota.limitReached || (await refreshQuota())) {
+      setStatus("error");
+      setError(DICTATION_LIMIT_MESSAGE);
+      return;
+    }
     setStatus("requesting");
+
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
