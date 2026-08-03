@@ -13,10 +13,7 @@ import {
 export const getDictationQuota = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const limitMinutes = parseLimitNumber(
-      process.env['DICTATION_MONTHLY_MINUTE_LIMIT'],
-      DEFAULT_MONTHLY_MINUTE_LIMIT,
-    );
+    const limitMinutes = serverMonthlyMinuteLimit(process.env);
 
     const { data, error } = await context.supabase
       .from("dictation_usage")

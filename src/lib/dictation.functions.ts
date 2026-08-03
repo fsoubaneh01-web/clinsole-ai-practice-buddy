@@ -2,10 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
-  DEFAULT_MONTHLY_MINUTE_LIMIT,
   DICTATION_LIMIT_MESSAGE,
   monthStartIso,
-  parseLimitNumber,
+  serverMonthlyMinuteLimit,
 } from "./dictation-limits";
 
 const InputSchema = z.object({
