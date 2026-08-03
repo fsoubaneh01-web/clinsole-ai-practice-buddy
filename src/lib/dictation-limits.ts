@@ -28,6 +28,18 @@ export function clientMonthlyMinuteLimit(): number {
   );
 }
 
+/**
+ * Server-side (authoritative) limit. Accepts either the server-only name or the
+ * VITE_ build-time name so a single .env entry configures both sides.
+ */
+export function serverMonthlyMinuteLimit(env: Record<string, unknown> = {}): number {
+  const raw =
+    env['DICTATION_MONTHLY_MINUTE_LIMIT'] ??
+    env['Dictation_monthly_minute_limit'] ??
+    env['VITE_DICTATION_MONTHLY_MINUTE_LIMIT'];
+  return toNumber(raw, DEFAULT_MONTHLY_MINUTE_LIMIT);
+}
+
 export { toNumber as parseLimitNumber };
 
 /** First day of the current calendar month, as an ISO timestamp. */

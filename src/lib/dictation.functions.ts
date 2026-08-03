@@ -2,10 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
-  DEFAULT_MONTHLY_MINUTE_LIMIT,
   DICTATION_LIMIT_MESSAGE,
   monthStartIso,
-  parseLimitNumber,
+  serverMonthlyMinuteLimit,
 } from "./dictation-limits";
 
 const InputSchema = z.object({
@@ -21,10 +20,7 @@ export const transcribeDictation = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data, context }) => {
     // Authoritative monthly cap check (the client also blocks the mic button).
-    const limitMinutes = parseLimitNumber(
-      process.env['DICTATION_MONTHLY_MINUTE_LIMIT'],
-      DEFAULT_MONTHLY_MINUTE_LIMIT,
-    );
+    const limitMinutes = serverMonthlyMinuteLimit(process.env);
     const { data: usageRows, error: usageError } = await context.supabase
       .from("dictation_usage")
       .select("duration_seconds")
