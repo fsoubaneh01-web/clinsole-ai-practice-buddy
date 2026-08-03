@@ -44,13 +44,17 @@ export function useDictation(opts: {
   const refreshQuota = useCallback(async () => {
     try {
       const q = await fetchQuota();
+      // The build-time client limit acts as an additional (stricter) cap so the
+      // mic disables even when the server env var isn't configured.
+      const limitMinutes = Math.min(q.limitMinutes, clientMonthlyMinuteLimit());
+      const limitReached = q.limitReached || q.usedMinutes >= limitMinutes;
       setQuota({
         usedMinutes: q.usedMinutes,
-        limitMinutes: q.limitMinutes,
-        remainingMinutes: q.remainingMinutes,
-        limitReached: q.limitReached,
+        limitMinutes,
+        remainingMinutes: Math.max(0, Math.round((limitMinutes - q.usedMinutes) * 10) / 10),
+        limitReached,
       });
-      return q.limitReached;
+      return limitReached;
     } catch {
       return false; // never block dictation because the quota check failed
     }
