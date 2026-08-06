@@ -54,10 +54,10 @@ function Subscription() {
               "Advanced income & expense tracking",
               "Priority support",
             ]}
-            cta={nurse?.plan === "premium" ? "Current plan" : "Upgrade to Premium"}
-            disabled={nurse?.plan === "premium"}
-            onClick={async () => { await upgradeToPremium(); toast.success("Welcome to Premium!"); }}
+            cta={nurse?.plan === "premium" ? "Current plan" : "Coming soon"}
+            disabled
           />
+
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">Cancel anytime. Prices in USD.</p>
