@@ -180,28 +180,72 @@ type Ctx = {
 
 const StoreCtx = createContext<Ctx | null>(null);
 
-const localKey = (userId: string) => `clinsole-local-${userId}`;
-
-const emptyExtras: LocalExtras = {
-  nurse: null,
-  onboarded: false,
-  transactions: [],
-  patientExtras: {},
+type TreatmentRow = {
+  id: string;
+  patient_id: string;
+  visit_date: string;
+  soap_subjective: string;
+  soap_objective: string;
+  soap_assessment: string;
+  soap_plan: string;
+  fee: number | string;
 };
 
+const rowToTreatment = (r: TreatmentRow): Treatment => ({
+  id: r.id,
+  date: r.visit_date,
+  soap: { s: r.soap_subjective, o: r.soap_objective, a: r.soap_assessment, p: r.soap_plan },
+  fee: Number(r.fee),
+});
 
-const loadLocal = (userId: string): LocalExtras => {
-  if (typeof window === "undefined") return emptyExtras;
-  try {
-    const raw = localStorage.getItem(localKey(userId));
-    if (raw) return { ...emptyExtras, ...JSON.parse(raw) };
-  } catch {}
-  return emptyExtras;
+type TransactionRow = {
+  id: string;
+  type: string;
+  amount: number | string;
+  occurred_at: string;
+  category: string;
+  note: string | null;
+  patient_id: string | null;
 };
 
-const saveLocal = (userId: string, data: LocalExtras) => {
-  try { localStorage.setItem(localKey(userId), JSON.stringify(data)); } catch {}
+const rowToTransaction = (r: TransactionRow): Transaction => ({
+  id: r.id,
+  type: r.type === "expense" ? "expense" : "income",
+  amount: Number(r.amount),
+  date: r.occurred_at,
+  category: r.category,
+  note: r.note ?? undefined,
+  patientId: r.patient_id ?? undefined,
+});
+
+type NurseProfileRow = {
+  name: string;
+  email: string;
+  credentials: string;
+  service_area: string;
+  years_experience: number;
+  bio: string;
+  plan: string;
+  onboarded: boolean;
 };
+
+const rowToNurse = (r: NurseProfileRow, aiUsedThisMonth: number): Nurse => ({
+  name: r.name,
+  email: r.email,
+  credentials: r.credentials,
+  serviceArea: r.service_area,
+  yearsExperience: r.years_experience,
+  bio: r.bio,
+  plan: r.plan === "premium" ? "premium" : "free",
+  aiUsedThisMonth,
+});
+
+/** Start of the current calendar month — AI credits reset automatically each month. */
+const monthStartIso = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
+};
+
 
 type PatientRow = {
   id: string;
