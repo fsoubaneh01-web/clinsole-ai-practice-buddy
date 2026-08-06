@@ -45,7 +45,7 @@ function SoapNote() {
       toast.error("Add a few quick visit notes to generate from.");
       return;
     }
-    if (!useAiCredit()) {
+    if (!(await useAiCredit())) {
       toast.error("You've used all AI notes on the Free plan this month.");
       return;
     }
