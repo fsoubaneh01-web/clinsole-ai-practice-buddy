@@ -417,7 +417,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [footAssessments, setFootAssessments] = useState<FootAssessment[]>([]);
 
+  // One-time cleanup: legacy localStorage app data is no longer read (now in the database)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stale = Object.keys(window.localStorage).filter(
+        (k) => k === "clinsole-state-v2" || k.startsWith("clinsole-local-"),
+      );
+      stale.forEach((k) => window.localStorage.removeItem(k));
+    } catch {}
+  }, []);
+
   // Auth session
+
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
