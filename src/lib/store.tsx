@@ -142,12 +142,6 @@ export const PLAN_LIMITS = {
   premium: { patients: Infinity, aiPerMonth: Infinity },
 } as const;
 
-type LocalExtras = {
-  nurse: Nurse | null;
-  onboarded: boolean;
-  transactions: Transaction[];
-  patientExtras: Record<string, { assessments: Assessment[]; treatments: Treatment[] }>;
-};
 
 type Ctx = {
   session: Session | null;
