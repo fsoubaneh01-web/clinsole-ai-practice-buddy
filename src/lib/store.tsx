@@ -157,11 +157,11 @@ type Ctx = {
   signUp: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 
-  setNurse: (n: Nurse) => void;
+  setNurse: (n: Nurse) => Promise<void>;
   addPatient: (p: Omit<Patient, "id" | "createdAt" | "assessments" | "treatments">) => Promise<{ patient?: Patient; error?: string }>;
   updatePatient: (id: string, p: Partial<Patient>) => Promise<void>;
   deletePatient: (id: string) => Promise<void>;
-  addTreatment: (patientId: string, t: Omit<Treatment, "id">) => void;
+  addTreatment: (patientId: string, t: Omit<Treatment, "id">) => Promise<{ treatment?: Treatment; error?: string }>;
   addAppointment: (a: Omit<Appointment, "id" | "patientName">) => Promise<{ appointment?: Appointment; error?: string }>;
   updateAppointment: (id: string, a: Partial<Omit<Appointment, "id" | "patientName">>) => Promise<{ error?: string }>;
   deleteAppointment: (id: string) => Promise<void>;
@@ -171,9 +171,9 @@ type Ctx = {
   deleteFootAssessment: (id: string) => Promise<void>;
   getPhotoUrl: (path: string) => Promise<string | null>;
   latestAssessmentFor: (patientId: string) => FootAssessment | undefined;
-  addTransaction: (t: Omit<Transaction, "id">) => void;
-  upgradeToPremium: () => void;
-  useAiCredit: () => boolean;
+  addTransaction: (t: Omit<Transaction, "id">) => Promise<void>;
+  upgradeToPremium: () => Promise<void>;
+  useAiCredit: () => Promise<boolean>;
   ageOf: (dob: string) => number;
 };
 
