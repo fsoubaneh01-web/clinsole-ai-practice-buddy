@@ -538,15 +538,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       setPatients([]);
       setAppointments([]);
-      setExtras(emptyExtras);
+      setFootAssessments([]);
+      setTransactions([]);
+      setNurseState(null);
+      setOnboarded(false);
     },
 
-    setNurse: (n) => setExtras((s) => ({ ...s, nurse: n, onboarded: true })),
+    setNurse: async (n) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { error } = await supabase.from("nurse_profiles").upsert(
+        {
+          user_id: userId,
+          name: n.name,
+          email: n.email,
+          credentials: n.credentials,
+          service_area: n.serviceArea,
+          years_experience: n.yearsExperience,
+          bio: n.bio,
+          plan: n.plan,
+          onboarded: true,
+        },
+        { onConflict: "user_id" }
+      );
+      if (error) { console.error("setNurse", error); return; }
+      setNurseState({ ...n, aiUsedThisMonth: nurse?.aiUsedThisMonth ?? n.aiUsedThisMonth });
+      setOnboarded(true);
+    },
 
     addPatient: async (p) => {
       const userId = session?.user?.id;
       if (!userId) return { error: "You must be signed in to add a patient." };
-      const plan = extras.nurse?.plan || "free";
+      const plan = nurse?.plan || "free";
       if (patients.length >= PLAN_LIMITS[plan].patients) {
         return { error: "You've reached the Free plan patient limit. Upgrade to add more." };
       }
