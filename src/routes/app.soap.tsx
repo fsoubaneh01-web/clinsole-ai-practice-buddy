@@ -45,7 +45,7 @@ function SoapNote() {
       toast.error("Add a few quick visit notes to generate from.");
       return;
     }
-    if (!useAiCredit()) {
+    if (!(await useAiCredit())) {
       toast.error("You've used all AI notes on the Free plan this month.");
       return;
     }
@@ -71,10 +71,11 @@ function SoapNote() {
     } finally { setLoading(false); }
   };
 
-  const save = () => {
+  const save = async () => {
     if (!soap || !patient) return;
-    addTreatment(patient.id, { date: new Date().toISOString(), soap, fee });
-    addTransaction({ type: "income", amount: fee, date: new Date().toISOString(), category: "Visit", patientId: patient.id });
+    const res = await addTreatment(patient.id, { date: new Date().toISOString(), soap, fee });
+    if (res.error) { toast.error(res.error); return; }
+    await addTransaction({ type: "income", amount: fee, date: new Date().toISOString(), category: "Visit", patientId: patient.id });
     toast.success("Note saved to patient record");
     setSoap(null); setBrief("");
   };

@@ -253,8 +253,8 @@ function VisitFlow() {
     setFinishing(true);
     try {
       const now = new Date().toISOString();
-      addTreatment(patient.id, { date: now, soap, fee });
-      addTransaction({
+      await addTreatment(patient.id, { date: now, soap, fee });
+      await addTransaction({
         type: "income", amount: fee, date: now,
         category: `Visit · ${paymentMethod}`, patientId: patient.id,
       });

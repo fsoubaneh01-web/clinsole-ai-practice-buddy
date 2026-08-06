@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_events: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           created_at: string
@@ -237,6 +258,51 @@ export type Database = {
           },
         ]
       }
+      nurse_profiles: {
+        Row: {
+          bio: string
+          created_at: string
+          credentials: string
+          email: string
+          id: string
+          name: string
+          onboarded: boolean
+          plan: string
+          service_area: string
+          updated_at: string
+          user_id: string
+          years_experience: number
+        }
+        Insert: {
+          bio?: string
+          created_at?: string
+          credentials?: string
+          email?: string
+          id?: string
+          name?: string
+          onboarded?: boolean
+          plan?: string
+          service_area?: string
+          updated_at?: string
+          user_id: string
+          years_experience?: number
+        }
+        Update: {
+          bio?: string
+          created_at?: string
+          credentials?: string
+          email?: string
+          id?: string
+          name?: string
+          onboarded?: boolean
+          plan?: string
+          service_area?: string
+          updated_at?: string
+          user_id?: string
+          years_experience?: number
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           address: string | null
@@ -287,6 +353,103 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          id: string
+          note: string | null
+          nurse_id: string
+          occurred_at: string
+          patient_id: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          nurse_id: string
+          occurred_at?: string
+          patient_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          nurse_id?: string
+          occurred_at?: string
+          patient_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatments: {
+        Row: {
+          created_at: string
+          fee: number
+          id: string
+          nurse_id: string
+          patient_id: string
+          soap_assessment: string
+          soap_objective: string
+          soap_plan: string
+          soap_subjective: string
+          updated_at: string
+          visit_date: string
+        }
+        Insert: {
+          created_at?: string
+          fee?: number
+          id?: string
+          nurse_id: string
+          patient_id: string
+          soap_assessment?: string
+          soap_objective?: string
+          soap_plan?: string
+          soap_subjective?: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Update: {
+          created_at?: string
+          fee?: number
+          id?: string
+          nurse_id?: string
+          patient_id?: string
+          soap_assessment?: string
+          soap_objective?: string
+          soap_plan?: string
+          soap_subjective?: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

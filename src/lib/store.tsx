@@ -142,12 +142,6 @@ export const PLAN_LIMITS = {
   premium: { patients: Infinity, aiPerMonth: Infinity },
 } as const;
 
-type LocalExtras = {
-  nurse: Nurse | null;
-  onboarded: boolean;
-  transactions: Transaction[];
-  patientExtras: Record<string, { assessments: Assessment[]; treatments: Treatment[] }>;
-};
 
 type Ctx = {
   session: Session | null;
@@ -163,11 +157,11 @@ type Ctx = {
   signUp: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 
-  setNurse: (n: Nurse) => void;
+  setNurse: (n: Nurse) => Promise<void>;
   addPatient: (p: Omit<Patient, "id" | "createdAt" | "assessments" | "treatments">) => Promise<{ patient?: Patient; error?: string }>;
   updatePatient: (id: string, p: Partial<Patient>) => Promise<void>;
   deletePatient: (id: string) => Promise<void>;
-  addTreatment: (patientId: string, t: Omit<Treatment, "id">) => void;
+  addTreatment: (patientId: string, t: Omit<Treatment, "id">) => Promise<{ treatment?: Treatment; error?: string }>;
   addAppointment: (a: Omit<Appointment, "id" | "patientName">) => Promise<{ appointment?: Appointment; error?: string }>;
   updateAppointment: (id: string, a: Partial<Omit<Appointment, "id" | "patientName">>) => Promise<{ error?: string }>;
   deleteAppointment: (id: string) => Promise<void>;
@@ -177,37 +171,81 @@ type Ctx = {
   deleteFootAssessment: (id: string) => Promise<void>;
   getPhotoUrl: (path: string) => Promise<string | null>;
   latestAssessmentFor: (patientId: string) => FootAssessment | undefined;
-  addTransaction: (t: Omit<Transaction, "id">) => void;
-  upgradeToPremium: () => void;
-  useAiCredit: () => boolean;
+  addTransaction: (t: Omit<Transaction, "id">) => Promise<void>;
+  upgradeToPremium: () => Promise<void>;
+  useAiCredit: () => Promise<boolean>;
   ageOf: (dob: string) => number;
 };
 
 
 const StoreCtx = createContext<Ctx | null>(null);
 
-const localKey = (userId: string) => `clinsole-local-${userId}`;
-
-const emptyExtras: LocalExtras = {
-  nurse: null,
-  onboarded: false,
-  transactions: [],
-  patientExtras: {},
+type TreatmentRow = {
+  id: string;
+  patient_id: string;
+  visit_date: string;
+  soap_subjective: string;
+  soap_objective: string;
+  soap_assessment: string;
+  soap_plan: string;
+  fee: number | string;
 };
 
+const rowToTreatment = (r: TreatmentRow): Treatment => ({
+  id: r.id,
+  date: r.visit_date,
+  soap: { s: r.soap_subjective, o: r.soap_objective, a: r.soap_assessment, p: r.soap_plan },
+  fee: Number(r.fee),
+});
 
-const loadLocal = (userId: string): LocalExtras => {
-  if (typeof window === "undefined") return emptyExtras;
-  try {
-    const raw = localStorage.getItem(localKey(userId));
-    if (raw) return { ...emptyExtras, ...JSON.parse(raw) };
-  } catch {}
-  return emptyExtras;
+type TransactionRow = {
+  id: string;
+  type: string;
+  amount: number | string;
+  occurred_at: string;
+  category: string;
+  note: string | null;
+  patient_id: string | null;
 };
 
-const saveLocal = (userId: string, data: LocalExtras) => {
-  try { localStorage.setItem(localKey(userId), JSON.stringify(data)); } catch {}
+const rowToTransaction = (r: TransactionRow): Transaction => ({
+  id: r.id,
+  type: r.type === "expense" ? "expense" : "income",
+  amount: Number(r.amount),
+  date: r.occurred_at,
+  category: r.category,
+  note: r.note ?? undefined,
+  patientId: r.patient_id ?? undefined,
+});
+
+type NurseProfileRow = {
+  name: string;
+  email: string;
+  credentials: string;
+  service_area: string;
+  years_experience: number;
+  bio: string;
+  plan: string;
+  onboarded: boolean;
 };
+
+const rowToNurse = (r: NurseProfileRow, aiUsedThisMonth: number): Nurse => ({
+  name: r.name,
+  email: r.email,
+  credentials: r.credentials,
+  serviceArea: r.service_area,
+  yearsExperience: r.years_experience,
+  bio: r.bio,
+  plan: r.plan === "premium" ? "premium" : "free",
+  aiUsedThisMonth,
+});
+
+/** Start of the current calendar month — AI credits reset automatically each month. */
+const monthStartIso = () => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
+};
+
 
 type PatientRow = {
   id: string;
@@ -372,7 +410,9 @@ export function summarizeAssessment(a: FootAssessment): string {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [extras, setExtras] = useState<LocalExtras>(emptyExtras);
+  const [nurse, setNurseState] = useState<Nurse | null>(null);
+  const [onboarded, setOnboarded] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [footAssessments, setFootAssessments] = useState<FootAssessment[]>([]);
@@ -389,29 +429,63 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Load local extras + patients + appointments + assessments on session change
+  // Load all nurse-scoped records from the database on session change
   useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) {
-      setExtras(emptyExtras);
+      setNurseState(null);
+      setOnboarded(false);
+      setTransactions([]);
       setPatients([]);
       setAppointments([]);
       setFootAssessments([]);
       return;
     }
-    const local = loadLocal(userId);
-    if (local.nurse && !local.nurse.email) local.nurse.email = session.user.email || "";
-    setExtras(local);
 
     (async () => {
-      const [pRes, aRes, fRes] = await Promise.all([
+      const [pRes, aRes, fRes, tRes, xRes, nRes, aiRes] = await Promise.all([
         supabase.from("patients").select("*").order("created_at", { ascending: false }),
         supabase.from("appointments").select("*").order("scheduled_at", { ascending: true }),
         supabase.from("foot_assessments").select("*").order("assessed_at", { ascending: false }),
+        supabase.from("treatments").select("*").order("visit_date", { ascending: false }),
+        supabase.from("transactions").select("*").order("occurred_at", { ascending: false }),
+        supabase.from("nurse_profiles").select("*").eq("user_id", userId).maybeSingle(),
+        supabase
+          .from("ai_usage_events")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", monthStartIso()),
       ]);
+
+      const aiUsed = aiRes.error ? 0 : aiRes.count ?? 0;
+      if (nRes.error) console.error("load nurse_profile", nRes.error);
+      if (nRes.data) {
+        const profile = nRes.data as NurseProfileRow;
+        const n = rowToNurse(profile, aiUsed);
+        if (!n.email) n.email = session.user.email || "";
+        setNurseState(n);
+        setOnboarded(profile.onboarded);
+      } else {
+        setNurseState(null);
+        setOnboarded(false);
+      }
+
+      if (tRes.error) console.error("load treatments", tRes.error);
+      const treatmentRows = (tRes.data ?? []) as TreatmentRow[];
+      const treatmentsByPatient = new Map<string, Treatment[]>();
+      for (const r of treatmentRows) {
+        const list = treatmentsByPatient.get(r.patient_id) ?? [];
+        list.push(rowToTreatment(r));
+        treatmentsByPatient.set(r.patient_id, list);
+      }
+
+      if (xRes.error) console.error("load transactions", xRes.error);
+      setTransactions(((xRes.data ?? []) as TransactionRow[]).map(rowToTransaction));
+
       if (pRes.error) { console.error("load patients", pRes.error); return; }
       const patientRows = pRes.data as PatientRow[];
-      const pList = patientRows.map((r) => rowToPatient(r, local.patientExtras[r.id]));
+      const pList = patientRows.map((r) =>
+        rowToPatient(r, { assessments: [], treatments: treatmentsByPatient.get(r.id) ?? [] })
+      );
       setPatients(pList);
       const nameById = new Map(pList.map((p) => [p.id, p.name]));
       if (aRes.error) { console.error("load appointments", aRes.error); return; }
@@ -421,11 +495,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })();
   }, [session]);
 
-  useEffect(() => {
-    if (session?.user?.id) saveLocal(session.user.id, extras);
-  }, [extras, session]);
-
-  const id = () => Math.random().toString(36).slice(2, 10);
 
   const ageOf = (dob: string) => {
     if (!dob) return 0;
@@ -437,11 +506,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const ctx: Ctx = {
     session,
     loading,
-    nurse: extras.nurse,
-    onboarded: extras.onboarded,
+    nurse,
+    onboarded,
     patients,
     appointments,
-    transactions: extras.transactions,
+    transactions,
     footAssessments,
     ageOf,
     latestAssessmentFor: (pid) => footAssessments.find((a) => a.patientId === pid),
@@ -469,15 +538,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       setPatients([]);
       setAppointments([]);
-      setExtras(emptyExtras);
+      setFootAssessments([]);
+      setTransactions([]);
+      setNurseState(null);
+      setOnboarded(false);
     },
 
-    setNurse: (n) => setExtras((s) => ({ ...s, nurse: n, onboarded: true })),
+    setNurse: async (n) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { error } = await supabase.from("nurse_profiles").upsert(
+        {
+          user_id: userId,
+          name: n.name,
+          email: n.email,
+          credentials: n.credentials,
+          service_area: n.serviceArea,
+          years_experience: n.yearsExperience,
+          bio: n.bio,
+          plan: n.plan,
+          onboarded: true,
+        },
+        { onConflict: "user_id" }
+      );
+      if (error) { console.error("setNurse", error); return; }
+      setNurseState({ ...n, aiUsedThisMonth: nurse?.aiUsedThisMonth ?? n.aiUsedThisMonth });
+      setOnboarded(true);
+    },
 
     addPatient: async (p) => {
       const userId = session?.user?.id;
       if (!userId) return { error: "You must be signed in to add a patient." };
-      const plan = extras.nurse?.plan || "free";
+      const plan = nurse?.plan || "free";
       if (patients.length >= PLAN_LIMITS[plan].patients) {
         return { error: "You've reached the Free plan patient limit. Upgrade to add more." };
       }
@@ -534,24 +626,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (error) { console.error("deletePatient", error); return; }
       setPatients((s) => s.filter((x) => x.id !== pid));
       setAppointments((s) => s.filter((a) => a.patientId !== pid));
-      setExtras((s) => {
-        const { [pid]: _, ...rest } = s.patientExtras;
-        return { ...s, patientExtras: rest };
-      });
+      setTransactions((s) => s.map((t) => (t.patientId === pid ? { ...t, patientId: undefined } : t)));
     },
-    addTreatment: (pid, t) => {
-      const treatment: Treatment = { ...t, id: id() };
-      setExtras((s) => ({
-        ...s,
-        patientExtras: {
-          ...s.patientExtras,
-          [pid]: {
-            assessments: s.patientExtras[pid]?.assessments ?? [],
-            treatments: [treatment, ...(s.patientExtras[pid]?.treatments ?? [])],
-          },
-        },
-      }));
+    addTreatment: async (pid, t) => {
+      const userId = session?.user?.id;
+      if (!userId) return { error: "You must be signed in." };
+      const { data, error } = await supabase
+        .from("treatments")
+        .insert({
+          nurse_id: userId,
+          patient_id: pid,
+          visit_date: t.date,
+          soap_subjective: t.soap.s,
+          soap_objective: t.soap.o,
+          soap_assessment: t.soap.a,
+          soap_plan: t.soap.p,
+          fee: t.fee,
+        })
+        .select()
+        .single();
+      if (error || !data) {
+        console.error("addTreatment", error);
+        return { error: error?.message || "Failed to save treatment." };
+      }
+      const treatment = rowToTreatment(data as TreatmentRow);
       setPatients((s) => s.map((x) => (x.id === pid ? { ...x, treatments: [treatment, ...x.treatments] } : x)));
+      return { treatment };
     },
     addAppointment: async (a) => {
       const userId = session?.user?.id;
@@ -738,16 +838,56 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setFootAssessments((s) => s.filter((x) => x.id !== aid));
     },
 
-    addTransaction: (t) =>
-      setExtras((s) => ({ ...s, transactions: [{ ...t, id: id() }, ...s.transactions] })),
-    upgradeToPremium: () =>
-      setExtras((s) => ({ ...s, nurse: s.nurse ? { ...s.nurse, plan: "premium" } : s.nurse })),
-    useAiCredit: () => {
-      const n = extras.nurse;
-      if (!n) return false;
-      const limit = PLAN_LIMITS[n.plan].aiPerMonth;
-      if (n.aiUsedThisMonth >= limit) return false;
-      setExtras((s) => ({ ...s, nurse: s.nurse ? { ...s.nurse, aiUsedThisMonth: s.nurse.aiUsedThisMonth + 1 } : s.nurse }));
+    addTransaction: async (t) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { data, error } = await supabase
+        .from("transactions")
+        .insert({
+          nurse_id: userId,
+          patient_id: t.patientId || null,
+          type: t.type,
+          amount: t.amount,
+          occurred_at: t.date,
+          category: t.category,
+          note: t.note || null,
+        })
+        .select()
+        .single();
+      if (error || !data) { console.error("addTransaction", error); return; }
+      setTransactions((s) => [rowToTransaction(data as TransactionRow), ...s]);
+    },
+    upgradeToPremium: async () => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { error } = await supabase
+        .from("nurse_profiles")
+        .update({ plan: "premium" })
+        .eq("user_id", userId);
+      if (error) { console.error("upgradeToPremium", error); return; }
+      setNurseState((n) => (n ? { ...n, plan: "premium" } : n));
+    },
+    /**
+     * Server-backed AI credit check. Usage is counted from ai_usage_events rows
+     * created since the start of the current calendar month, so credits reset
+     * automatically on month rollover and cannot be reset by clearing storage.
+     */
+    useAiCredit: async () => {
+      const userId = session?.user?.id;
+      if (!userId) return false;
+      const plan = nurse?.plan || "free";
+      const limit = PLAN_LIMITS[plan].aiPerMonth;
+      const { count, error } = await supabase
+        .from("ai_usage_events")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", monthStartIso());
+      if (error) { console.error("aiUsage count", error); return false; }
+      const used = count ?? 0;
+      setNurseState((n) => (n ? { ...n, aiUsedThisMonth: used } : n));
+      if (used >= limit) return false;
+      const { error: insErr } = await supabase.from("ai_usage_events").insert({ user_id: userId, kind: "soap" });
+      if (insErr) { console.error("aiUsage insert", insErr); return false; }
+      setNurseState((n) => (n ? { ...n, aiUsedThisMonth: used + 1 } : n));
       return true;
     },
   };

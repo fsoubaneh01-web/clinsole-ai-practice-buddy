@@ -56,7 +56,7 @@ function Subscription() {
             ]}
             cta={nurse?.plan === "premium" ? "Current plan" : "Upgrade to Premium"}
             disabled={nurse?.plan === "premium"}
-            onClick={() => { upgradeToPremium(); toast.success("Welcome to Premium!"); }}
+            onClick={async () => { await upgradeToPremium(); toast.success("Welcome to Premium!"); }}
           />
         </div>
 

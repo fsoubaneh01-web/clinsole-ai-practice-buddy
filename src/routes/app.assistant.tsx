@@ -28,7 +28,7 @@ function Assistant() {
   const used = nurse?.aiUsedThisMonth || 0;
 
   const run = async () => {
-    if (!useAiCredit()) {
+    if (!(await useAiCredit())) {
       toast.error("You've used all AI credits on the Free plan this month.");
       return;
     }
