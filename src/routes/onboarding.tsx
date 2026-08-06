@@ -21,8 +21,8 @@ function Onboarding() {
     bio: nurse?.bio || "",
   });
 
-  const submit = () => {
-    setNurse({
+  const submit = async () => {
+    await setNurse({
       ...form,
       email: nurse?.email || session?.user?.email || "",
       plan: nurse?.plan || "free",
