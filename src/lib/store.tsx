@@ -431,27 +431,63 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Load local extras + patients + appointments + assessments on session change
   useEffect(() => {
+  // Load all nurse-scoped records from the database on session change
+  useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) {
-      setExtras(emptyExtras);
+      setNurseState(null);
+      setOnboarded(false);
+      setTransactions([]);
       setPatients([]);
       setAppointments([]);
       setFootAssessments([]);
       return;
     }
-    const local = loadLocal(userId);
-    if (local.nurse && !local.nurse.email) local.nurse.email = session.user.email || "";
-    setExtras(local);
 
     (async () => {
-      const [pRes, aRes, fRes] = await Promise.all([
+      const [pRes, aRes, fRes, tRes, xRes, nRes, aiRes] = await Promise.all([
         supabase.from("patients").select("*").order("created_at", { ascending: false }),
         supabase.from("appointments").select("*").order("scheduled_at", { ascending: true }),
         supabase.from("foot_assessments").select("*").order("assessed_at", { ascending: false }),
+        supabase.from("treatments").select("*").order("visit_date", { ascending: false }),
+        supabase.from("transactions").select("*").order("occurred_at", { ascending: false }),
+        supabase.from("nurse_profiles").select("*").eq("user_id", userId).maybeSingle(),
+        supabase
+          .from("ai_usage_events")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", monthStartIso()),
       ]);
+
+      const aiUsed = aiRes.error ? 0 : aiRes.count ?? 0;
+      if (nRes.error) console.error("load nurse_profile", nRes.error);
+      if (nRes.data) {
+        const profile = nRes.data as NurseProfileRow;
+        const n = rowToNurse(profile, aiUsed);
+        if (!n.email) n.email = session.user.email || "";
+        setNurseState(n);
+        setOnboarded(profile.onboarded);
+      } else {
+        setNurseState(null);
+        setOnboarded(false);
+      }
+
+      if (tRes.error) console.error("load treatments", tRes.error);
+      const treatmentRows = (tRes.data ?? []) as TreatmentRow[];
+      const treatmentsByPatient = new Map<string, Treatment[]>();
+      for (const r of treatmentRows) {
+        const list = treatmentsByPatient.get(r.patient_id) ?? [];
+        list.push(rowToTreatment(r));
+        treatmentsByPatient.set(r.patient_id, list);
+      }
+
+      if (xRes.error) console.error("load transactions", xRes.error);
+      setTransactions(((xRes.data ?? []) as TransactionRow[]).map(rowToTransaction));
+
       if (pRes.error) { console.error("load patients", pRes.error); return; }
       const patientRows = pRes.data as PatientRow[];
-      const pList = patientRows.map((r) => rowToPatient(r, local.patientExtras[r.id]));
+      const pList = patientRows.map((r) =>
+        rowToPatient(r, { assessments: [], treatments: treatmentsByPatient.get(r.id) ?? [] })
+      );
       setPatients(pList);
       const nameById = new Map(pList.map((p) => [p.id, p.name]));
       if (aRes.error) { console.error("load appointments", aRes.error); return; }
@@ -461,11 +497,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })();
   }, [session]);
 
-  useEffect(() => {
-    if (session?.user?.id) saveLocal(session.user.id, extras);
-  }, [extras, session]);
-
-  const id = () => Math.random().toString(36).slice(2, 10);
 
   const ageOf = (dob: string) => {
     if (!dob) return 0;
