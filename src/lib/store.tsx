@@ -410,7 +410,9 @@ export function summarizeAssessment(a: FootAssessment): string {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [extras, setExtras] = useState<LocalExtras>(emptyExtras);
+  const [nurse, setNurseState] = useState<Nurse | null>(null);
+  const [onboarded, setOnboarded] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [footAssessments, setFootAssessments] = useState<FootAssessment[]>([]);
