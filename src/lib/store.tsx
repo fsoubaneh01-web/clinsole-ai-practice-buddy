@@ -626,24 +626,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (error) { console.error("deletePatient", error); return; }
       setPatients((s) => s.filter((x) => x.id !== pid));
       setAppointments((s) => s.filter((a) => a.patientId !== pid));
-      setExtras((s) => {
-        const { [pid]: _, ...rest } = s.patientExtras;
-        return { ...s, patientExtras: rest };
-      });
+      setTransactions((s) => s.map((t) => (t.patientId === pid ? { ...t, patientId: undefined } : t)));
     },
-    addTreatment: (pid, t) => {
-      const treatment: Treatment = { ...t, id: id() };
-      setExtras((s) => ({
-        ...s,
-        patientExtras: {
-          ...s.patientExtras,
-          [pid]: {
-            assessments: s.patientExtras[pid]?.assessments ?? [],
-            treatments: [treatment, ...(s.patientExtras[pid]?.treatments ?? [])],
-          },
-        },
-      }));
+    addTreatment: async (pid, t) => {
+      const userId = session?.user?.id;
+      if (!userId) return { error: "You must be signed in." };
+      const { data, error } = await supabase
+        .from("treatments")
+        .insert({
+          nurse_id: userId,
+          patient_id: pid,
+          visit_date: t.date,
+          soap_subjective: t.soap.s,
+          soap_objective: t.soap.o,
+          soap_assessment: t.soap.a,
+          soap_plan: t.soap.p,
+          fee: t.fee,
+        })
+        .select()
+        .single();
+      if (error || !data) {
+        console.error("addTreatment", error);
+        return { error: error?.message || "Failed to save treatment." };
+      }
+      const treatment = rowToTreatment(data as TreatmentRow);
       setPatients((s) => s.map((x) => (x.id === pid ? { ...x, treatments: [treatment, ...x.treatments] } : x)));
+      return { treatment };
     },
     addAppointment: async (a) => {
       const userId = session?.user?.id;
