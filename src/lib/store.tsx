@@ -429,8 +429,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Load local extras + patients + appointments + assessments on session change
-  useEffect(() => {
   // Load all nurse-scoped records from the database on session change
   useEffect(() => {
     const userId = session?.user?.id;
