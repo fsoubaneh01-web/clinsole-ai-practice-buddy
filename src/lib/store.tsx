@@ -838,16 +838,56 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setFootAssessments((s) => s.filter((x) => x.id !== aid));
     },
 
-    addTransaction: (t) =>
-      setExtras((s) => ({ ...s, transactions: [{ ...t, id: id() }, ...s.transactions] })),
-    upgradeToPremium: () =>
-      setExtras((s) => ({ ...s, nurse: s.nurse ? { ...s.nurse, plan: "premium" } : s.nurse })),
-    useAiCredit: () => {
-      const n = extras.nurse;
-      if (!n) return false;
-      const limit = PLAN_LIMITS[n.plan].aiPerMonth;
-      if (n.aiUsedThisMonth >= limit) return false;
-      setExtras((s) => ({ ...s, nurse: s.nurse ? { ...s.nurse, aiUsedThisMonth: s.nurse.aiUsedThisMonth + 1 } : s.nurse }));
+    addTransaction: async (t) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { data, error } = await supabase
+        .from("transactions")
+        .insert({
+          nurse_id: userId,
+          patient_id: t.patientId || null,
+          type: t.type,
+          amount: t.amount,
+          occurred_at: t.date,
+          category: t.category,
+          note: t.note || null,
+        })
+        .select()
+        .single();
+      if (error || !data) { console.error("addTransaction", error); return; }
+      setTransactions((s) => [rowToTransaction(data as TransactionRow), ...s]);
+    },
+    upgradeToPremium: async () => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+      const { error } = await supabase
+        .from("nurse_profiles")
+        .update({ plan: "premium" })
+        .eq("user_id", userId);
+      if (error) { console.error("upgradeToPremium", error); return; }
+      setNurseState((n) => (n ? { ...n, plan: "premium" } : n));
+    },
+    /**
+     * Server-backed AI credit check. Usage is counted from ai_usage_events rows
+     * created since the start of the current calendar month, so credits reset
+     * automatically on month rollover and cannot be reset by clearing storage.
+     */
+    useAiCredit: async () => {
+      const userId = session?.user?.id;
+      if (!userId) return false;
+      const plan = nurse?.plan || "free";
+      const limit = PLAN_LIMITS[plan].aiPerMonth;
+      const { count, error } = await supabase
+        .from("ai_usage_events")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", monthStartIso());
+      if (error) { console.error("aiUsage count", error); return false; }
+      const used = count ?? 0;
+      setNurseState((n) => (n ? { ...n, aiUsedThisMonth: used } : n));
+      if (used >= limit) return false;
+      const { error: insErr } = await supabase.from("ai_usage_events").insert({ user_id: userId, kind: "soap" });
+      if (insErr) { console.error("aiUsage insert", insErr); return false; }
+      setNurseState((n) => (n ? { ...n, aiUsedThisMonth: used + 1 } : n));
       return true;
     },
   };
