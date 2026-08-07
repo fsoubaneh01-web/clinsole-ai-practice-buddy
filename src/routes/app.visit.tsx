@@ -258,15 +258,24 @@ function VisitFlow() {
         type: "income", amount: fee, date: now,
         category: `Visit · ${paymentMethod}`, patientId: patient.id,
       });
-      const fu = new Date(`${followupDate}T${followupTime}:00`);
-      await addAppointment({
-        patientId: patient.id,
-        date: fu.toISOString(),
-        duration: 45,
-        type: followupType,
-        expectedFee: fee,
-        recurring: null,
-      });
+
+      // Only schedule a follow-up when both date and time are provided and valid.
+      if (followupDate && followupTime) {
+        const fu = new Date(`${followupDate}T${followupTime}:00`);
+        if (!isNaN(fu.getTime())) {
+          await addAppointment({
+            patientId: patient.id,
+            date: fu.toISOString(),
+            duration: 45,
+            type: followupType,
+            expectedFee: fee,
+            recurring: null,
+          });
+        } else {
+          toast.warning("Follow-up date/time was invalid; skipping appointment.");
+        }
+      }
+
       if (draftKey) try { localStorage.removeItem(draftKey); } catch {}
       toast.success("Visit completed and saved");
       navigate({ to: "/app/patients/$id", params: { id: patient.id } });
@@ -276,6 +285,7 @@ function VisitFlow() {
       setFinishing(false);
     }
   };
+
 
   return (
     <AppShell title="Visit Flow">
