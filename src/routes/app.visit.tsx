@@ -405,6 +405,7 @@ function VisitFlow() {
               date={followupDate} setDate={setFollowupDate}
               time={followupTime} setTime={setFollowupTime}
               type={followupType} setType={setFollowupType}
+              skip={skipFollowup} setSkip={setSkipFollowup}
             />
           )}
 
