@@ -416,7 +416,7 @@ function VisitFlow() {
               photos={photos.length}
               soap={!!soap}
               fee={fee}
-              followup={`${format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d · HH:mm")}`}
+              followup={skipFollowup ? "Skipped" : `${format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d · HH:mm")}`}
               startedAt={visitStartedAt}
               education={selectedTopics.length}
               onFinish={finishVisit}
