@@ -79,6 +79,7 @@ function VisitFlow() {
   const [followupDate, setFollowupDate] = useState(format(addDays(new Date(), 14), "yyyy-MM-dd"));
   const [followupTime, setFollowupTime] = useState("10:00");
   const [followupType, setFollowupType] = useState("Foot care follow-up");
+  const [skipFollowup, setSkipFollowup] = useState(false);
   const [visitStartedAt, setVisitStartedAt] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
 
