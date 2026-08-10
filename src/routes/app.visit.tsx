@@ -776,7 +776,7 @@ function EducationStep({ selected, toggle }: { selected: string[]; toggle: (id: 
   );
 }
 
-function FollowupStep({ date, setDate, time, setTime, type, setType }: any) {
+function FollowupStep({ date, setDate, time, setTime, type, setType, skip, setSkip }: any) {
   const quick = [
     { label: "1 week",   d: 7  },
     { label: "2 weeks",  d: 14 },
@@ -788,31 +788,55 @@ function FollowupStep({ date, setDate, time, setTime, type, setType }: any) {
     <div className="mx-auto max-w-lg space-y-5">
       <div>
         <h2 className="text-lg font-bold">Schedule follow-up</h2>
-        <p className="text-sm text-muted-foreground">Create the next appointment automatically on finish.</p>
+        <p className="text-sm text-muted-foreground">Create the next appointment automatically, or skip it for this visit.</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {quick.map((q) => (
-          <button
-            key={q.label}
-            onClick={() => setDate(format(addDays(new Date(), q.d), "yyyy-MM-dd"))}
-            className="rounded-full border px-3 py-1 text-xs font-semibold hover:bg-muted"
-          >{q.label}</button>
-        ))}
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label>Date</Label>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+
+      <div className="flex items-center justify-between rounded-2xl border bg-background p-4 shadow-soft">
+        <div className="space-y-0.5">
+          <Label htmlFor="skip-followup" className="text-sm font-semibold">Skip follow-up</Label>
+          <p className="text-xs text-muted-foreground">No appointment will be scheduled.</p>
         </div>
-        <div className="space-y-1.5">
-          <Label>Time</Label>
-          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        <Switch
+          id="skip-followup"
+          checked={skip}
+          onCheckedChange={setSkip}
+          aria-label="Skip follow-up"
+        />
+      </div>
+
+      {!skip && (
+        <div className="space-y-4 rounded-2xl border bg-surface p-4 transition-all">
+          <div className="flex flex-wrap gap-2">
+            {quick.map((q) => (
+              <button
+                key={q.label}
+                onClick={() => setDate(format(addDays(new Date(), q.d), "yyyy-MM-dd"))}
+                className="rounded-full border px-3 py-1 text-xs font-semibold hover:bg-muted"
+              >{q.label}</button>
+            ))}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Date</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Time</Label>
+              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Visit type</Label>
+            <Input value={type} onChange={(e) => setType(e.target.value)} placeholder="Foot care follow-up" />
+          </div>
         </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label>Visit type</Label>
-        <Input value={type} onChange={(e) => setType(e.target.value)} placeholder="Foot care follow-up" />
-      </div>
+      )}
+
+      {skip && (
+        <div className="rounded-2xl border border-dashed bg-surface-muted p-6 text-center text-sm text-muted-foreground">
+          Follow-up appointment will not be scheduled for this visit.
+        </div>
+      )}
     </div>
   );
 }
