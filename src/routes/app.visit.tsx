@@ -261,20 +261,24 @@ function VisitFlow() {
         category: `Visit · ${paymentMethod}`, patientId: patient.id,
       });
 
-      // Only schedule a follow-up when both date and time are provided and valid.
-      if (followupDate && followupTime) {
-        const fu = new Date(`${followupDate}T${followupTime}:00`);
-        if (!isNaN(fu.getTime())) {
-          await addAppointment({
-            patientId: patient.id,
-            date: fu.toISOString(),
-            duration: 45,
-            type: followupType,
-            expectedFee: fee,
-            recurring: null,
-          });
+      // Only schedule a follow-up when the nurse hasn't skipped it and both date/time are valid.
+      if (!skipFollowup) {
+        if (followupDate && followupTime) {
+          const fu = new Date(`${followupDate}T${followupTime}:00`);
+          if (!isNaN(fu.getTime())) {
+            await addAppointment({
+              patientId: patient.id,
+              date: fu.toISOString(),
+              duration: 45,
+              type: followupType,
+              expectedFee: fee,
+              recurring: null,
+            });
+          } else {
+            toast.warning("Follow-up date/time was invalid; skipping appointment.");
+          }
         } else {
-          toast.warning("Follow-up date/time was invalid; skipping appointment.");
+          toast.warning("Follow-up date/time missing; appointment not scheduled.");
         }
       }
 
