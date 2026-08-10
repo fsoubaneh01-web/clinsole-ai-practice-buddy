@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { FootAssessmentModule } from "@/components/FootAssessmentModule";
 import { useStore, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
@@ -78,6 +79,7 @@ function VisitFlow() {
   const [followupDate, setFollowupDate] = useState(format(addDays(new Date(), 14), "yyyy-MM-dd"));
   const [followupTime, setFollowupTime] = useState("10:00");
   const [followupType, setFollowupType] = useState("Foot care follow-up");
+  const [skipFollowup, setSkipFollowup] = useState(false);
   const [visitStartedAt, setVisitStartedAt] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
 
@@ -259,20 +261,24 @@ function VisitFlow() {
         category: `Visit · ${paymentMethod}`, patientId: patient.id,
       });
 
-      // Only schedule a follow-up when both date and time are provided and valid.
-      if (followupDate && followupTime) {
-        const fu = new Date(`${followupDate}T${followupTime}:00`);
-        if (!isNaN(fu.getTime())) {
-          await addAppointment({
-            patientId: patient.id,
-            date: fu.toISOString(),
-            duration: 45,
-            type: followupType,
-            expectedFee: fee,
-            recurring: null,
-          });
+      // Only schedule a follow-up when the nurse hasn't skipped it and both date/time are valid.
+      if (!skipFollowup) {
+        if (followupDate && followupTime) {
+          const fu = new Date(`${followupDate}T${followupTime}:00`);
+          if (!isNaN(fu.getTime())) {
+            await addAppointment({
+              patientId: patient.id,
+              date: fu.toISOString(),
+              duration: 45,
+              type: followupType,
+              expectedFee: fee,
+              recurring: null,
+            });
+          } else {
+            toast.warning("Follow-up date/time was invalid; skipping appointment.");
+          }
         } else {
-          toast.warning("Follow-up date/time was invalid; skipping appointment.");
+          toast.warning("Follow-up date/time missing; appointment not scheduled.");
         }
       }
 
@@ -399,6 +405,7 @@ function VisitFlow() {
               date={followupDate} setDate={setFollowupDate}
               time={followupTime} setTime={setFollowupTime}
               type={followupType} setType={setFollowupType}
+              skip={skipFollowup} setSkip={setSkipFollowup}
             />
           )}
 
@@ -409,7 +416,7 @@ function VisitFlow() {
               photos={photos.length}
               soap={!!soap}
               fee={fee}
-              followup={`${format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d · HH:mm")}`}
+              followup={skipFollowup ? "Skipped" : `${format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d · HH:mm")}`}
               startedAt={visitStartedAt}
               education={selectedTopics.length}
               onFinish={finishVisit}
@@ -769,7 +776,7 @@ function EducationStep({ selected, toggle }: { selected: string[]; toggle: (id: 
   );
 }
 
-function FollowupStep({ date, setDate, time, setTime, type, setType }: any) {
+function FollowupStep({ date, setDate, time, setTime, type, setType, skip, setSkip }: any) {
   const quick = [
     { label: "1 week",   d: 7  },
     { label: "2 weeks",  d: 14 },
@@ -781,31 +788,55 @@ function FollowupStep({ date, setDate, time, setTime, type, setType }: any) {
     <div className="mx-auto max-w-lg space-y-5">
       <div>
         <h2 className="text-lg font-bold">Schedule follow-up</h2>
-        <p className="text-sm text-muted-foreground">Create the next appointment automatically on finish.</p>
+        <p className="text-sm text-muted-foreground">Create the next appointment automatically, or skip it for this visit.</p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {quick.map((q) => (
-          <button
-            key={q.label}
-            onClick={() => setDate(format(addDays(new Date(), q.d), "yyyy-MM-dd"))}
-            className="rounded-full border px-3 py-1 text-xs font-semibold hover:bg-muted"
-          >{q.label}</button>
-        ))}
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label>Date</Label>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+
+      <div className="flex items-center justify-between rounded-2xl border bg-background p-4 shadow-soft">
+        <div className="space-y-0.5">
+          <Label htmlFor="skip-followup" className="text-sm font-semibold">Skip follow-up</Label>
+          <p className="text-xs text-muted-foreground">No appointment will be scheduled.</p>
         </div>
-        <div className="space-y-1.5">
-          <Label>Time</Label>
-          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        <Switch
+          id="skip-followup"
+          checked={skip}
+          onCheckedChange={setSkip}
+          aria-label="Skip follow-up"
+        />
+      </div>
+
+      {!skip && (
+        <div className="space-y-4 rounded-2xl border bg-surface p-4 transition-all">
+          <div className="flex flex-wrap gap-2">
+            {quick.map((q) => (
+              <button
+                key={q.label}
+                onClick={() => setDate(format(addDays(new Date(), q.d), "yyyy-MM-dd"))}
+                className="rounded-full border px-3 py-1 text-xs font-semibold hover:bg-muted"
+              >{q.label}</button>
+            ))}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Date</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Time</Label>
+              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Visit type</Label>
+            <Input value={type} onChange={(e) => setType(e.target.value)} placeholder="Foot care follow-up" />
+          </div>
         </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label>Visit type</Label>
-        <Input value={type} onChange={(e) => setType(e.target.value)} placeholder="Foot care follow-up" />
-      </div>
+      )}
+
+      {skip && (
+        <div className="rounded-2xl border border-dashed bg-surface-muted p-6 text-center text-sm text-muted-foreground">
+          Follow-up appointment will not be scheduled for this visit.
+        </div>
+      )}
     </div>
   );
 }
