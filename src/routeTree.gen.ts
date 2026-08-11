@@ -16,6 +16,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVisitRouteImport } from './routes/app.visit'
+import { Route as AppUpcomingRouteImport } from './routes/app.upcoming'
 import { Route as AppSubscriptionRouteImport } from './routes/app.subscription'
 import { Route as AppSoapRouteImport } from './routes/app.soap'
 import { Route as AppPatientsRouteImport } from './routes/app.patients'
@@ -61,6 +62,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppVisitRoute = AppVisitRouteImport.update({
   id: '/visit',
   path: '/visit',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUpcomingRoute = AppUpcomingRouteImport.update({
+  id: '/upcoming',
+  path: '/upcoming',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSubscriptionRoute = AppSubscriptionRouteImport.update({
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
+  '/app/upcoming': typeof AppUpcomingRoute
   '/app/visit': typeof AppVisitRoute
   '/app/patients/$id': typeof AppPatientsIdRoute
   '/app/patients/new': typeof AppPatientsNewRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
+  '/app/upcoming': typeof AppUpcomingRoute
   '/app/visit': typeof AppVisitRoute
   '/app/patients/$id': typeof AppPatientsIdRoute
   '/app/patients/new': typeof AppPatientsNewRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
+  '/app/upcoming': typeof AppUpcomingRoute
   '/app/visit': typeof AppVisitRoute
   '/app/patients_/$id': typeof AppPatientsIdRoute
   '/app/patients_/new': typeof AppPatientsNewRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
+    | '/app/upcoming'
     | '/app/visit'
     | '/app/patients/$id'
     | '/app/patients/new'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
+    | '/app/upcoming'
     | '/app/visit'
     | '/app/patients/$id'
     | '/app/patients/new'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
+    | '/app/upcoming'
     | '/app/visit'
     | '/app/patients_/$id'
     | '/app/patients_/new'
@@ -301,6 +313,13 @@ declare module '@tanstack/react-router' {
       path: '/visit'
       fullPath: '/app/visit'
       preLoaderRoute: typeof AppVisitRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/upcoming': {
+      id: '/app/upcoming'
+      path: '/upcoming'
+      fullPath: '/app/upcoming'
+      preLoaderRoute: typeof AppUpcomingRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/subscription': {
@@ -393,6 +412,7 @@ interface AppRouteChildren {
   AppPatientsRoute: typeof AppPatientsRoute
   AppSoapRoute: typeof AppSoapRoute
   AppSubscriptionRoute: typeof AppSubscriptionRoute
+  AppUpcomingRoute: typeof AppUpcomingRoute
   AppVisitRoute: typeof AppVisitRoute
   AppPatientsIdRoute: typeof AppPatientsIdRoute
   AppPatientsNewRoute: typeof AppPatientsNewRoute
@@ -408,6 +428,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPatientsRoute: AppPatientsRoute,
   AppSoapRoute: AppSoapRoute,
   AppSubscriptionRoute: AppSubscriptionRoute,
+  AppUpcomingRoute: AppUpcomingRoute,
   AppVisitRoute: AppVisitRoute,
   AppPatientsIdRoute: AppPatientsIdRoute,
   AppPatientsNewRoute: AppPatientsNewRoute,
