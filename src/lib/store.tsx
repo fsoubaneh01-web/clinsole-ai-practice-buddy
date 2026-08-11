@@ -668,6 +668,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addAppointment: async (a) => {
       const userId = session?.user?.id;
       if (!userId) return { error: "You must be signed in." };
+      // Guard against booking the exact same patient/time twice (e.g. double submit
+      // or a follow-up re-created from the visit flow).
+      const dupe = appointments.find(
+        (x) => x.patientId === a.patientId && new Date(x.date).getTime() === new Date(a.date).getTime()
+      );
+      if (dupe) return { appointment: dupe };
       const { data, error } = await supabase
         .from("appointments")
         .insert({

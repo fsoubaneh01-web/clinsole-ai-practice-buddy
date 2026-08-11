@@ -30,9 +30,17 @@ function UpcomingVisits() {
     const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
 
+    const seen = new Set<string>();
     const future = appointments
       .filter((a) => new Date(a.date) >= startOfToday)
-      .sort((a, b) => a.date.localeCompare(b.date));
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .filter((a) => {
+        // Collapse duplicate rows for the same patient at the same time.
+        const key = `${a.patientId}|${new Date(a.date).getTime()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
     const buckets: Group[] = [
       { key: "today", label: "Today", items: [] },
