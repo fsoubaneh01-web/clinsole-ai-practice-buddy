@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { addDays, endOfWeek, format, isSameDay, isToday, isTomorrow } from "date-fns";
+import { endOfWeek, format, isSameDay, isToday, isTomorrow } from "date-fns";
 import { ChevronRight, CalendarClock } from "lucide-react";
 
 import { AppShell, Container } from "@/components/AppShell";
@@ -106,5 +106,3 @@ function UpcomingVisits() {
   );
 }
 
-// keeps addDays import meaningful for future range tweaks
-void addDays;
