@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { format, isToday, isPast, addDays, differenceInMinutes } from "date-fns";
 import {
   Calendar, Users, FileText, TrendingUp, ChevronRight, Bell, Sparkles,
-  AlertTriangle, Activity,
+  AlertTriangle, Activity, CalendarClock,
 } from "lucide-react";
 
 import { AppShell, Container } from "@/components/AppShell";
