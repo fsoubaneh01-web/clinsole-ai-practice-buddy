@@ -227,11 +227,18 @@ function Dashboard() {
 
           <section className="rounded-3xl border bg-surface p-5 shadow-card">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Today's schedule</h2>
-              <Link to="/app/calendar" className="text-xs font-medium text-primary">Open</Link>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Today's Visits</h2>
+              <Link
+                to="/app/upcoming"
+                aria-label="View upcoming visits"
+                title="Upcoming visits"
+                className="grid h-8 w-8 place-items-center rounded-full text-primary hover:bg-primary/10"
+              >
+                <CalendarClock className="h-4 w-4" />
+              </Link>
             </div>
             {today.length === 0 ? (
-              <Empty text="Nothing scheduled today." />
+              <Empty text="No visits scheduled today." />
             ) : (
               <ul className="mt-3 space-y-2">
                 {today.map((a) => {
