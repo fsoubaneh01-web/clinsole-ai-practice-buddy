@@ -90,7 +90,8 @@ function PatientProfile() {
                     <AlertDialogAction
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       onClick={async () => {
-                        await deletePatient(p.id);
+                        const r = await deletePatient(p.id);
+                        if (r.error) { toast.error(`Couldn't delete patient: ${r.error}`); return; }
                         toast.success("Patient deleted");
                         nav({ to: "/app/patients" });
                       }}

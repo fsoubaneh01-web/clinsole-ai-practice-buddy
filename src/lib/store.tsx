@@ -160,11 +160,11 @@ type Ctx = {
   setNurse: (n: Nurse) => Promise<void>;
   addPatient: (p: Omit<Patient, "id" | "createdAt" | "assessments" | "treatments">) => Promise<{ patient?: Patient; error?: string }>;
   updatePatient: (id: string, p: Partial<Patient>) => Promise<void>;
-  deletePatient: (id: string) => Promise<void>;
+  deletePatient: (id: string) => Promise<{ error?: string }>;
   addTreatment: (patientId: string, t: Omit<Treatment, "id">) => Promise<{ treatment?: Treatment; error?: string }>;
   addAppointment: (a: Omit<Appointment, "id" | "patientName">) => Promise<{ appointment?: Appointment; error?: string }>;
   updateAppointment: (id: string, a: Partial<Omit<Appointment, "id" | "patientName">>) => Promise<{ error?: string }>;
-  deleteAppointment: (id: string) => Promise<void>;
+  deleteAppointment: (id: string) => Promise<{ error?: string }>;
   addFootAssessment: (a: FootAssessmentInput, photos: File[]) => Promise<{ assessment?: FootAssessment; error?: string }>;
   addFootObservation: (o: FootObservationInput, photos: File[]) => Promise<{ assessment?: FootAssessment; error?: string }>;
   uploadClinicalPhotos: (patientId: string, files: File[]) => Promise<{ paths?: string[]; error?: string }>;
@@ -635,10 +635,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     deletePatient: async (pid) => {
       const { error } = await supabase.from("patients").delete().eq("id", pid);
-      if (error) { console.error("deletePatient", error); return; }
+      if (error) { console.error("deletePatient", error); return { error: error.message }; }
       setPatients((s) => s.filter((x) => x.id !== pid));
       setAppointments((s) => s.filter((a) => a.patientId !== pid));
       setTransactions((s) => s.map((t) => (t.patientId === pid ? { ...t, patientId: undefined } : t)));
+      return {};
     },
     addTreatment: async (pid, t) => {
       const userId = session?.user?.id;
@@ -724,8 +725,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     deleteAppointment: async (aid) => {
       const { error } = await supabase.from("appointments").delete().eq("id", aid);
-      if (error) { console.error("deleteAppointment", error); return; }
+      if (error) { console.error("deleteAppointment", error); return { error: error.message }; }
       setAppointments((s) => s.filter((a) => a.id !== aid));
+      return {};
     },
     uploadClinicalPhotos: async (patientId, files) => {
       const userId = session?.user?.id;
