@@ -39,20 +39,24 @@ function findOverlap(
 
 // Generate future occurrence dates for a recurring series: 12 occurrences or
 // 3 months out, whichever comes first (excluding the first appointment itself).
+// All arithmetic is done in local wall-clock time so a 10:00 visit stays at
+// 10:00 across DST changes, and monthly repeats clamp to the last valid day.
 function recurrenceDates(start: Date, kind: "weekly" | "biweekly" | "monthly"): Date[] {
-  const limit = new Date(start);
-  limit.setMonth(limit.getMonth() + 3);
+  const limit = addMonthsLocal(start, 3);
   const out: Date[] = [];
   for (let i = 1; i < 12; i++) {
-    const d = new Date(start);
-    if (kind === "weekly") d.setDate(d.getDate() + 7 * i);
-    else if (kind === "biweekly") d.setDate(d.getDate() + 14 * i);
-    else d.setMonth(d.getMonth() + i);
+    const d =
+      kind === "weekly"
+        ? addDaysLocal(start, 7 * i)
+        : kind === "biweekly"
+          ? addDaysLocal(start, 14 * i)
+          : addMonthsLocal(start, i);
     if (d.getTime() > limit.getTime()) break;
     out.push(d);
   }
   return out;
 }
+
 
 function CalendarView() {
   const { appointments, patients, addAppointment, updateAppointment, deleteAppointment } = useStore();
