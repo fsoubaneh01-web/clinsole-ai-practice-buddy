@@ -396,7 +396,7 @@ function AppointmentDialog({
           <AlertDialogFooter>
             <AlertDialogCancel>Go back</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { setConflict(null); void commit(buildDate()); }}
+              onClick={() => { setConflict(null); const d = buildDate(); if (d) void commit(d); }}
             >Book anyway</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
