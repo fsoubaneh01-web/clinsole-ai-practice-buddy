@@ -37,6 +37,23 @@ function findOverlap(
   });
 }
 
+// Generate future occurrence dates for a recurring series: 12 occurrences or
+// 3 months out, whichever comes first (excluding the first appointment itself).
+function recurrenceDates(start: Date, kind: "weekly" | "biweekly" | "monthly"): Date[] {
+  const limit = new Date(start);
+  limit.setMonth(limit.getMonth() + 3);
+  const out: Date[] = [];
+  for (let i = 1; i < 12; i++) {
+    const d = new Date(start);
+    if (kind === "weekly") d.setDate(d.getDate() + 7 * i);
+    else if (kind === "biweekly") d.setDate(d.getDate() + 14 * i);
+    else d.setMonth(d.getMonth() + i);
+    if (d.getTime() > limit.getTime()) break;
+    out.push(d);
+  }
+  return out;
+}
+
 function CalendarView() {
   const { appointments, patients, addAppointment, updateAppointment, deleteAppointment } = useStore();
   const [selected, setSelected] = useState<Date>(new Date());
@@ -61,6 +78,10 @@ function CalendarView() {
             const r = await addAppointment(v);
             if (r.error) toast.error(r.error);
             else toast.success("Appointment booked");
+            return !r.error;
+          }}
+          onCreateOccurrence={async (v) => {
+            const r = await addAppointment(v);
             return !r.error;
           }}
         />
@@ -202,13 +223,14 @@ function CalendarView() {
 type FormValues = Omit<Appointment, "id" | "patientName">;
 
 function AppointmentDialog({
-  patients, appointments, defaultDate, existing, onSave, open: openProp, onOpenChange,
+  patients, appointments, defaultDate, existing, onSave, onCreateOccurrence, open: openProp, onOpenChange,
 }: {
   patients: Patient[];
   appointments: Appointment[];
   defaultDate: Date;
   existing?: Appointment;
   onSave: (v: FormValues) => Promise<boolean>;
+  onCreateOccurrence?: (v: FormValues) => Promise<boolean>;
   open?: boolean;
   onOpenChange?: (o: boolean) => void;
 }) {
@@ -238,13 +260,48 @@ function AppointmentDialog({
     return d;
   };
 
+  // Create the future occurrences of a recurring series as independent rows.
+  // Each one goes through the same server-side overlap guard; conflicting slots
+  // are skipped (never silently double-booked) and reported back to the nurse.
+  const createSeries = async (start: Date, kind: "weekly" | "biweekly" | "monthly") => {
+    if (!onCreateOccurrence) return;
+    let created = 0;
+    let skipped = 0;
+    for (const d of recurrenceDates(start, kind)) {
+      try {
+        const res = await checkOverlap({
+          data: { startIso: d.toISOString(), durationMin: duration },
+        });
+        if (res.conflict) { skipped++; continue; }
+      } catch (e) {
+        console.error("overlap check (series)", e);
+      }
+      const ok = await onCreateOccurrence({
+        patientId: pid, date: d.toISOString(), duration, type,
+        location, notes, expectedFee: fee,
+        recurring: kind,
+      });
+      if (ok) created++; else skipped++;
+    }
+    if (created > 0) {
+      toast.success(
+        `${created} more ${kind} visit${created === 1 ? "" : "s"} scheduled` +
+          (skipped > 0 ? ` · ${skipped} skipped (conflict)` : ""),
+      );
+    } else if (skipped > 0) {
+      toast.warning(`No repeat visits added — ${skipped} slot${skipped === 1 ? "" : "s"} conflicted.`);
+    }
+  };
+
   const commit = async (d: Date) => {
     setBusy(true);
+    const kind = recurring === "none" ? null : (recurring as "weekly" | "biweekly" | "monthly");
     const ok = await onSave({
       patientId: pid, date: d.toISOString(), duration, type,
       location, notes, expectedFee: fee,
-      recurring: recurring === "none" ? null : (recurring as Appointment["recurring"]),
+      recurring: kind,
     });
+    if (ok && kind && !existing) await createSeries(d, kind);
     setBusy(false);
     if (ok) setOpen(false);
   };
