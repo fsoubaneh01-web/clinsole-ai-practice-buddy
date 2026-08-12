@@ -245,22 +245,32 @@ function AppointmentDialog({
           <Button
             className="w-full gradient-primary text-primary-foreground"
             disabled={busy || !pid || pid === "__none"}
-            onClick={async () => {
-              const [h, m] = time.split(":").map(Number);
-              const d = new Date(`${dateStr}T00:00:00`);
-              d.setHours(h, m, 0, 0);
-              setBusy(true);
-              const ok = await onSave({
-                patientId: pid, date: d.toISOString(), duration, type,
-                location, notes, expectedFee: fee,
-                recurring: recurring === "none" ? null : (recurring as Appointment["recurring"]),
-              });
-              setBusy(false);
-              if (ok) setOpen(false);
+            onClick={() => {
+              const d = buildDate();
+              const clash = findOverlap(appointments, d, duration, existing?.id);
+              if (clash) { setConflict(clash); return; }
+              void commit(d);
             }}
           >{busy ? "Saving..." : existing ? "Save changes" : "Book appointment"}</Button>
         </div>
       </DialogContent>
+
+      <AlertDialog open={!!conflict} onOpenChange={(o) => { if (!o) setConflict(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Double-booking warning</AlertDialogTitle>
+            <AlertDialogDescription>
+              {conflict && `This overlaps with an existing appointment at ${format(new Date(conflict.date), "HH:mm")}${conflict.patientName ? ` (${conflict.patientName})` : ""}. Book it anyway?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { setConflict(null); void commit(buildDate()); }}
+            >Book anyway</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
