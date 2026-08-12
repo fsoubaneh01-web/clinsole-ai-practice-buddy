@@ -13,6 +13,8 @@ import {
 import { useStore, type Appointment, type Patient } from "@/lib/store";
 import { useServerFn } from "@tanstack/react-start";
 import { checkAppointmentOverlap } from "@/lib/appointments.functions";
+import { addDaysLocal, addMonthsLocal, parseLocalDateTime } from "@/lib/datetime";
+
 
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { Bell, CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
