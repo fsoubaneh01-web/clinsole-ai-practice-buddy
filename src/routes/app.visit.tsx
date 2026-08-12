@@ -444,7 +444,7 @@ function VisitFlow() {
               photos={photos.length}
               soap={!!soap}
               fee={fee}
-              followup={skipFollowup ? "Skipped" : `${format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d · HH:mm")}`}
+              followup={skipFollowup ? "Skipped" : (() => { const d = parseLocalDateTime(followupDate, followupTime); return d ? format(d, "EEE, MMM d · HH:mm") : "Not scheduled"; })()}
               startedAt={visitStartedAt}
               education={selectedTopics.length}
               onFinish={() => { void finishVisit(); }}
