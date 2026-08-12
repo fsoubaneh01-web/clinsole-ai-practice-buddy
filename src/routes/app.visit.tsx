@@ -167,7 +167,9 @@ function VisitFlow() {
       <p><strong>Objective:</strong> ${esc(soap.o)}</p>
       <p><strong>Assessment:</strong> ${esc(soap.a)}</p>
       <p><strong>Plan:</strong> ${esc(soap.p)}</p>` : "";
-    const fu = format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d yyyy · HH:mm");
+    const fuParsed = parseLocalDateTime(followupDate, followupTime);
+    const fu = fuParsed ? format(fuParsed, "EEE, MMM d yyyy · HH:mm") : "Not scheduled";
+
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Visit Summary — ${esc(patient.name)}</title>
       <style>
         body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111;max-width:780px;margin:32px auto;padding:0 24px}
