@@ -250,8 +250,27 @@ function VisitFlow() {
     }
   };
 
-  const finishVisit = async () => {
+  const finishVisit = async (opts?: { forceFollowup?: boolean; dropFollowup?: boolean }) => {
     if (!patient || !soap) return;
+
+    const wantsFollowup = !skipFollowup && !opts?.dropFollowup;
+    const fuDate = wantsFollowup && followupDate && followupTime
+      ? new Date(`${followupDate}T${followupTime}:00`)
+      : null;
+    const fuValid = !!fuDate && !isNaN(fuDate.getTime());
+
+    // Authoritative server-side double-booking check before anything is saved.
+    if (fuValid && !opts?.forceFollowup) {
+      try {
+        const res = await checkOverlap({
+          data: { startIso: fuDate!.toISOString(), durationMin: 45 },
+        });
+        if (res.conflict) { setFollowupConflict(res.conflict); return; }
+      } catch (e) {
+        console.error("follow-up overlap check", e);
+      }
+    }
+
     setFinishing(true);
     try {
       const now = new Date().toISOString();
@@ -262,21 +281,18 @@ function VisitFlow() {
       });
 
       // Only schedule a follow-up when the nurse hasn't skipped it and both date/time are valid.
-      if (!skipFollowup) {
-        if (followupDate && followupTime) {
-          const fu = new Date(`${followupDate}T${followupTime}:00`);
-          if (!isNaN(fu.getTime())) {
-            await addAppointment({
-              patientId: patient.id,
-              date: fu.toISOString(),
-              duration: 45,
-              type: followupType,
-              expectedFee: fee,
-              recurring: null,
-            });
-          } else {
-            toast.warning("Follow-up date/time was invalid; skipping appointment.");
-          }
+      if (wantsFollowup) {
+        if (fuValid) {
+          await addAppointment({
+            patientId: patient.id,
+            date: fuDate!.toISOString(),
+            duration: 45,
+            type: followupType,
+            expectedFee: fee,
+            recurring: null,
+          });
+        } else if (followupDate && followupTime) {
+          toast.warning("Follow-up date/time was invalid; skipping appointment.");
         } else {
           toast.warning("Follow-up date/time missing; appointment not scheduled.");
         }
@@ -291,6 +307,7 @@ function VisitFlow() {
       setFinishing(false);
     }
   };
+
 
 
   return (
