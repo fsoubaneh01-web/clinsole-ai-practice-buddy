@@ -271,7 +271,13 @@ function AppointmentDialog({
     if (!onCreateOccurrence) return;
     let created = 0;
     let skipped = 0;
-    for (const d of recurrenceDates(start, kind)) {
+    const dates = recurrenceDates(start, kind);
+    if (dates.length === 0) {
+      toast.warning("No repeat visits could be generated for this date.");
+      return;
+    }
+    for (const d of dates) {
+
       try {
         const res = await checkOverlap({
           data: { startIso: d.toISOString(), durationMin: duration },
@@ -349,7 +355,7 @@ function AppointmentDialog({
             <Label>Patient</Label>
             <Select value={pid} onValueChange={setPid}>
               <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className="pointer-events-auto">
                 {patients.length === 0 && <SelectItem value="__none" disabled>No patients yet</SelectItem>}
                 {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
               </SelectContent>
@@ -366,16 +372,35 @@ function AppointmentDialog({
           <div className="space-y-1.5"><Label>Notes</Label><Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
           <div className="space-y-1.5">
             <Label>Recurring</Label>
-            <Select value={recurring} onValueChange={setRecurring}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">One-time</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="biweekly">Every 2 weeks</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Plain buttons instead of a portalled dropdown: on touch devices the
+                dropdown inside a dialog could silently fail to commit the choice,
+                so a recurring booking saved as one-time and no series was created. */}
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                ["none", "One-time"],
+                ["weekly", "Weekly"],
+                ["biweekly", "Every 2 weeks"],
+                ["monthly", "Monthly"],
+              ] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setRecurring(val)}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                    recurring === val
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "bg-surface text-muted-foreground hover:border-primary/50"
+                  }`}
+                >{label}</button>
+              ))}
+            </div>
+            {recurring !== "none" && !existing && (
+              <p className="text-xs text-muted-foreground">
+                Future visits will be booked automatically (up to 12, max 3 months ahead).
+              </p>
+            )}
           </div>
+
           <Button
             className="w-full gradient-primary text-primary-foreground"
             disabled={busy || !pid || pid === "__none"}
