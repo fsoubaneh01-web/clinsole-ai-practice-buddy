@@ -23,6 +23,11 @@ import { generateSoapNote } from "@/lib/soap.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { useDictation } from "@/hooks/use-dictation";
 import { cn } from "@/lib/utils";
+import { checkAppointmentOverlap } from "@/lib/appointments.functions";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 const searchSchema = z.object({ patientId: z.string().optional() });
@@ -66,6 +71,7 @@ function VisitFlow() {
     addTreatment, addTransaction, addAppointment,
   } = useStore();
   const generate = useServerFn(generateSoapNote);
+  const checkOverlap = useServerFn(checkAppointmentOverlap);
 
   const [stepIdx, setStepIdx] = useState(0);
   const [pid, setPid] = useState(patientId || patients[0]?.id || "");
@@ -82,6 +88,7 @@ function VisitFlow() {
   const [skipFollowup, setSkipFollowup] = useState(false);
   const [visitStartedAt, setVisitStartedAt] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
+  const [followupConflict, setFollowupConflict] = useState<{ date: string; patientName?: string | null } | null>(null);
 
   const observations = useMemo(
     () => footAssessments.filter(
@@ -250,8 +257,27 @@ function VisitFlow() {
     }
   };
 
-  const finishVisit = async () => {
+  const finishVisit = async (opts?: { forceFollowup?: boolean; dropFollowup?: boolean }) => {
     if (!patient || !soap) return;
+
+    const wantsFollowup = !skipFollowup && !opts?.dropFollowup;
+    const fuDate = wantsFollowup && followupDate && followupTime
+      ? new Date(`${followupDate}T${followupTime}:00`)
+      : null;
+    const fuValid = !!fuDate && !isNaN(fuDate.getTime());
+
+    // Authoritative server-side double-booking check before anything is saved.
+    if (fuValid && !opts?.forceFollowup) {
+      try {
+        const res = await checkOverlap({
+          data: { startIso: fuDate!.toISOString(), durationMin: 45 },
+        });
+        if (res.conflict) { setFollowupConflict(res.conflict); return; }
+      } catch (e) {
+        console.error("follow-up overlap check", e);
+      }
+    }
+
     setFinishing(true);
     try {
       const now = new Date().toISOString();
@@ -262,21 +288,18 @@ function VisitFlow() {
       });
 
       // Only schedule a follow-up when the nurse hasn't skipped it and both date/time are valid.
-      if (!skipFollowup) {
-        if (followupDate && followupTime) {
-          const fu = new Date(`${followupDate}T${followupTime}:00`);
-          if (!isNaN(fu.getTime())) {
-            await addAppointment({
-              patientId: patient.id,
-              date: fu.toISOString(),
-              duration: 45,
-              type: followupType,
-              expectedFee: fee,
-              recurring: null,
-            });
-          } else {
-            toast.warning("Follow-up date/time was invalid; skipping appointment.");
-          }
+      if (wantsFollowup) {
+        if (fuValid) {
+          await addAppointment({
+            patientId: patient.id,
+            date: fuDate!.toISOString(),
+            duration: 45,
+            type: followupType,
+            expectedFee: fee,
+            recurring: null,
+          });
+        } else if (followupDate && followupTime) {
+          toast.warning("Follow-up date/time was invalid; skipping appointment.");
         } else {
           toast.warning("Follow-up date/time missing; appointment not scheduled.");
         }
@@ -291,6 +314,7 @@ function VisitFlow() {
       setFinishing(false);
     }
   };
+
 
 
   return (
@@ -419,13 +443,33 @@ function VisitFlow() {
               followup={skipFollowup ? "Skipped" : `${format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d · HH:mm")}`}
               startedAt={visitStartedAt}
               education={selectedTopics.length}
-              onFinish={finishVisit}
+              onFinish={() => { void finishVisit(); }}
               onPrint={printSummary}
               finishing={finishing}
             />
           )}
 
         </div>
+
+        <AlertDialog open={!!followupConflict} onOpenChange={(o) => { if (!o) setFollowupConflict(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Double-booking warning</AlertDialogTitle>
+              <AlertDialogDescription>
+                {followupConflict && `The follow-up overlaps with an existing appointment at ${format(new Date(followupConflict.date), "HH:mm")}${followupConflict.patientName ? ` (${followupConflict.patientName})` : ""}. Book it anyway?`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Go back</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => { setFollowupConflict(null); void finishVisit({ dropFollowup: true }); }}
+              >Finish without follow-up</AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => { setFollowupConflict(null); void finishVisit({ forceFollowup: true }); }}
+              >Book anyway</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Nav */}
         <div className="mt-5 flex items-center justify-between gap-3">
