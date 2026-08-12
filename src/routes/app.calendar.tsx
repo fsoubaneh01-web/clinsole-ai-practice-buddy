@@ -11,6 +11,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useStore, type Appointment, type Patient } from "@/lib/store";
+import { useServerFn } from "@tanstack/react-start";
+import { checkAppointmentOverlap } from "@/lib/appointments.functions";
+
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { Bell, CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -225,7 +228,8 @@ function AppointmentDialog({
   const [fee, setFee] = useState(init?.expectedFee ?? 65);
   const [recurring, setRecurring] = useState<string>(init?.recurring ?? "none");
   const [busy, setBusy] = useState(false);
-  const [conflict, setConflict] = useState<Appointment | null>(null);
+  const [conflict, setConflict] = useState<{ date: string; patientName?: string | null } | null>(null);
+  const checkOverlap = useServerFn(checkAppointmentOverlap);
 
   const buildDate = () => {
     const [h, m] = time.split(":").map(Number);
@@ -244,6 +248,26 @@ function AppointmentDialog({
     setBusy(false);
     if (ok) setOpen(false);
   };
+
+  // Client check first (instant), then an authoritative server-side check so a
+  // stale local cache can't let a real double-booking slip through.
+  const attemptSave = async () => {
+    const d = buildDate();
+    const clash = findOverlap(appointments, d, duration, existing?.id);
+    if (clash) { setConflict(clash); return; }
+    setBusy(true);
+    try {
+      const res = await checkOverlap({
+        data: { startIso: d.toISOString(), durationMin: duration, excludeId: existing?.id },
+      });
+      if (res.conflict) { setBusy(false); setConflict(res.conflict); return; }
+    } catch (e) {
+      console.error("overlap check", e);
+    }
+    setBusy(false);
+    await commit(d);
+  };
+
 
 
   return (
@@ -292,12 +316,8 @@ function AppointmentDialog({
           <Button
             className="w-full gradient-primary text-primary-foreground"
             disabled={busy || !pid || pid === "__none"}
-            onClick={() => {
-              const d = buildDate();
-              const clash = findOverlap(appointments, d, duration, existing?.id);
-              if (clash) { setConflict(clash); return; }
-              void commit(d);
-            }}
+            onClick={() => { void attemptSave(); }}
+
           >{busy ? "Saving..." : existing ? "Save changes" : "Book appointment"}</Button>
         </div>
       </DialogContent>
