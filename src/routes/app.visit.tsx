@@ -261,10 +261,10 @@ function VisitFlow() {
     if (!patient || !soap) return;
 
     const wantsFollowup = !skipFollowup && !opts?.dropFollowup;
-    const fuDate = wantsFollowup && followupDate && followupTime
-      ? new Date(`${followupDate}T${followupTime}:00`)
-      : null;
+    // Local wall-clock interpretation, converted to a UTC instant on save.
+    const fuDate = wantsFollowup ? parseLocalDateTime(followupDate, followupTime) : null;
     const fuValid = !!fuDate && !isNaN(fuDate.getTime());
+
 
     // Authoritative server-side double-booking check before anything is saved.
     if (fuValid && !opts?.forceFollowup) {
