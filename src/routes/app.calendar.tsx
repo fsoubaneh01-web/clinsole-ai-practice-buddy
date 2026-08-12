@@ -314,8 +314,10 @@ function AppointmentDialog({
   // stale local cache can't let a real double-booking slip through.
   const attemptSave = async () => {
     const d = buildDate();
+    if (!d) { toast.error("Please enter a valid date and time."); return; }
     const clash = findOverlap(appointments, d, duration, existing?.id);
     if (clash) { setConflict(clash); return; }
+
     setBusy(true);
     try {
       const res = await checkOverlap({
