@@ -282,9 +282,10 @@ function Dashboard() {
 }
 
 function Metric({
-  icon: Icon, label, value, sub, tint,
+  icon: Icon, label, value, sub, tint, to,
 }: {
   icon: any; label: string; value: string | number; sub: string; tint: "purple" | "teal" | "amber" | "green";
+  to?: string;
 }) {
   const tints: Record<string, string> = {
     purple: "bg-primary/10 text-primary",
@@ -292,18 +293,24 @@ function Metric({
     amber: "bg-warning/15 text-warning",
     green: "bg-success/10 text-success",
   };
-  return (
-    <div className="rounded-2xl border bg-surface p-4 shadow-soft transition-shadow hover:shadow-card lg:p-5">
+  const className = "block rounded-2xl border bg-surface p-4 shadow-soft transition-all hover:shadow-card active:scale-[0.98] lg:p-5";
+  const content = (
+    <>
       <div className="flex items-start justify-between">
         <div className={cn("grid h-9 w-9 place-items-center rounded-xl", tints[tint])}>
           <Icon className="h-4 w-4" />
         </div>
+        {to && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
       </div>
       <div className="mt-3 text-2xl font-bold leading-none lg:text-[28px]">{value}</div>
       <div className="mt-1.5 text-xs font-medium text-foreground/80">{label}</div>
       <div className="mt-0.5 text-[11px] text-muted-foreground">{sub}</div>
-    </div>
+    </>
   );
+  if (to) {
+    return <Link to={to} className={className}>{content}</Link>;
+  }
+  return <div className={className}>{content}</div>;
 }
 
 function Empty({ text }: { text: string }) {
