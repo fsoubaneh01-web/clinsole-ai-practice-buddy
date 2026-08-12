@@ -11,6 +11,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useStore, type Appointment, type Patient } from "@/lib/store";
+import { useServerFn } from "@tanstack/react-start";
+import { checkAppointmentOverlap } from "@/lib/appointments.functions";
+
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { Bell, CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
