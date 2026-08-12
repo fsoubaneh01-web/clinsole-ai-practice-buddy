@@ -24,6 +24,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useDictation } from "@/hooks/use-dictation";
 import { cn } from "@/lib/utils";
 import { checkAppointmentOverlap } from "@/lib/appointments.functions";
+import { parseLocalDateTime } from "@/lib/datetime";
+
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
