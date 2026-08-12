@@ -259,12 +259,10 @@ function AppointmentDialog({
   const [conflict, setConflict] = useState<{ date: string; patientName?: string | null } | null>(null);
   const checkOverlap = useServerFn(checkAppointmentOverlap);
 
-  const buildDate = () => {
-    const [h, m] = time.split(":").map(Number);
-    const d = new Date(`${dateStr}T00:00:00`);
-    d.setHours(h || 0, m || 0, 0, 0);
-    return d;
-  };
+  // Interpret the picked date/time as local wall-clock time (never UTC), so the
+  // stored instant matches what the nurse actually chose in her timezone.
+  const buildDate = () => parseLocalDateTime(dateStr, time);
+
 
   // Create the future occurrences of a recurring series as independent rows.
   // Each one goes through the same server-side overlap guard; conflicting slots
