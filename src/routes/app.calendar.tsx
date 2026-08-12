@@ -271,7 +271,13 @@ function AppointmentDialog({
     if (!onCreateOccurrence) return;
     let created = 0;
     let skipped = 0;
-    for (const d of recurrenceDates(start, kind)) {
+    const dates = recurrenceDates(start, kind);
+    if (dates.length === 0) {
+      toast.warning("No repeat visits could be generated for this date.");
+      return;
+    }
+    for (const d of dates) {
+
       try {
         const res = await checkOverlap({
           data: { startIso: d.toISOString(), durationMin: duration },
