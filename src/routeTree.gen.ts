@@ -20,6 +20,7 @@ import { Route as AppUpcomingRouteImport } from './routes/app.upcoming'
 import { Route as AppSubscriptionRouteImport } from './routes/app.subscription'
 import { Route as AppSoapRouteImport } from './routes/app.soap'
 import { Route as AppPatientsRouteImport } from './routes/app.patients'
+import { Route as AppNotesRouteImport } from './routes/app.notes'
 import { Route as AppIncomeRouteImport } from './routes/app.income'
 import { Route as AppDictationUsageRouteImport } from './routes/app.dictation-usage'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
@@ -84,6 +85,11 @@ const AppPatientsRoute = AppPatientsRouteImport.update({
   path: '/patients',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNotesRoute = AppNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppIncomeRoute = AppIncomeRouteImport.update({
   id: '/income',
   path: '/income',
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/dictation-usage': typeof AppDictationUsageRoute
   '/app/income': typeof AppIncomeRoute
+  '/app/notes': typeof AppNotesRoute
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/dictation-usage': typeof AppDictationUsageRoute
   '/app/income': typeof AppIncomeRoute
+  '/app/notes': typeof AppNotesRoute
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/dictation-usage': typeof AppDictationUsageRoute
   '/app/income': typeof AppIncomeRoute
+  '/app/notes': typeof AppNotesRoute
   '/app/patients': typeof AppPatientsRoute
   '/app/soap': typeof AppSoapRoute
   '/app/subscription': typeof AppSubscriptionRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/dictation-usage'
     | '/app/income'
+    | '/app/notes'
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/dictation-usage'
     | '/app/income'
+    | '/app/notes'
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/dictation-usage'
     | '/app/income'
+    | '/app/notes'
     | '/app/patients'
     | '/app/soap'
     | '/app/subscription'
@@ -343,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPatientsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/notes': {
+      id: '/app/notes'
+      path: '/notes'
+      fullPath: '/app/notes'
+      preLoaderRoute: typeof AppNotesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/income': {
       id: '/app/income'
       path: '/income'
@@ -409,6 +428,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppDictationUsageRoute: typeof AppDictationUsageRoute
   AppIncomeRoute: typeof AppIncomeRoute
+  AppNotesRoute: typeof AppNotesRoute
   AppPatientsRoute: typeof AppPatientsRoute
   AppSoapRoute: typeof AppSoapRoute
   AppSubscriptionRoute: typeof AppSubscriptionRoute
@@ -425,6 +445,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppDictationUsageRoute: AppDictationUsageRoute,
   AppIncomeRoute: AppIncomeRoute,
+  AppNotesRoute: AppNotesRoute,
   AppPatientsRoute: AppPatientsRoute,
   AppSoapRoute: AppSoapRoute,
   AppSubscriptionRoute: AppSubscriptionRoute,
@@ -447,3 +468,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

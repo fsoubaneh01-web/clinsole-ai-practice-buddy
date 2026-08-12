@@ -11,6 +11,7 @@ import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { FootAssessmentModule } from "@/components/FootAssessmentModule";
+import { pendingNotes } from "@/lib/pending-notes";
 
 export const Route = createFileRoute("/app/dashboard")({ component: Dashboard });
 
@@ -30,8 +31,8 @@ function Dashboard() {
     [patients, in7],
   );
   const notesToFinish = useMemo(
-    () => today.filter((a) => new Date(a.date) < now).length,
-    [today, now],
+    () => pendingNotes(appointments, patients).length,
+    [appointments, patients],
   );
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const revenue = transactions
@@ -103,7 +104,7 @@ function Dashboard() {
         <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
           <Metric icon={Calendar} label="Today's Visits" value={today.length} sub={`${today.reduce((s, a) => s + a.duration, 0)} min booked`} tint="purple" to="/app/upcoming" />
           <Metric icon={Users} label="Total Patients" value={patients.length} sub={`${followUpsDue.length} due follow-up`} tint="teal" to="/app/patients" />
-          <Metric icon={FileText} label="Notes to Finish" value={notesToFinish} sub={notesToFinish ? "Awaiting sign-off" : "All caught up"} tint="amber" to="/app/soap" />
+          <Metric icon={FileText} label="Notes to Finish" value={notesToFinish} sub={notesToFinish ? "Awaiting sign-off" : "All caught up"} tint="amber" to="/app/notes" />
           <Metric icon={TrendingUp} label="Revenue (mo)" value={`$${revenue.toLocaleString()}`} sub={`${transactions.filter((t) => t.type === "income" && new Date(t.date) >= monthStart).length} paid`} tint="green" to="/app/income" />
         </div>
 
