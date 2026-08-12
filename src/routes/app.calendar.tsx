@@ -6,6 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useStore, type Appointment, type Patient } from "@/lib/store";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { Bell, CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
@@ -13,6 +17,22 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/calendar")({ component: CalendarView });
+
+function findOverlap(
+  appointments: Appointment[],
+  start: Date,
+  duration: number,
+  excludeId?: string,
+): Appointment | undefined {
+  const startMs = start.getTime();
+  const endMs = startMs + duration * 60_000;
+  return appointments.find((a) => {
+    if (a.id === excludeId) return false;
+    const aStart = new Date(a.date).getTime();
+    const aEnd = aStart + (a.duration || 0) * 60_000;
+    return startMs < aEnd && aStart < endMs;
+  });
+}
 
 function CalendarView() {
   const { appointments, patients, addAppointment, updateAppointment, deleteAppointment } = useStore();
