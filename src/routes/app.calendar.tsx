@@ -80,6 +80,10 @@ function CalendarView() {
             else toast.success("Appointment booked");
             return !r.error;
           }}
+          onCreateOccurrence={async (v) => {
+            const r = await addAppointment(v);
+            return !r.error;
+          }}
         />
       }
     >
