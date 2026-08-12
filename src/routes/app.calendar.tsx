@@ -349,7 +349,7 @@ function AppointmentDialog({
             <Label>Patient</Label>
             <Select value={pid} onValueChange={setPid}>
               <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className="pointer-events-auto">
                 {patients.length === 0 && <SelectItem value="__none" disabled>No patients yet</SelectItem>}
                 {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
               </SelectContent>
