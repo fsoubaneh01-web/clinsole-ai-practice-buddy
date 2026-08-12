@@ -6,6 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useStore, type Appointment, type Patient } from "@/lib/store";
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { Bell, CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
@@ -14,10 +18,27 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/calendar")({ component: CalendarView });
 
+function findOverlap(
+  appointments: Appointment[],
+  start: Date,
+  duration: number,
+  excludeId?: string,
+): Appointment | undefined {
+  const startMs = start.getTime();
+  const endMs = startMs + duration * 60_000;
+  return appointments.find((a) => {
+    if (a.id === excludeId) return false;
+    const aStart = new Date(a.date).getTime();
+    const aEnd = aStart + (a.duration || 0) * 60_000;
+    return startMs < aEnd && aStart < endMs;
+  });
+}
+
 function CalendarView() {
   const { appointments, patients, addAppointment, updateAppointment, deleteAppointment } = useStore();
   const [selected, setSelected] = useState<Date>(new Date());
   const [editing, setEditing] = useState<Appointment | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Appointment | null>(null);
   const weekStart = startOfWeek(selected, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -31,6 +52,7 @@ function CalendarView() {
       actions={
         <AppointmentDialog
           patients={patients}
+          appointments={appointments}
           defaultDate={selected}
           onSave={async (v) => {
             const r = await addAppointment(v);
@@ -120,7 +142,7 @@ function CalendarView() {
                     aria-label="Edit"
                   ><Pencil className="h-4 w-4" /></button>
                   <button
-                    onClick={async () => { await deleteAppointment(a.id); toast.success("Appointment cancelled"); }}
+                    onClick={() => setPendingDelete(a)}
                     className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     aria-label="Delete"
                   ><Trash2 className="h-4 w-4" /></button>
@@ -133,6 +155,7 @@ function CalendarView() {
         {editing && (
           <AppointmentDialog
             patients={patients}
+            appointments={appointments}
             defaultDate={new Date(editing.date)}
             existing={editing}
             open
@@ -145,6 +168,29 @@ function CalendarView() {
             }}
           />
         )}
+
+        <AlertDialog open={!!pendingDelete} onOpenChange={(o) => { if (!o) setPendingDelete(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this appointment?</AlertDialogTitle>
+              <AlertDialogDescription>This can't be undone.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async () => {
+                  const target = pendingDelete;
+                  setPendingDelete(null);
+                  if (!target) return;
+                  const r = await deleteAppointment(target.id);
+                  if (r.error) toast.error(`Couldn't delete appointment: ${r.error}`);
+                  else toast.success("Appointment cancelled");
+                }}
+              >Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Container>
     </AppShell>
   );
@@ -153,9 +199,10 @@ function CalendarView() {
 type FormValues = Omit<Appointment, "id" | "patientName">;
 
 function AppointmentDialog({
-  patients, defaultDate, existing, onSave, open: openProp, onOpenChange,
+  patients, appointments, defaultDate, existing, onSave, open: openProp, onOpenChange,
 }: {
   patients: Patient[];
+  appointments: Appointment[];
   defaultDate: Date;
   existing?: Appointment;
   onSave: (v: FormValues) => Promise<boolean>;
@@ -178,6 +225,26 @@ function AppointmentDialog({
   const [fee, setFee] = useState(init?.expectedFee ?? 65);
   const [recurring, setRecurring] = useState<string>(init?.recurring ?? "none");
   const [busy, setBusy] = useState(false);
+  const [conflict, setConflict] = useState<Appointment | null>(null);
+
+  const buildDate = () => {
+    const [h, m] = time.split(":").map(Number);
+    const d = new Date(`${dateStr}T00:00:00`);
+    d.setHours(h || 0, m || 0, 0, 0);
+    return d;
+  };
+
+  const commit = async (d: Date) => {
+    setBusy(true);
+    const ok = await onSave({
+      patientId: pid, date: d.toISOString(), duration, type,
+      location, notes, expectedFee: fee,
+      recurring: recurring === "none" ? null : (recurring as Appointment["recurring"]),
+    });
+    setBusy(false);
+    if (ok) setOpen(false);
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -225,22 +292,32 @@ function AppointmentDialog({
           <Button
             className="w-full gradient-primary text-primary-foreground"
             disabled={busy || !pid || pid === "__none"}
-            onClick={async () => {
-              const [h, m] = time.split(":").map(Number);
-              const d = new Date(`${dateStr}T00:00:00`);
-              d.setHours(h, m, 0, 0);
-              setBusy(true);
-              const ok = await onSave({
-                patientId: pid, date: d.toISOString(), duration, type,
-                location, notes, expectedFee: fee,
-                recurring: recurring === "none" ? null : (recurring as Appointment["recurring"]),
-              });
-              setBusy(false);
-              if (ok) setOpen(false);
+            onClick={() => {
+              const d = buildDate();
+              const clash = findOverlap(appointments, d, duration, existing?.id);
+              if (clash) { setConflict(clash); return; }
+              void commit(d);
             }}
           >{busy ? "Saving..." : existing ? "Save changes" : "Book appointment"}</Button>
         </div>
       </DialogContent>
+
+      <AlertDialog open={!!conflict} onOpenChange={(o) => { if (!o) setConflict(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Double-booking warning</AlertDialogTitle>
+            <AlertDialogDescription>
+              {conflict && `This overlaps with an existing appointment at ${format(new Date(conflict.date), "HH:mm")}${conflict.patientName ? ` (${conflict.patientName})` : ""}. Book it anyway?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { setConflict(null); void commit(buildDate()); }}
+            >Book anyway</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
