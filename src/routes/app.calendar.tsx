@@ -13,6 +13,8 @@ import {
 import { useStore, type Appointment, type Patient } from "@/lib/store";
 import { useServerFn } from "@tanstack/react-start";
 import { checkAppointmentOverlap } from "@/lib/appointments.functions";
+import { addDaysLocal, addMonthsLocal, parseLocalDateTime } from "@/lib/datetime";
+
 
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { Bell, CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
@@ -39,20 +41,24 @@ function findOverlap(
 
 // Generate future occurrence dates for a recurring series: 12 occurrences or
 // 3 months out, whichever comes first (excluding the first appointment itself).
+// All arithmetic is done in local wall-clock time so a 10:00 visit stays at
+// 10:00 across DST changes, and monthly repeats clamp to the last valid day.
 function recurrenceDates(start: Date, kind: "weekly" | "biweekly" | "monthly"): Date[] {
-  const limit = new Date(start);
-  limit.setMonth(limit.getMonth() + 3);
+  const limit = addMonthsLocal(start, 3);
   const out: Date[] = [];
   for (let i = 1; i < 12; i++) {
-    const d = new Date(start);
-    if (kind === "weekly") d.setDate(d.getDate() + 7 * i);
-    else if (kind === "biweekly") d.setDate(d.getDate() + 14 * i);
-    else d.setMonth(d.getMonth() + i);
+    const d =
+      kind === "weekly"
+        ? addDaysLocal(start, 7 * i)
+        : kind === "biweekly"
+          ? addDaysLocal(start, 14 * i)
+          : addMonthsLocal(start, i);
     if (d.getTime() > limit.getTime()) break;
     out.push(d);
   }
   return out;
 }
+
 
 function CalendarView() {
   const { appointments, patients, addAppointment, updateAppointment, deleteAppointment } = useStore();
@@ -253,12 +259,10 @@ function AppointmentDialog({
   const [conflict, setConflict] = useState<{ date: string; patientName?: string | null } | null>(null);
   const checkOverlap = useServerFn(checkAppointmentOverlap);
 
-  const buildDate = () => {
-    const [h, m] = time.split(":").map(Number);
-    const d = new Date(`${dateStr}T00:00:00`);
-    d.setHours(h || 0, m || 0, 0, 0);
-    return d;
-  };
+  // Interpret the picked date/time as local wall-clock time (never UTC), so the
+  // stored instant matches what the nurse actually chose in her timezone.
+  const buildDate = () => parseLocalDateTime(dateStr, time);
+
 
   // Create the future occurrences of a recurring series as independent rows.
   // Each one goes through the same server-side overlap guard; conflicting slots
@@ -310,8 +314,10 @@ function AppointmentDialog({
   // stale local cache can't let a real double-booking slip through.
   const attemptSave = async () => {
     const d = buildDate();
+    if (!d) { toast.error("Please enter a valid date and time."); return; }
     const clash = findOverlap(appointments, d, duration, existing?.id);
     if (clash) { setConflict(clash); return; }
+
     setBusy(true);
     try {
       const res = await checkOverlap({
@@ -390,7 +396,7 @@ function AppointmentDialog({
           <AlertDialogFooter>
             <AlertDialogCancel>Go back</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { setConflict(null); void commit(buildDate()); }}
+              onClick={() => { setConflict(null); const d = buildDate(); if (d) void commit(d); }}
             >Book anyway</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -24,6 +24,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useDictation } from "@/hooks/use-dictation";
 import { cn } from "@/lib/utils";
 import { checkAppointmentOverlap } from "@/lib/appointments.functions";
+import { parseLocalDateTime } from "@/lib/datetime";
+
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -165,7 +167,9 @@ function VisitFlow() {
       <p><strong>Objective:</strong> ${esc(soap.o)}</p>
       <p><strong>Assessment:</strong> ${esc(soap.a)}</p>
       <p><strong>Plan:</strong> ${esc(soap.p)}</p>` : "";
-    const fu = format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d yyyy · HH:mm");
+    const fuParsed = parseLocalDateTime(followupDate, followupTime);
+    const fu = fuParsed ? format(fuParsed, "EEE, MMM d yyyy · HH:mm") : "Not scheduled";
+
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Visit Summary — ${esc(patient.name)}</title>
       <style>
         body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111;max-width:780px;margin:32px auto;padding:0 24px}
@@ -261,10 +265,10 @@ function VisitFlow() {
     if (!patient || !soap) return;
 
     const wantsFollowup = !skipFollowup && !opts?.dropFollowup;
-    const fuDate = wantsFollowup && followupDate && followupTime
-      ? new Date(`${followupDate}T${followupTime}:00`)
-      : null;
+    // Local wall-clock interpretation, converted to a UTC instant on save.
+    const fuDate = wantsFollowup ? parseLocalDateTime(followupDate, followupTime) : null;
     const fuValid = !!fuDate && !isNaN(fuDate.getTime());
+
 
     // Authoritative server-side double-booking check before anything is saved.
     if (fuValid && !opts?.forceFollowup) {
@@ -440,7 +444,7 @@ function VisitFlow() {
               photos={photos.length}
               soap={!!soap}
               fee={fee}
-              followup={skipFollowup ? "Skipped" : `${format(new Date(`${followupDate}T${followupTime}:00`), "EEE, MMM d · HH:mm")}`}
+              followup={skipFollowup ? "Skipped" : (() => { const d = parseLocalDateTime(followupDate, followupTime); return d ? format(d, "EEE, MMM d · HH:mm") : "Not scheduled"; })()}
               startedAt={visitStartedAt}
               education={selectedTopics.length}
               onFinish={() => { void finishVisit(); }}
