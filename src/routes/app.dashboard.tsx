@@ -30,8 +30,8 @@ function Dashboard() {
     [patients, in7],
   );
   const notesToFinish = useMemo(
-    () => today.filter((a) => new Date(a.date) < now).length,
-    [today, now],
+    () => pendingNotes(appointments, patients).length,
+    [appointments, patients],
   );
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const revenue = transactions
