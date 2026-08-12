@@ -316,12 +316,8 @@ function AppointmentDialog({
           <Button
             className="w-full gradient-primary text-primary-foreground"
             disabled={busy || !pid || pid === "__none"}
-            onClick={() => {
-              const d = buildDate();
-              const clash = findOverlap(appointments, d, duration, existing?.id);
-              if (clash) { setConflict(clash); return; }
-              void commit(d);
-            }}
+            onClick={() => { void attemptSave(); }}
+
           >{busy ? "Saving..." : existing ? "Save changes" : "Book appointment"}</Button>
         </div>
       </DialogContent>
