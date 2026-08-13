@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDictation } from "@/hooks/use-dictation";
+import plantarAsset from "@/assets/foot-plantar.png.asset.json";
+import dorsalAsset from "@/assets/foot-dorsal.png.asset.json";
 
 import { Button } from "@/components/ui/button";
 import {
