@@ -672,21 +672,38 @@ function FootSvg({
           {mirrored ? "MIRRORED (scaleX -1)" : "un-mirrored"} · {regions.length} zones
         </div>
       )}
-      <div
-        className="relative h-[300px] w-full max-w-[170px] select-none lg:h-[380px] lg:max-w-[200px]"
-        style={{ transform: mirrored ? "scaleX(-1)" : undefined }}
-      >
+      <div className="relative h-[300px] w-full max-w-[170px] select-none lg:h-[380px] lg:max-w-[200px]">
         <img
           src={baseImage}
           alt={`${side === "L" ? "Left" : "Right"} foot, ${view} view`}
           draggable={false}
           className="pointer-events-none absolute inset-0 h-full w-full object-fill"
-          style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,.12))" }}
+          style={{
+            filter: "drop-shadow(0 4px 10px rgba(0,0,0,.12))",
+            transform: mirrored ? "scaleX(-1)" : "none",
+            transformOrigin: "center",
+            WebkitTransform: mirrored ? "scaleX(-1)" : "none",
+          } as React.CSSProperties}
         />
-        <svg viewBox="0 0 220 530" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+        <svg
+          viewBox="0 0 220 530"
+          preserveAspectRatio="none"
+          className="absolute inset-0 h-full w-full"
+          style={{ transform: mirrored ? "scaleX(-1)" : "none", transformOrigin: "center" }}
+        >
           {qa && (
-            <rect x="1" y="1" width="218" height="528" fill="none"
-              stroke="#DE8A44" strokeWidth="2" strokeDasharray="6 4" opacity="0.9" />
+            <>
+              <rect x="1" y="1" width="218" height="528" fill="none"
+                stroke="#DE8A44" strokeWidth="2" strokeDasharray="6 4" opacity="0.9" />
+              {/* Drawn inside the mirrored layer: reads backwards when the
+                  mirror is genuinely applied, so the label can't lie. */}
+              <text x="110" y="60" textAnchor="middle" fontSize="34" fontWeight="700"
+                fontFamily="monospace" fill="#0F172A" opacity="0.55">
+                {side}
+              </text>
+              {/* Hallux marker: sits on the source artwork's big-toe side. */}
+              <circle cx={sourceSide === "L" ? 178 : 42} cy="42" r="12" fill="#099292" opacity="0.8" />
+            </>
           )}
           {regions.map((r) => {
 
