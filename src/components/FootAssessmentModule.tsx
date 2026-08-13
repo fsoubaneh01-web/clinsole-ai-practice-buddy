@@ -673,24 +673,27 @@ function FootSvg({
         </div>
       )}
       <div className="relative h-[300px] w-full max-w-[170px] select-none lg:h-[380px] lg:max-w-[200px]">
-        <img
-          src={baseImage}
-          alt={`${side === "L" ? "Left" : "Right"} foot, ${view} view`}
-          draggable={false}
-          className="pointer-events-none absolute inset-0 h-full w-full object-fill"
-          style={{
-            filter: "drop-shadow(0 4px 10px rgba(0,0,0,.12))",
-            transform: mirrored ? "scaleX(-1)" : "none",
-            transformOrigin: "center",
-            WebkitTransform: mirrored ? "scaleX(-1)" : "none",
-          } as React.CSSProperties}
-        />
-        <svg
-          viewBox="0 0 220 530"
-          preserveAspectRatio="none"
-          className="absolute inset-0 h-full w-full"
-          style={{ transform: mirrored ? "scaleX(-1)" : "none", transformOrigin: "center" }}
+        {/* One transform owns the complete artwork layer. Keeping the image and
+            hit-map transform-free prevents nested mirrors from cancelling. */}
+        <div
+          data-foot-side={side}
+          data-foot-view={view}
+          data-mirrored={mirrored ? "true" : "false"}
+          className="absolute inset-0"
+          style={{ transform: mirrored ? "scaleX(-1)" : undefined, transformOrigin: "center" }}
         >
+          <img
+            src={baseImage}
+            alt={`${side === "L" ? "Left" : "Right"} foot, ${view} view`}
+            draggable={false}
+            className="pointer-events-none absolute inset-0 h-full w-full object-fill"
+            style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,.12))" }}
+          />
+          <svg
+            viewBox="0 0 220 530"
+            preserveAspectRatio="none"
+            className="absolute inset-0 h-full w-full"
+          >
           {qa && (
             <>
               <rect x="1" y="1" width="218" height="528" fill="none"
@@ -705,7 +708,7 @@ function FootSvg({
               <circle cx={sourceSide === "L" ? 178 : 42} cy="42" r="12" fill="#099292" opacity="0.8" />
             </>
           )}
-          {regions.map((r) => {
+            {regions.map((r) => {
 
             const isSelected = selected?.side === side && selected.region.id === r.id;
             const wasObserved = observedIds.has(r.id);
@@ -733,8 +736,9 @@ function FootSvg({
 
               </g>
             );
-          })}
-        </svg>
+            })}
+          </svg>
+        </div>
       </div>
     </div>
   );
