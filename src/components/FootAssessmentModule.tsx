@@ -684,20 +684,21 @@ function FootSvg({
                 <path
                   d={r.d}
                   fill={fill}
-                  fillOpacity={isSelected ? 0.7 : 0.32}
-                  stroke={isSelected ? ring : "#FFFFFF"}
-                  strokeOpacity={isSelected ? 1 : 0.7}
-                  strokeWidth={isSelected ? 2.5 : 1}
+                  fillOpacity={qa ? 0.12 : isSelected ? 0.7 : 0.32}
+                  stroke={qa ? "#0F172A" : isSelected ? ring : "#FFFFFF"}
+                  strokeOpacity={qa ? 0.9 : isSelected ? 1 : 0.7}
+                  strokeWidth={qa ? 1.2 : isSelected ? 2.5 : 1}
                   style={{ transition: "fill-opacity .2s, stroke-width .2s" }}
                 />
-                {isSelected && (
+                {isSelected && !qa && (
                   <path d={r.d} fill="none" stroke={ring} strokeWidth="2" opacity="0.5">
                     <animate attributeName="opacity" values="0.7;0;0.7" dur="1.8s" repeatCount="indefinite" />
                   </path>
                 )}
-                {wasObserved && !isSelected && (
+                {wasObserved && !isSelected && !qa && (
                   <path d={r.d} fill="none" stroke={ring} strokeWidth="1.5" strokeDasharray="3 3" opacity="0.7" />
                 )}
+
               </g>
             );
           })}
