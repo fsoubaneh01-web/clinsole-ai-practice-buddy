@@ -298,9 +298,10 @@ export function FootAssessmentModule({
         className="mt-4 grid grid-cols-2 gap-3 rounded-2xl p-4"
         style={{ background: "linear-gradient(180deg,#F5F7FB 0%,#EAF0F5 100%)" }}
       >
-        <FootSvg side="L" view={view} selected={selected} onSelect={handleSelect} observations={observations} />
-        <FootSvg side="R" view={view} selected={selected} onSelect={handleSelect} observations={observations} />
+        <FootSvg side="L" view={view} selected={selected} onSelect={handleSelect} observations={observations} qa={qa} />
+        <FootSvg side="R" view={view} selected={selected} onSelect={handleSelect} observations={observations} qa={qa} />
       </div>
+
 
       {/* Assessment panel */}
       <AnimatePresence mode="wait">
