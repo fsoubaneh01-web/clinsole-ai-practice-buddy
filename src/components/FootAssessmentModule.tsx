@@ -626,12 +626,13 @@ export function FootAssessmentModule({
    ──────────────────────────────────────────────────────────── */
 
 function FootSvg({
-  side, view, selected, onSelect, observations,
+  side, view, selected, onSelect, observations, qa = false,
 }: {
   side: FootSide; view: FootView;
   selected: { side: FootSide; region: Region } | null;
   onSelect: (side: FootSide, region: Region) => void;
   observations: FootAssessment[];
+  qa?: boolean;
 }) {
   const regions = REGIONS[view];
   const observedIds = new Set(
@@ -649,6 +650,13 @@ function FootSvg({
       <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {side === "L" ? "Left" : "Right"} · {view}
       </div>
+      {qa && (
+        <div className="mb-1 rounded-md border border-dashed border-primary/60 bg-primary/5 px-1.5 py-0.5 text-center font-mono text-[9px] leading-tight text-primary">
+          src: {view} artwork = {sourceSide === "L" ? "LEFT" : "RIGHT"} foot
+          <br />
+          {mirrored ? "MIRRORED (scaleX -1)" : "un-mirrored"} · {regions.length} zones
+        </div>
+      )}
       <div
         className="relative h-[300px] w-full max-w-[170px] select-none lg:h-[380px] lg:max-w-[200px]"
         style={{ transform: mirrored ? "scaleX(-1)" : undefined }}
@@ -661,7 +669,12 @@ function FootSvg({
           style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,.12))" }}
         />
         <svg viewBox="0 0 220 530" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+          {qa && (
+            <rect x="1" y="1" width="218" height="528" fill="none"
+              stroke="#DE8A44" strokeWidth="2" strokeDasharray="6 4" opacity="0.9" />
+          )}
           {regions.map((r) => {
+
             const isSelected = selected?.side === side && selected.region.id === r.id;
             const wasObserved = observedIds.has(r.id);
             const fill = groupColor(r.group);
