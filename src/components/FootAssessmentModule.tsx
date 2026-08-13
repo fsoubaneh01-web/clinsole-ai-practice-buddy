@@ -635,6 +635,11 @@ function FootSvg({
     observations.filter((o) => o.side === side && o.view === view).map((o) => o.region),
   );
   const baseImage = view === "plantar" ? plantarAsset.url : dorsalAsset.url;
+  // Source artwork: the plantar photo is a LEFT foot (hallux on image right),
+  // the dorsal photo is a RIGHT foot (hallux on image left). Mirror only the
+  // side that doesn't match its source so each foot is anatomically correct.
+  const sourceSide: FootSide = view === "plantar" ? "L" : "R";
+  const mirrored = side !== sourceSide;
 
   return (
     <div className="flex flex-col items-center">
@@ -643,7 +648,7 @@ function FootSvg({
       </div>
       <div
         className="relative h-[300px] w-full max-w-[170px] select-none lg:h-[380px] lg:max-w-[200px]"
-        style={{ transform: side === "L" ? "scaleX(-1)" : undefined }}
+        style={{ transform: mirrored ? "scaleX(-1)" : undefined }}
       >
         <img
           src={baseImage}
