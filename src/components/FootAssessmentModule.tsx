@@ -163,6 +163,8 @@ export function FootAssessmentModule({
 }) {
   const { footAssessments, addFootObservation } = useStore();
   const [view, setView] = useState<FootView>("plantar");
+  const [qa, setQa] = useState(false);
+
   const [selected, setSelected] = useState<{ side: FootSide; region: Region } | null>(null);
   const [draft, setDraft] = useState("");
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
