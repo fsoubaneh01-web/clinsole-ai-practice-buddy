@@ -270,19 +270,34 @@ export function FootAssessmentModule({
           {patientMeta && <p className="mt-0.5 truncate text-xs text-muted-foreground">{patientMeta}</p>}
         </div>
         <div className="flex shrink-0 rounded-full bg-muted p-1 text-xs font-medium">
-          {(["plantar", "dorsal"] as FootView[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => { setView(v); setSelected(null); }}
-              className={cn(
-                "rounded-full px-3 py-1.5 capitalize transition-colors",
-                view === v ? "bg-surface text-primary shadow-soft" : "text-muted-foreground",
-              )}
-            >
-              {v}
-            </button>
-          ))}
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex rounded-full bg-muted p-1 text-xs font-medium">
+            {(["plantar", "dorsal"] as FootView[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => { setView(v); setSelected(null); }}
+                className={cn(
+                  "rounded-full px-3 py-1.5 capitalize transition-colors",
+                  view === v ? "bg-surface text-primary shadow-soft" : "text-muted-foreground",
+                )}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setQa((q) => !q)}
+            aria-pressed={qa}
+            className={cn(
+              "rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors",
+              qa ? "border-primary bg-primary text-primary-foreground" : "border-dashed text-muted-foreground",
+            )}
+          >
+            QA overlay {qa ? "on" : "off"}
+          </button>
         </div>
+
       </div>
 
       {/* Legend */}
