@@ -269,8 +269,8 @@ export function FootAssessmentModule({
           <h2 className="mt-0.5 truncate text-lg font-bold lg:text-xl">Foot assessment · {patientName}</h2>
           {patientMeta && <p className="mt-0.5 truncate text-xs text-muted-foreground">{patientMeta}</p>}
         </div>
-        <div className="flex shrink-0 rounded-full bg-muted p-1 text-xs font-medium">
         <div className="flex shrink-0 flex-col items-end gap-1.5">
+
           <div className="flex rounded-full bg-muted p-1 text-xs font-medium">
             {(["plantar", "dorsal"] as FootView[]).map((v) => (
               <button
