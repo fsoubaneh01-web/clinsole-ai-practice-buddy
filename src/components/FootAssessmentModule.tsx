@@ -616,7 +616,8 @@ export function FootAssessmentModule({
 }
 
 /* ────────────────────────────────────────────────────────────
-   SVG foot — right foot drawn natively; left mirrored
+   Photoreal foot base image + tappable region overlays.
+   One plantar image and one dorsal image, mirrored for the left foot.
    ──────────────────────────────────────────────────────────── */
 
 function FootSvg({
@@ -631,36 +632,25 @@ function FootSvg({
   const observedIds = new Set(
     observations.filter((o) => o.side === side && o.view === view).map((o) => o.region),
   );
-  const outline =
-    "M 55 15 Q 22 18 20 55 L 22 135 Q 15 150 18 205 Q 20 250 32 262 \
-     Q 40 300 40 355 Q 22 400 42 470 Q 65 512 110 514 Q 155 512 178 470 \
-     Q 198 400 180 355 Q 180 300 188 262 Q 200 250 202 205 Q 205 150 198 135 \
-     L 200 55 Q 198 18 165 15 Z";
+  const baseImage = view === "plantar" ? plantarAsset.url : dorsalAsset.url;
 
   return (
     <div className="flex flex-col items-center">
       <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {side === "L" ? "Left" : "Right"} · {view}
       </div>
-      <svg
-        viewBox="0 0 220 530"
-        className="h-[300px] w-full max-w-[170px] select-none lg:h-[380px] lg:max-w-[200px]"
+      <div
+        className="relative h-[300px] w-full max-w-[170px] select-none lg:h-[380px] lg:max-w-[200px]"
         style={{ transform: side === "L" ? "scaleX(-1)" : undefined }}
       >
-        <defs>
-          <filter id={`shadow-${side}`} x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
-            <feOffset dx="0" dy="3" result="offsetblur" />
-            <feComponentTransfer><feFuncA type="linear" slope="0.18" /></feComponentTransfer>
-            <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-
-        {/* Skin base */}
-        <path d={outline} fill="#FDF4EC" stroke="#D8C4B4" strokeWidth="1.5" filter={`url(#shadow-${side})`} />
-
-        {/* Colored anatomical regions */}
-        <g>
+        <img
+          src={baseImage}
+          alt={`${side === "L" ? "Left" : "Right"} foot, ${view} view`}
+          draggable={false}
+          className="pointer-events-none absolute inset-0 h-full w-full object-fill"
+          style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,.12))" }}
+        />
+        <svg viewBox="0 0 220 530" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
           {regions.map((r) => {
             const isSelected = selected?.side === side && selected.region.id === r.id;
             const wasObserved = observedIds.has(r.id);
@@ -671,9 +661,9 @@ function FootSvg({
                 <path
                   d={r.d}
                   fill={fill}
-                  fillOpacity={isSelected ? 0.95 : 0.55}
+                  fillOpacity={isSelected ? 0.7 : 0.32}
                   stroke={isSelected ? ring : "#FFFFFF"}
-                  strokeOpacity={isSelected ? 1 : 0.85}
+                  strokeOpacity={isSelected ? 1 : 0.7}
                   strokeWidth={isSelected ? 2.5 : 1}
                   style={{ transition: "fill-opacity .2s, stroke-width .2s" }}
                 />
@@ -688,14 +678,12 @@ function FootSvg({
               </g>
             );
           })}
-        </g>
-
-        {/* Outline overlay for crisp edge */}
-        <path d={outline} fill="none" stroke="#8B7361" strokeWidth="1.2" strokeOpacity="0.6" pointerEvents="none" />
-      </svg>
+        </svg>
+      </div>
     </div>
   );
 }
+
 
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
