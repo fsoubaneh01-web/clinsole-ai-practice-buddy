@@ -163,6 +163,8 @@ export function FootAssessmentModule({
 }) {
   const { footAssessments, addFootObservation } = useStore();
   const [view, setView] = useState<FootView>("plantar");
+  const [qa, setQa] = useState(false);
+
   const [selected, setSelected] = useState<{ side: FootSide; region: Region } | null>(null);
   const [draft, setDraft] = useState("");
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
@@ -267,20 +269,35 @@ export function FootAssessmentModule({
           <h2 className="mt-0.5 truncate text-lg font-bold lg:text-xl">Foot assessment · {patientName}</h2>
           {patientMeta && <p className="mt-0.5 truncate text-xs text-muted-foreground">{patientMeta}</p>}
         </div>
-        <div className="flex shrink-0 rounded-full bg-muted p-1 text-xs font-medium">
-          {(["plantar", "dorsal"] as FootView[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => { setView(v); setSelected(null); }}
-              className={cn(
-                "rounded-full px-3 py-1.5 capitalize transition-colors",
-                view === v ? "bg-surface text-primary shadow-soft" : "text-muted-foreground",
-              )}
-            >
-              {v}
-            </button>
-          ))}
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+
+          <div className="flex rounded-full bg-muted p-1 text-xs font-medium">
+            {(["plantar", "dorsal"] as FootView[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => { setView(v); setSelected(null); }}
+                className={cn(
+                  "rounded-full px-3 py-1.5 capitalize transition-colors",
+                  view === v ? "bg-surface text-primary shadow-soft" : "text-muted-foreground",
+                )}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setQa((q) => !q)}
+            aria-pressed={qa}
+            className={cn(
+              "rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors",
+              qa ? "border-primary bg-primary text-primary-foreground" : "border-dashed text-muted-foreground",
+            )}
+          >
+            QA overlay {qa ? "on" : "off"}
+          </button>
         </div>
+
       </div>
 
       {/* Legend */}
@@ -298,9 +315,10 @@ export function FootAssessmentModule({
         className="mt-4 grid grid-cols-2 gap-3 rounded-2xl p-4"
         style={{ background: "linear-gradient(180deg,#F5F7FB 0%,#EAF0F5 100%)" }}
       >
-        <FootSvg side="L" view={view} selected={selected} onSelect={handleSelect} observations={observations} />
-        <FootSvg side="R" view={view} selected={selected} onSelect={handleSelect} observations={observations} />
+        <FootSvg side="L" view={view} selected={selected} onSelect={handleSelect} observations={observations} qa={qa} />
+        <FootSvg side="R" view={view} selected={selected} onSelect={handleSelect} observations={observations} qa={qa} />
       </div>
+
 
       {/* Assessment panel */}
       <AnimatePresence mode="wait">
@@ -623,12 +641,13 @@ export function FootAssessmentModule({
    ──────────────────────────────────────────────────────────── */
 
 function FootSvg({
-  side, view, selected, onSelect, observations,
+  side, view, selected, onSelect, observations, qa = false,
 }: {
   side: FootSide; view: FootView;
   selected: { side: FootSide; region: Region } | null;
   onSelect: (side: FootSide, region: Region) => void;
   observations: FootAssessment[];
+  qa?: boolean;
 }) {
   const regions = REGIONS[view];
   const observedIds = new Set(
@@ -646,6 +665,13 @@ function FootSvg({
       <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {side === "L" ? "Left" : "Right"} · {view}
       </div>
+      {qa && (
+        <div className="mb-1 rounded-md border border-dashed border-primary/60 bg-primary/5 px-1.5 py-0.5 text-center font-mono text-[9px] leading-tight text-primary">
+          src: {view} artwork = {sourceSide === "L" ? "LEFT" : "RIGHT"} foot
+          <br />
+          {mirrored ? "MIRRORED (scaleX -1)" : "un-mirrored"} · {regions.length} zones
+        </div>
+      )}
       <div
         className="relative h-[300px] w-full max-w-[170px] select-none lg:h-[380px] lg:max-w-[200px]"
         style={{ transform: mirrored ? "scaleX(-1)" : undefined }}
@@ -658,7 +684,12 @@ function FootSvg({
           style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,.12))" }}
         />
         <svg viewBox="0 0 220 530" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+          {qa && (
+            <rect x="1" y="1" width="218" height="528" fill="none"
+              stroke="#DE8A44" strokeWidth="2" strokeDasharray="6 4" opacity="0.9" />
+          )}
           {regions.map((r) => {
+
             const isSelected = selected?.side === side && selected.region.id === r.id;
             const wasObserved = observedIds.has(r.id);
             const fill = groupColor(r.group);
@@ -668,20 +699,21 @@ function FootSvg({
                 <path
                   d={r.d}
                   fill={fill}
-                  fillOpacity={isSelected ? 0.7 : 0.32}
-                  stroke={isSelected ? ring : "#FFFFFF"}
-                  strokeOpacity={isSelected ? 1 : 0.7}
-                  strokeWidth={isSelected ? 2.5 : 1}
+                  fillOpacity={qa ? 0.12 : isSelected ? 0.7 : 0.32}
+                  stroke={qa ? "#0F172A" : isSelected ? ring : "#FFFFFF"}
+                  strokeOpacity={qa ? 0.9 : isSelected ? 1 : 0.7}
+                  strokeWidth={qa ? 1.2 : isSelected ? 2.5 : 1}
                   style={{ transition: "fill-opacity .2s, stroke-width .2s" }}
                 />
-                {isSelected && (
+                {isSelected && !qa && (
                   <path d={r.d} fill="none" stroke={ring} strokeWidth="2" opacity="0.5">
                     <animate attributeName="opacity" values="0.7;0;0.7" dur="1.8s" repeatCount="indefinite" />
                   </path>
                 )}
-                {wasObserved && !isSelected && (
+                {wasObserved && !isSelected && !qa && (
                   <path d={r.d} fill="none" stroke={ring} strokeWidth="1.5" strokeDasharray="3 3" opacity="0.7" />
                 )}
+
               </g>
             );
           })}
