@@ -698,14 +698,16 @@ function FootSvg({
             <>
               <rect x="1" y="1" width="218" height="528" fill="none"
                 stroke="#DE8A44" strokeWidth="2" strokeDasharray="6 4" opacity="0.9" />
-              {/* Drawn inside the mirrored layer: reads backwards when the
-                  mirror is genuinely applied, so the label can't lie. */}
+              {/* Text is counter-mirrored so it stays readable while the
+                  artwork around it mirrors. */}
               <text x="110" y="60" textAnchor="middle" fontSize="34" fontWeight="700"
-                fontFamily="monospace" fill="#0F172A" opacity="0.55">
+                fontFamily="monospace" fill="#0F172A" opacity="0.55"
+                transform={mirrored ? "translate(220,0) scale(-1,1)" : undefined}>
                 {side}
               </text>
-              {/* Hallux marker: sits on the source artwork's big-toe side. */}
-              <circle cx={sourceSide === "L" ? 178 : 42} cy="42" r="12" fill="#099292" opacity="0.8" />
+              {/* Hallux marker in source-artwork coordinates only; the group
+                  transform performs the flip. */}
+              <circle cx="178" cy="42" r="12" fill="#099292" opacity="0.8" />
             </>
           )}
             {regions.map((r) => {
