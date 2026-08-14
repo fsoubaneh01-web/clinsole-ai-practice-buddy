@@ -655,11 +655,13 @@ function FootSvg({
   );
   const baseImage = view === "plantar" ? plantarAsset.url : dorsalAsset.url;
   // Source artwork: the plantar photo is a LEFT foot (hallux on the panel's
-  // inner edge) and the dorsal photo — shot toes-down — is also a LEFT foot
-  // (hallux on image left). Mirror only the side that doesn't match its
-  // source so each panel shows the foot named in its header.
-  const sourceSide: FootSide = "L";
+  // inner edge). The dorsal photo — shot toes-down — is a RIGHT foot (its
+  // hallux sits on the image's own left side), so the RIGHT panel uses it
+  // un-mirrored and the LEFT panel mirrors it; that lands the big toe medial
+  // on both dorsal feet.
+  const sourceSide: FootSide = view === "plantar" ? "L" : "R";
   const mirrored = side !== sourceSide;
+
 
   return (
     <div className="flex flex-col items-center">
