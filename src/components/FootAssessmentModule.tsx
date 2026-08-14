@@ -710,11 +710,11 @@ function FootSvg({
                 {side}
               </text>
               {/* Hallux marker in source-artwork coordinates only; the group
-                  transform performs the flip. The plantar source is a LEFT
-                  foot (hallux top-right, x≈178/y≈42); the dorsal source is a
-                  RIGHT foot photographed toes-down (hallux bottom-left). */}
+                  transform performs the flip. Both sources are LEFT feet:
+                  plantar is toes-up (hallux top, x≈178) and dorsal is
+                  toes-down (hallux bottom, x≈178) — medial on both panels. */}
               <circle
-                cx={view === "plantar" ? 178 : 42}
+                cx={178}
                 cy={view === "plantar" ? 42 : 488}
                 r="12" fill="#099292" opacity="0.8"
               />
