@@ -680,7 +680,10 @@ function FootSvg({
           data-foot-view={view}
           data-mirrored={mirrored ? "true" : "false"}
           className="absolute inset-0"
-          style={{ transform: mirrored ? "scaleX(-1)" : undefined, transformOrigin: "center" }}
+          style={{
+            transform: mirrored ? "translateX(100%) scaleX(-1)" : undefined,
+            transformOrigin: "0 0",
+          }}
         >
           <img
             src={baseImage}
