@@ -709,18 +709,27 @@ function FootSvg({
                 {side}
               </text>
               {/* Hallux marker in source-artwork coordinates only; the group
-                  transform performs the flip. */}
-              <circle cx="178" cy="42" r="12" fill="#099292" opacity="0.8" />
+                  transform performs the flip. The plantar source is a LEFT
+                  foot (hallux top-right, x≈178/y≈42); the dorsal source is a
+                  RIGHT foot photographed toes-down (hallux bottom-left). */}
+              <circle
+                cx={view === "plantar" ? 178 : 42}
+                cy={view === "plantar" ? 42 : 488}
+                r="12" fill="#099292" opacity="0.8"
+              />
+
             </>
           )}
-            {/* Plantar paths were authored in right-foot coordinates, while the
-                plantar source artwork is a left foot. Normalize every plantar
-                zone to the source artwork once; the outer artwork transform
-                then mirrors the photo and this complete zone group together. */}
+            {/* Zone paths are authored toes-up in right-foot coordinates.
+                Plantar source art is a left foot → flip in X.
+                Dorsal source art is a right foot shot toes-down → flip in Y.
+                One transform per view normalizes the whole zone group to the
+                photo; the outer artwork transform then mirrors both together. */}
             <g
               data-zone-coordinate-space={view === "plantar" ? "plantar-left-source" : "dorsal-right-source"}
-              transform={view === "plantar" ? "translate(220 0) scale(-1 1)" : undefined}
+              transform={view === "plantar" ? "translate(220 0) scale(-1 1)" : "translate(0 530) scale(1 -1)"}
             >
+
             {regions.map((r) => {
 
             const isSelected = selected?.side === side && selected.region.id === r.id;
