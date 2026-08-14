@@ -711,27 +711,21 @@ function FootSvg({
                 transform={mirrored ? "translate(220,0) scale(-1,1)" : undefined}>
                 {side}
               </text>
-              {/* Hallux marker in source-artwork coordinates only; the group
-                  transform performs the flip. Both sources are LEFT feet:
-                  plantar is toes-up (hallux top, x≈178) and dorsal is
-                  toes-down (hallux bottom, x≈178) — medial on both panels. */}
-              <circle
-                cx={178}
-                cy={view === "plantar" ? 42 : 488}
-                r="12" fill="#099292" opacity="0.8"
-              />
-
             </>
           )}
             {/* Zone paths are authored toes-up in right-foot coordinates.
                 Plantar source art is a left foot → flip in X.
                 Dorsal source art is a right foot shot toes-down → flip in Y.
                 One transform per view normalizes the whole zone group to the
-                photo; the outer artwork transform then mirrors both together. */}
+                photo; the outer artwork transform then mirrors both together.
+                The hallux QA marker lives INSIDE this group so it always
+                travels with the zone shapes. */}
             <g
               data-zone-coordinate-space={view === "plantar" ? "plantar-left-source" : "dorsal-right-source"}
               transform={view === "plantar" ? "translate(220 0) scale(-1 1)" : "translate(0 530) scale(1 -1)"}
             >
+            {qa && <circle cx={42} cy={42} r="12" fill="#099292" opacity="0.8" />}
+
 
             {regions.map((r) => {
 
