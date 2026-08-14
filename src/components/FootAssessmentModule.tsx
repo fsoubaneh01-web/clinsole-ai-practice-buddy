@@ -713,6 +713,14 @@ function FootSvg({
               <circle cx="178" cy="42" r="12" fill="#099292" opacity="0.8" />
             </>
           )}
+            {/* Plantar paths were authored in right-foot coordinates, while the
+                plantar source artwork is a left foot. Normalize every plantar
+                zone to the source artwork once; the outer artwork transform
+                then mirrors the photo and this complete zone group together. */}
+            <g
+              data-zone-coordinate-space={view === "plantar" ? "plantar-left-source" : "dorsal-right-source"}
+              transform={view === "plantar" ? "translate(220 0) scale(-1 1)" : undefined}
+            >
             {regions.map((r) => {
 
             const isSelected = selected?.side === side && selected.region.id === r.id;
@@ -720,7 +728,7 @@ function FootSvg({
             const fill = groupColor(r.group);
             const ring = groupRing(r.group);
             return (
-              <g key={r.id} onClick={() => onSelect(side, r)} className="cursor-pointer">
+              <g key={r.id} data-region-id={r.id} onClick={() => onSelect(side, r)} className="cursor-pointer">
                 <path
                   d={r.d}
                   fill={fill}
@@ -742,6 +750,7 @@ function FootSvg({
               </g>
             );
             })}
+            </g>
           </svg>
         </div>
       </div>
