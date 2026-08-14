@@ -670,9 +670,13 @@ function FootSvg({
       </div>
       {qa && (
         <div className="mb-1 rounded-md border border-dashed border-primary/60 bg-primary/5 px-1.5 py-0.5 text-center font-mono text-[9px] leading-tight text-primary">
-          src: {view} artwork = {sourceSide === "L" ? "LEFT" : "RIGHT"} foot
+          src: {view} photo = {sourceSide === "L" ? "LEFT" : "RIGHT"} foot
           <br />
-          {mirrored ? "MIRRORED (scaleX -1)" : "un-mirrored"} · {regions.length} zones
+          {mirrored
+            ? `MIRRORED derivative (scaleX -1) → renders ${side === "L" ? "LEFT" : "RIGHT"} foot`
+            : `TRUE SOURCE · un-mirrored → renders ${side === "L" ? "LEFT" : "RIGHT"} foot`}
+          {" · "}
+          {regions.length} zones
         </div>
       )}
       <div className="relative h-[300px] w-full max-w-[170px] select-none lg:h-[380px] lg:max-w-[200px]">
