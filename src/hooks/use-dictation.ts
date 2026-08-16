@@ -32,6 +32,7 @@ export function useDictation(opts: {
   const [status, setStatus] = useState<DictationStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
+  const [transcribeSeconds, setTranscribeSeconds] = useState(0);
   const [quota, setQuota] = useState<{
     usedMinutes: number; limitMinutes: number; remainingMinutes: number; limitReached: boolean;
   }>({
