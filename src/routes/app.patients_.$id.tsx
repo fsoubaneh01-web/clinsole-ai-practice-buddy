@@ -12,6 +12,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useStore, type DiabetesStatus, type FootAssessment, summarizeAssessment } from "@/lib/store";
+import { ZoneTrends } from "@/components/ZoneTrends";
 import { format } from "date-fns";
 import { ArrowLeft, CalendarPlus, ClipboardPlus, Footprints, Mail, MapPin, Pencil, Phone, ShieldAlert, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -129,6 +130,7 @@ function PatientProfile() {
               <TabsTrigger value="history">Visit history</TabsTrigger>
               <TabsTrigger value="assess">Assessments</TabsTrigger>
               <TabsTrigger value="treat">Treatments</TabsTrigger>
+              <TabsTrigger value="trends">Trends</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -196,6 +198,9 @@ function PatientProfile() {
                   </div>
                 </div>
               ))}
+            </TabsContent>
+            <TabsContent value="trends" className="mt-4">
+              <ZoneTrends patientId={p.id} />
             </TabsContent>
           </Tabs>
         )}
