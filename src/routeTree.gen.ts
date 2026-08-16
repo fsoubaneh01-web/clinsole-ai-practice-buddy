@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
-import { Route as QaFootRouteImport } from './routes/qa-foot'
 import { Route as PrototypeRouteImport } from './routes/prototype'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
@@ -34,11 +33,6 @@ import { Route as AppPatientsIdRouteImport } from './routes/app.patients_.$id'
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QaFootRoute = QaFootRouteImport.update({
-  id: '/qa-foot',
-  path: '/qa-foot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrototypeRoute = PrototypeRouteImport.update({
@@ -143,7 +137,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/prototype': typeof PrototypeRoute
-  '/qa-foot': typeof QaFootRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -166,7 +159,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/prototype': typeof PrototypeRoute
-  '/qa-foot': typeof QaFootRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -190,7 +182,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/prototype': typeof PrototypeRoute
-  '/qa-foot': typeof QaFootRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -215,7 +206,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/prototype'
-    | '/qa-foot'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -238,7 +228,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/prototype'
-    | '/qa-foot'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -261,7 +250,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/prototype'
-    | '/qa-foot'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -285,7 +273,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PrototypeRoute: typeof PrototypeRoute
-  QaFootRoute: typeof QaFootRoute
   SignupRoute: typeof SignupRoute
 }
 
@@ -296,13 +283,6 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/qa-foot': {
-      id: '/qa-foot'
-      path: '/qa-foot'
-      fullPath: '/qa-foot'
-      preLoaderRoute: typeof QaFootRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/prototype': {
@@ -483,7 +463,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PrototypeRoute: PrototypeRoute,
-  QaFootRoute: QaFootRoute,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
