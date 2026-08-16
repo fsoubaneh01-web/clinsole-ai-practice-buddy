@@ -61,7 +61,11 @@ export type FootAssessment = {
   skin?: SkinCondition[];
   measurements?: WoundMeasurements;
   followUp?: string;
+  trend?: TrendTag;
 };
+
+export type TrendTag = "improving" | "worsening" | "unchanged" | "new";
+
 
 export type FootAssessmentInput = Omit<
   FootAssessment,
