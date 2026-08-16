@@ -61,7 +61,11 @@ export type FootAssessment = {
   skin?: SkinCondition[];
   measurements?: WoundMeasurements;
   followUp?: string;
+  trend?: TrendTag;
 };
+
+export type TrendTag = "improving" | "worsening" | "unchanged" | "new";
+
 
 export type FootAssessmentInput = Omit<
   FootAssessment,
@@ -169,6 +173,7 @@ type Ctx = {
   addFootObservation: (o: FootObservationInput, photos: File[]) => Promise<{ assessment?: FootAssessment; error?: string }>;
   uploadClinicalPhotos: (patientId: string, files: File[]) => Promise<{ paths?: string[]; error?: string }>;
   deleteFootAssessment: (id: string) => Promise<void>;
+  setAssessmentTrend: (id: string, trend: TrendTag | null) => Promise<{ error?: string }>;
   getPhotoUrl: (path: string) => Promise<string | null>;
   latestAssessmentFor: (patientId: string) => FootAssessment | undefined;
   addTransaction: (t: Omit<Transaction, "id">) => Promise<void>;
@@ -335,6 +340,7 @@ type FootAssessmentRow = {
   wound_width_mm: number | string | null;
   wound_depth_mm: number | string | null;
   follow_up_at: string | null;
+  trend: string | null;
 };
 
 const num = (v: number | string | null) =>
@@ -374,6 +380,7 @@ const rowToFootAssessment = (r: FootAssessmentRow): FootAssessment => {
     skin: (r.skin_conditions as SkinCondition[] | null)?.length ? (r.skin_conditions as SkinCondition[]) : undefined,
     measurements: hasWound ? { length, width, depth } : undefined,
     followUp: r.follow_up_at ?? undefined,
+    trend: (r.trend as TrendTag | null) ?? undefined,
   };
 };
 
@@ -847,6 +854,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const assessment = rowToFootAssessment(data as FootAssessmentRow);
       setFootAssessments((s) => [assessment, ...s]);
       return { assessment };
+    },
+    setAssessmentTrend: async (aid, trend) => {
+      const { error } = await supabase.from("foot_assessments").update({ trend }).eq("id", aid);
+      if (error) { console.error("setAssessmentTrend", error); return { error: error.message }; }
+      setFootAssessments((s) => s.map((x) => (x.id === aid ? { ...x, trend: trend ?? undefined } : x)));
+      return {};
     },
     deleteFootAssessment: async (aid) => {
       const target = footAssessments.find((x) => x.id === aid);

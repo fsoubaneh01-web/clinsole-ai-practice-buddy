@@ -157,6 +157,7 @@ export type Database = {
           skin_infection: boolean
           skin_temperature: string | null
           skin_ulcer: boolean
+          trend: string | null
           updated_at: string
           wound_depth_mm: number | null
           wound_length_mm: number | null
@@ -200,6 +201,7 @@ export type Database = {
           skin_infection?: boolean
           skin_temperature?: string | null
           skin_ulcer?: boolean
+          trend?: string | null
           updated_at?: string
           wound_depth_mm?: number | null
           wound_length_mm?: number | null
@@ -243,6 +245,7 @@ export type Database = {
           skin_infection?: boolean
           skin_temperature?: string | null
           skin_ulcer?: boolean
+          trend?: string | null
           updated_at?: string
           wound_depth_mm?: number | null
           wound_length_mm?: number | null
