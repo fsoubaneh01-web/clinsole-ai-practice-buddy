@@ -8,7 +8,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useDictation } from "@/hooks/use-dictation";
 import plantarAsset from "@/assets/foot-plantar.png.asset.json";
-import dorsalAsset from "@/assets/foot-dorsal.png.asset.json";
+import dorsalAsset from "@/assets/foot-dorsal-toesup-full.png.asset.json";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -721,15 +721,18 @@ function FootSvg({
           )}
             {/* Zone paths are authored toes-up in right-foot coordinates.
                 Plantar source art is a left foot → flip in X.
-                Dorsal source art is a right foot shot toes-down → flip in Y.
-                One transform per view normalizes the whole zone group to the
-                photo; the outer artwork transform then mirrors both together.
+                Dorsal source art is the toes-up flip of the same right-foot
+                photo (full length, so the ankle stays in frame) → the zone
+                group needs no transform at all.
+                The outer artwork transform then mirrors both together.
                 The hallux QA marker lives INSIDE this group so it always
                 travels with the zone shapes. */}
             <g
-              data-zone-coordinate-space={view === "plantar" ? "plantar-left-source" : "dorsal-right-source"}
-              transform={view === "plantar" ? "translate(220 0) scale(-1 1)" : "translate(0 530) scale(1 -1)"}
+              data-zone-coordinate-space={view === "plantar" ? "plantar-left-source" : "dorsal-right-source-toesup"}
+              transform={view === "plantar" ? "translate(220 0) scale(-1 1)" : undefined}
             >
+
+
             {qa && <circle cx={42} cy={42} r="12" fill="#099292" opacity="0.8" />}
 
 
