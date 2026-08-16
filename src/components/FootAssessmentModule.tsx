@@ -721,15 +721,17 @@ function FootSvg({
           )}
             {/* Zone paths are authored toes-up in right-foot coordinates.
                 Plantar source art is a left foot → flip in X.
-                Dorsal source art is a right foot shot toes-down → flip in Y.
-                One transform per view normalizes the whole zone group to the
-                photo; the outer artwork transform then mirrors both together.
+                Dorsal source art is now the toes-up crop (leg removed): no Y
+                flip needed, just the crop scale 971/771 ≈ 1.2594 that stretches
+                the original full-length mapping onto the shorter cropped photo.
+                The outer artwork transform then mirrors both together.
                 The hallux QA marker lives INSIDE this group so it always
                 travels with the zone shapes. */}
             <g
-              data-zone-coordinate-space={view === "plantar" ? "plantar-left-source" : "dorsal-right-source"}
-              transform={view === "plantar" ? "translate(220 0) scale(-1 1)" : "translate(0 530) scale(1 -1)"}
+              data-zone-coordinate-space={view === "plantar" ? "plantar-left-source" : "dorsal-right-source-toesup"}
+              transform={view === "plantar" ? "translate(220 0) scale(-1 1)" : "scale(1 1.2594)"}
             >
+
             {qa && <circle cx={42} cy={42} r="12" fill="#099292" opacity="0.8" />}
 
 
