@@ -680,6 +680,19 @@ function DictationStep({ value, onChange, observations, visitId }: {
           {usedMinutes.toFixed(1)} / {limitMinutes} min this month
         </span>
       </div>
+      {status === "transcribing" && (
+        <div className="space-y-1.5">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-300"
+              style={{ width: `${Math.min(95, 8 + transcribeSeconds * 6)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Transcribing with medical speech recognition — {transcribeSeconds}s elapsed. This usually takes 10–30 seconds.
+          </p>
+        </div>
+      )}
       {limitMessage && (
         <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
           {limitMessage}
