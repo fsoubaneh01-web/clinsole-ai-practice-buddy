@@ -71,30 +71,31 @@ const PLANTAR_RIGHT: Region[] = [
         M 158 26 Q 170 18 180 30 Q 182 62 174 128 L 158 128 Z \
         M 184 40 Q 196 40 200 62 Q 200 100 190 132 L 174 130 Q 180 96 180 68 Z" },
   { id: "metHeads", label: "Metatarsal heads", group: "forefoot",
-    d: "M 32 138 Q 22 148 22 170 Q 24 195 40 205 L 180 205 Q 196 195 198 170 Q 198 148 188 138 Z" },
+    d: "M 12 138 Q 5 165 6 205 L 218 205 Q 220 165 212 138 Z" },
   { id: "forefoot", label: "Plantar forefoot", group: "forefoot",
-    d: "M 22 205 Q 20 235 32 255 L 188 255 Q 200 235 198 205 Z" },
+    d: "M 6 205 L 218 205 L 216 255 L 14 255 Z" },
   { id: "medArch", label: "Medial arch", group: "arch",
-    d: "M 32 255 Q 30 285 40 315 L 40 355 Q 22 355 20 320 Q 18 285 32 255 Z" },
+    d: "M 15 255 Q 26 305 40 355 L 62 355 Q 48 305 42 255 Z" },
   { id: "midfoot", label: "Midfoot", group: "arch",
-    d: "M 40 255 L 158 255 L 158 355 L 40 355 Z" },
+    d: "M 42 255 L 170 255 Q 176 305 162 355 L 62 355 Q 48 305 42 255 Z" },
   { id: "latArch", label: "Lateral arch", group: "lateral",
-    d: "M 158 255 Q 195 260 198 300 Q 200 335 180 355 L 158 355 Z" },
+    d: "M 170 255 L 216 255 Q 210 305 198 355 L 162 355 Q 176 305 170 255 Z" },
   { id: "medBorder", label: "Medial border", group: "medial",
-    d: "M 22 138 L 32 138 L 32 255 L 22 255 Z \
-        M 20 355 L 40 355 L 40 400 L 22 400 Z" },
+    d: "M 8 138 Q 4 175 6 205 Q 11 232 16 255 Q 29 302 40 355 Q 45 402 50 450 \
+        L 66 448 Q 60 400 56 355 Q 46 302 32 255 Q 26 232 22 205 Q 20 172 24 140 Z" },
   { id: "latBorder", label: "Lateral border", group: "lateral",
-    d: "M 188 138 L 200 138 L 198 255 L 188 255 Z \
-        M 180 355 L 200 355 L 200 400 L 178 400 Z" },
+    d: "M 216 138 Q 220 175 219 205 Q 218 232 216 255 Q 210 305 198 355 Q 192 402 180 450 \
+        L 164 446 Q 176 400 182 355 Q 194 302 200 255 Q 203 230 203 205 Q 204 172 200 140 Z" },
   /* Heel split: medial / lateral / plantar (weight-bearing) / posterior */
   { id: "heelMedial", label: "Heel · medial", group: "heel",
-    d: "M 40 355 L 90 355 L 78 430 Q 60 435 46 420 Q 40 395 40 355 Z" },
+    d: "M 42 356 L 84 356 Q 86 420 92 470 L 74 476 Q 58 430 50 400 Q 44 375 42 356 Z" },
   { id: "heelLateral", label: "Heel · lateral", group: "heel",
-    d: "M 108 355 L 158 355 L 178 400 Q 178 425 158 432 Q 138 432 122 428 Z" },
+    d: "M 154 356 L 196 356 Q 192 382 186 406 Q 178 440 164 476 L 146 470 Q 152 420 154 356 Z" },
   { id: "heelPlantar", label: "Heel · plantar (weight-bearing)", group: "heel",
-    d: "M 78 430 Q 78 462 108 470 Q 140 465 158 432 Q 138 432 122 428 L 108 428 L 90 428 Q 84 428 78 430 Z" },
+    d: "M 84 356 L 154 356 Q 152 420 146 470 L 92 470 Q 86 420 84 356 Z" },
   { id: "heelPosterior", label: "Heel · posterior (Achilles)", group: "heel",
-    d: "M 78 470 Q 82 500 110 510 Q 138 500 158 470 Q 140 478 110 480 Q 92 478 78 470 Z" },
+    d: "M 74 476 L 164 476 Q 152 512 110 522 Q 82 514 74 476 Z" },
+
 ];
 
 /* Dorsal view — dorsal foot as a broad region + ankle joint & borders */
