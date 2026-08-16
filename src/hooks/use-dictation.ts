@@ -166,6 +166,7 @@ export function useDictation(opts: {
             : "Transcription failed — check your connection. You can type your notes below instead.",
         );
       } finally {
+        stopTicker();
         void refreshQuota();
       }
     };
