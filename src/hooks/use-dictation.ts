@@ -200,6 +200,8 @@ export function useDictation(opts: {
     status,
     error,
     seconds,
+    /** Seconds elapsed since transcription started (0 when not transcribing). */
+    transcribeSeconds,
     supported,
     start,
     stop,
