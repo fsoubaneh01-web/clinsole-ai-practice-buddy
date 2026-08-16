@@ -668,7 +668,7 @@ function DictationStep({ value, onChange, observations, visitId }: {
           className={cn("gap-2", recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground")}
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className={cn("h-4 w-4", recording && "animate-pulse")} />}
-          {status === "transcribing" ? "Transcribing…"
+          {status === "transcribing" ? `Transcribing… ${transcribeSeconds}s`
             : status === "requesting" ? "Requesting mic…"
             : recording ? `Stop (${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")})`
             : "Start dictation"}
