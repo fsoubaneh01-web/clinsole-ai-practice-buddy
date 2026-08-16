@@ -644,7 +644,7 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
 function DictationStep({ value, onChange, observations, visitId }: {
   value: string; onChange: (v: string) => void; observations: { id: string }[]; visitId?: string;
 }) {
-  const { status, error, seconds, supported, toggle, limitReached, limitMessage, usedMinutes, limitMinutes } =
+  const { status, error, seconds, transcribeSeconds, supported, toggle, limitReached, limitMessage, usedMinutes, limitMinutes } =
     useDictation({
       visitId,
       onTranscript: (text) => {
