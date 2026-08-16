@@ -644,7 +644,7 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
 function DictationStep({ value, onChange, observations, visitId }: {
   value: string; onChange: (v: string) => void; observations: { id: string }[]; visitId?: string;
 }) {
-  const { status, error, seconds, supported, toggle, limitReached, limitMessage, usedMinutes, limitMinutes } =
+  const { status, error, seconds, transcribeSeconds, supported, toggle, limitReached, limitMessage, usedMinutes, limitMinutes } =
     useDictation({
       visitId,
       onTranscript: (text) => {
@@ -668,7 +668,7 @@ function DictationStep({ value, onChange, observations, visitId }: {
           className={cn("gap-2", recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground")}
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className={cn("h-4 w-4", recording && "animate-pulse")} />}
-          {status === "transcribing" ? "Transcribing…"
+          {status === "transcribing" ? `Transcribing… ${transcribeSeconds}s`
             : status === "requesting" ? "Requesting mic…"
             : recording ? `Stop (${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")})`
             : "Start dictation"}
@@ -680,6 +680,19 @@ function DictationStep({ value, onChange, observations, visitId }: {
           {usedMinutes.toFixed(1)} / {limitMinutes} min this month
         </span>
       </div>
+      {status === "transcribing" && (
+        <div className="space-y-1.5">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-300"
+              style={{ width: `${Math.min(95, 8 + transcribeSeconds * 6)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Transcribing with medical speech recognition — {transcribeSeconds}s elapsed. This usually takes 10–30 seconds.
+          </p>
+        </div>
+      )}
       {limitMessage && (
         <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
           {limitMessage}

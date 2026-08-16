@@ -158,9 +158,13 @@ export async function transcribeMedicalAudio(
     Type: "DICTATION",
   });
 
+  // Adaptive polling: check early and often (AWS batch jobs for short clips can
+  // finish in <2s), then back off so long jobs don't hammer the API.
   const deadline = Date.now() + 110_000;
+  let wait = 500;
   while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, wait));
+    wait = Math.min(2000, wait + 250);
     const res = await transcribeApi(creds, "GetMedicalTranscriptionJob", {
       MedicalTranscriptionJobName: jobName,
     });

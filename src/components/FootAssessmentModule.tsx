@@ -396,7 +396,7 @@ export function FootAssessmentModule({
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={
                   recording ? "Listening…"
-                    : dictation.status === "transcribing" ? "Transcribing…"
+                    : dictation.status === "transcribing" ? `Transcribing… ${dictation.transcribeSeconds}s (usually 10–30s)`
                     : "Type or dictate observation for this region"
                 }
                 rows={3}

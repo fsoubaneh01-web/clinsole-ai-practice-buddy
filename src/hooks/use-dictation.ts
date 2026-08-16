@@ -32,6 +32,7 @@ export function useDictation(opts: {
   const [status, setStatus] = useState<DictationStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
+  const [transcribeSeconds, setTranscribeSeconds] = useState(0);
   const [quota, setQuota] = useState<{
     usedMinutes: number; limitMinutes: number; remainingMinutes: number; limitReached: boolean;
   }>({
@@ -131,6 +132,16 @@ export function useDictation(opts: {
       }
 
       setStatus("transcribing");
+      const transcribeStartedAt = Date.now();
+      setTranscribeSeconds(0);
+      if (tickRef.current) clearInterval(tickRef.current);
+      tickRef.current = setInterval(
+        () => setTranscribeSeconds(Math.floor((Date.now() - transcribeStartedAt) / 1000)),
+        250,
+      );
+      const stopTicker = () => {
+        if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
+      };
       try {
         const res = await transcribe({
           data: {
@@ -155,6 +166,7 @@ export function useDictation(opts: {
             : "Transcription failed — check your connection. You can type your notes below instead.",
         );
       } finally {
+        stopTicker();
         void refreshQuota();
       }
     };
@@ -188,6 +200,8 @@ export function useDictation(opts: {
     status,
     error,
     seconds,
+    /** Seconds elapsed since transcription started (0 when not transcribing). */
+    transcribeSeconds,
     supported,
     start,
     stop,
