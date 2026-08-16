@@ -131,6 +131,16 @@ export function useDictation(opts: {
       }
 
       setStatus("transcribing");
+      const transcribeStartedAt = Date.now();
+      setTranscribeSeconds(0);
+      if (tickRef.current) clearInterval(tickRef.current);
+      tickRef.current = setInterval(
+        () => setTranscribeSeconds(Math.floor((Date.now() - transcribeStartedAt) / 1000)),
+        250,
+      );
+      const stopTicker = () => {
+        if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
+      };
       try {
         const res = await transcribe({
           data: {
