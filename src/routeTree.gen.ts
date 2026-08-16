@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as QaDorsalFlipRouteImport } from './routes/qa-dorsal-flip'
 import { Route as PrototypeRouteImport } from './routes/prototype'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
@@ -33,6 +34,11 @@ import { Route as AppPatientsIdRouteImport } from './routes/app.patients_.$id'
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QaDorsalFlipRoute = QaDorsalFlipRouteImport.update({
+  id: '/qa-dorsal-flip',
+  path: '/qa-dorsal-flip',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrototypeRoute = PrototypeRouteImport.update({
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/prototype': typeof PrototypeRoute
+  '/qa-dorsal-flip': typeof QaDorsalFlipRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/prototype': typeof PrototypeRoute
+  '/qa-dorsal-flip': typeof QaDorsalFlipRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/prototype': typeof PrototypeRoute
+  '/qa-dorsal-flip': typeof QaDorsalFlipRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/prototype'
+    | '/qa-dorsal-flip'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/prototype'
+    | '/qa-dorsal-flip'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/prototype'
+    | '/qa-dorsal-flip'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -273,6 +285,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PrototypeRoute: typeof PrototypeRoute
+  QaDorsalFlipRoute: typeof QaDorsalFlipRoute
   SignupRoute: typeof SignupRoute
 }
 
@@ -283,6 +296,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qa-dorsal-flip': {
+      id: '/qa-dorsal-flip'
+      path: '/qa-dorsal-flip'
+      fullPath: '/qa-dorsal-flip'
+      preLoaderRoute: typeof QaDorsalFlipRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/prototype': {
@@ -463,6 +483,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PrototypeRoute: PrototypeRoute,
+  QaDorsalFlipRoute: QaDorsalFlipRoute,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
