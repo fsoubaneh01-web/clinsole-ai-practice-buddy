@@ -11,7 +11,7 @@ import {
 import { useStore, type FootAssessment, type Patient } from "@/lib/store";
 import { type RiskResult } from "@/lib/risk-score";
 import {
-  buildReferralSummary, evaluateReferral, loadFlagState, saveFlagState,
+  buildReferralSummary, evaluateReferral, flagSignature, loadFlagState, saveFlagState,
   REFERRAL_DISCLAIMER, type ManualFlagState,
 } from "@/lib/referral";
 import { cn } from "@/lib/utils";
