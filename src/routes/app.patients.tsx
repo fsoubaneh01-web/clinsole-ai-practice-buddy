@@ -63,7 +63,7 @@ function Patients() {
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
             </li>
-          ))}
+          );})}
           {filtered.length === 0 && (
             <li className="rounded-2xl border border-dashed bg-surface-muted p-8 text-center text-sm text-muted-foreground lg:col-span-2">
               No patients found.
