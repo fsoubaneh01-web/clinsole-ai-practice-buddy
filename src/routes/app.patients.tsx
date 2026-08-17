@@ -44,8 +44,9 @@ function Patients() {
             const risk = computeRisk(visit, p);
             const referral = evaluateReferral(visit, risk, p);
             return (
-            <li key={p.id}>
-              <Link to="/app/patients/$id" params={{ id: p.id }} className="flex items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
+            <li key={p.id} className="min-w-0">
+              <Link to="/app/patients/$id" params={{ id: p.id }} className="flex min-w-0 items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
+
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                   {p.name.split(" ").map((x) => x[0]).slice(0,2).join("")}
                 </div>
