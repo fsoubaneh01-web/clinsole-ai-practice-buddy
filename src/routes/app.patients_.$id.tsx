@@ -118,6 +118,7 @@ function PatientProfile() {
       </div>
 
       <Container className="py-6">
+        {!editing && <RiskSummaryCard risk={risk} className="mb-5" />}
         {editing ? (
           <EditForm
             patient={p}
