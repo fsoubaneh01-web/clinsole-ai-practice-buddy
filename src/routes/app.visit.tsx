@@ -397,7 +397,7 @@ function VisitFlow() {
           )}
 
           {step.id === "summary" && patient && (
-            <SummaryStep patient={patient} ageOf={ageOf} latestAssessment={latestAssessment} risk={visitRisk} />
+            <SummaryStep patient={patient} ageOf={ageOf} latestAssessment={latestAssessment} risk={visitRisk} visitFindings={visitFindings} />
           )}
 
           {step.id === "assessment" && patient && (
@@ -552,11 +552,14 @@ function StartStep({ patients, pid, setPid, onBegin, startedAt }: {
   );
 }
 
-function SummaryStep({ patient, ageOf, latestAssessment, risk }: any) {
+function SummaryStep({ patient, ageOf, latestAssessment, risk, visitFindings }: any) {
   const age = ageOf(patient.dob);
   return (
     <div className="space-y-5">
       {risk && <RiskBadge risk={risk} />}
+      {risk?.hasData && visitFindings?.length > 0 && (
+        <ReferralFlagCard patient={patient} assessments={visitFindings} risk={risk} />
+      )}
       <div>
         <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Patient summary</div>
         <h2 className="mt-1 text-2xl font-bold">{patient.name}</h2>
