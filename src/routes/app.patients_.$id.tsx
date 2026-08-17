@@ -150,13 +150,15 @@ function PatientProfile() {
           />
         ) : (
           <Tabs defaultValue="overview">
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="history">Visit history</TabsTrigger>
-              <TabsTrigger value="assess">Assessments</TabsTrigger>
-              <TabsTrigger value="treat">Treatments</TabsTrigger>
-              <TabsTrigger value="trends">Trends</TabsTrigger>
-            </TabsList>
+            <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <TabsList className="w-max">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="history">Visit history</TabsTrigger>
+                <TabsTrigger value="assess">Assessments</TabsTrigger>
+                <TabsTrigger value="treat">Treatments</TabsTrigger>
+                <TabsTrigger value="trends">Trends</TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="overview" className="mt-4 grid gap-4 lg:grid-cols-2">
               <Card title="Medical conditions">
