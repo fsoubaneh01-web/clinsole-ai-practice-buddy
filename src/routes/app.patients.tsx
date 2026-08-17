@@ -3,6 +3,8 @@ import { AppShell, Container } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStore, PLAN_LIMITS } from "@/lib/store";
+import { RiskPill } from "@/components/RiskBadge";
+import { computeRisk, visitAssessments } from "@/lib/risk-score";
 import { ChevronRight, Plus, Search, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 
