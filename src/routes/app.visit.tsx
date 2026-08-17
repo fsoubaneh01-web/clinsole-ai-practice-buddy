@@ -104,6 +104,10 @@ function VisitFlow() {
   const step = STEPS[stepIdx];
   const patient = patients.find((p) => p.id === pid);
   const latestAssessment = pid ? latestAssessmentFor(pid) : undefined;
+  const visitRisk = useMemo(
+    () => (patient ? computeRisk(visitAssessments(footAssessments, patient.id), patient) : null),
+    [footAssessments, patient],
+  );
 
   // Auto-save draft per patient so nurses can move back/forward and resume.
   const draftKey = pid ? `clinsole-visit-draft-${pid}` : null;
