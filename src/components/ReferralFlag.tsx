@@ -11,7 +11,7 @@ import {
 import { useStore, type FootAssessment, type Patient } from "@/lib/store";
 import { type RiskResult } from "@/lib/risk-score";
 import {
-  buildReferralSummary, evaluateReferral, loadFlagState, saveFlagState,
+  buildReferralSummary, evaluateReferral, flagSignature, loadFlagState, saveFlagState,
   REFERRAL_DISCLAIMER, type ManualFlagState,
 } from "@/lib/referral";
 import { cn } from "@/lib/utils";
@@ -49,7 +49,9 @@ export function ReferralFlagCard({ patient, assessments, risk, className }: Prop
     ? { ...auto, flagged: true, criteria: [`Manually flagged by nurse: ${state.manual.note || "needs referral"}`, ...auto.criteria], headline: auto.flagged ? auto.headline : "This visit was manually flagged as needing referral." }
     : auto;
 
-  const dismissed = !!state.dismissed;
+  const signature = useMemo(() => flagSignature(auto), [auto]);
+  const staleDismissal = !!state.dismissed && state.dismissed.signature !== undefined && state.dismissed.signature !== signature;
+  const dismissed = !!state.dismissed && !staleDismissal;
 
   const summary = useMemo(
     () => buildReferralSummary({
@@ -109,6 +111,12 @@ export function ReferralFlagCard({ patient, assessments, risk, className }: Prop
             </p>
           )}
 
+          {staleDismissal && (
+            <p className="mt-2 rounded-xl bg-warning/20 p-2 text-[11px] font-medium text-warning-foreground">
+              Findings changed since this flag was dismissed on {format(new Date(state.dismissed!.at), "MMM d, HH:mm")} — flag re-raised for review.
+            </p>
+          )}
+
           {dismissing ? (
             <div className="mt-3 space-y-2">
               <Textarea
@@ -118,12 +126,13 @@ export function ReferralFlagCard({ patient, assessments, risk, className }: Prop
                 className="min-h-16 text-xs"
               />
               <div className="flex gap-2">
-                <Button size="sm" className="h-8 text-xs" onClick={() => { persist({ ...state, dismissed: { note: note.trim(), at: new Date().toISOString() } }); setDismissing(false); setNote(""); }}>
+                <Button size="sm" className="h-8 text-xs" onClick={() => { persist({ ...state, dismissed: { note: note.trim(), at: new Date().toISOString(), signature } }); setDismissing(false); setNote(""); }}>
                   <Check className="mr-1 h-3.5 w-3.5" />Save override
                 </Button>
                 <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setDismissing(false)}>Cancel</Button>
               </div>
             </div>
+
           ) : (
             <div className="mt-3 flex flex-wrap gap-2">
               <Button size="sm" className="h-9 text-xs" onClick={() => setOpen(true)}>

@@ -1,0 +1,1 @@
+DELETE FROM public.foot_assessments WHERE id IN ('381be629-5069-405a-8010-dd70d502281e','9d717fe6-3695-432b-88a4-e7795782049e');

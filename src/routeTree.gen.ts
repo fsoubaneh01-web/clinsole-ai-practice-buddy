@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
-import { Route as QaRiskRouteImport } from './routes/qa-risk'
 import { Route as QaDorsalFlipRouteImport } from './routes/qa-dorsal-flip'
 import { Route as PrototypeRouteImport } from './routes/prototype'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -35,11 +34,6 @@ import { Route as AppPatientsIdRouteImport } from './routes/app.patients_.$id'
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QaRiskRoute = QaRiskRouteImport.update({
-  id: '/qa-risk',
-  path: '/qa-risk',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QaDorsalFlipRoute = QaDorsalFlipRouteImport.update({
@@ -150,7 +144,6 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/prototype': typeof PrototypeRoute
   '/qa-dorsal-flip': typeof QaDorsalFlipRoute
-  '/qa-risk': typeof QaRiskRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -174,7 +167,6 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/prototype': typeof PrototypeRoute
   '/qa-dorsal-flip': typeof QaDorsalFlipRoute
-  '/qa-risk': typeof QaRiskRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -199,7 +191,6 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/prototype': typeof PrototypeRoute
   '/qa-dorsal-flip': typeof QaDorsalFlipRoute
-  '/qa-risk': typeof QaRiskRoute
   '/signup': typeof SignupRoute
   '/app/assess': typeof AppAssessRoute
   '/app/assistant': typeof AppAssistantRoute
@@ -225,7 +216,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/prototype'
     | '/qa-dorsal-flip'
-    | '/qa-risk'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -249,7 +239,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/prototype'
     | '/qa-dorsal-flip'
-    | '/qa-risk'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -273,7 +262,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/prototype'
     | '/qa-dorsal-flip'
-    | '/qa-risk'
     | '/signup'
     | '/app/assess'
     | '/app/assistant'
@@ -298,7 +286,6 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   PrototypeRoute: typeof PrototypeRoute
   QaDorsalFlipRoute: typeof QaDorsalFlipRoute
-  QaRiskRoute: typeof QaRiskRoute
   SignupRoute: typeof SignupRoute
 }
 
@@ -309,13 +296,6 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/qa-risk': {
-      id: '/qa-risk'
-      path: '/qa-risk'
-      fullPath: '/qa-risk'
-      preLoaderRoute: typeof QaRiskRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/qa-dorsal-flip': {
@@ -504,7 +484,6 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   PrototypeRoute: PrototypeRoute,
   QaDorsalFlipRoute: QaDorsalFlipRoute,
-  QaRiskRoute: QaRiskRoute,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport

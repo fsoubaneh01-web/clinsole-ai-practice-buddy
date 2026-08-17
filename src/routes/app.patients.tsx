@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useStore, PLAN_LIMITS } from "@/lib/store";
 import { RiskPill } from "@/components/RiskBadge";
 import { computeRisk, visitAssessments } from "@/lib/risk-score";
-import { ChevronRight, Plus, Search, ShieldAlert } from "lucide-react";
+import { evaluateReferral } from "@/lib/referral";
+import { ChevronRight, Plus, Search, ShieldAlert, Send } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/app/patients")({ component: Patients });
@@ -39,7 +40,9 @@ function Patients() {
 
         <ul className="mt-5 grid gap-2 lg:grid-cols-2">
           {filtered.map((p) => {
-            const risk = computeRisk(visitAssessments(footAssessments, p.id), p);
+            const visit = visitAssessments(footAssessments, p.id);
+            const risk = computeRisk(visit, p);
+            const referral = evaluateReferral(visit, risk, p);
             return (
             <li key={p.id}>
               <Link to="/app/patients/$id" params={{ id: p.id }} className="flex items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
@@ -55,7 +58,13 @@ function Patients() {
                       </span>
                     )}
                     {risk.hasData && <RiskPill risk={risk} />}
+                    {referral.flagged && (
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${referral.urgency === "prompt" ? "bg-destructive/15 text-destructive" : "bg-warning/25 text-warning-foreground"}`}>
+                        <Send className="h-3 w-3" />Referral
+                      </span>
+                    )}
                   </div>
+
                   <div className="truncate text-xs text-muted-foreground">
                     {risk.hasData ? risk.explanation : `${ageOf(p.dob)} yrs · ${p.conditions[0] || "No conditions on file"}`}
                   </div>

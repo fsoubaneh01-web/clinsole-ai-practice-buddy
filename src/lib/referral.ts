@@ -87,10 +87,16 @@ export function evaluateReferral(
 
 export type ManualFlagState = {
   manual?: { note: string; at: string };
-  dismissed?: { note: string; at: string };
+  dismissed?: { note: string; at: string; signature?: string };
 };
 
+/** Fingerprint of the auto-flag so a dismissal goes stale when findings change. */
+export function flagSignature(flag: ReferralFlag): string {
+  return [flag.flagged ? "1" : "0", flag.specialty, flag.urgency, ...[...flag.criteria].sort()].join("|");
+}
+
 const key = (patientId: string, dayISO: string) => `clinsole-referral-${patientId}-${dayISO.slice(0, 10)}`;
+
 
 export function loadFlagState(patientId: string, dayISO: string): ManualFlagState {
   if (typeof window === "undefined") return {};
