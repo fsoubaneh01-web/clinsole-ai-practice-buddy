@@ -27,6 +27,7 @@ import { checkAppointmentOverlap } from "@/lib/appointments.functions";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { RiskBadge } from "@/components/RiskBadge";
 import { computeRisk, visitAssessments } from "@/lib/risk-score";
+import { ReferralFlagCard } from "@/components/ReferralFlag";
 
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -104,9 +105,13 @@ function VisitFlow() {
   const step = STEPS[stepIdx];
   const patient = patients.find((p) => p.id === pid);
   const latestAssessment = pid ? latestAssessmentFor(pid) : undefined;
-  const visitRisk = useMemo(
-    () => (patient ? computeRisk(visitAssessments(footAssessments, patient.id), patient) : null),
+  const visitFindings = useMemo(
+    () => (patient ? visitAssessments(footAssessments, patient.id) : []),
     [footAssessments, patient],
+  );
+  const visitRisk = useMemo(
+    () => (patient ? computeRisk(visitFindings, patient) : null),
+    [visitFindings, patient],
   );
 
   // Auto-save draft per patient so nurses can move back/forward and resume.
