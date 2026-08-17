@@ -25,6 +25,8 @@ import { useDictation } from "@/hooks/use-dictation";
 import { cn } from "@/lib/utils";
 import { checkAppointmentOverlap } from "@/lib/appointments.functions";
 import { parseLocalDateTime } from "@/lib/datetime";
+import { RiskBadge } from "@/components/RiskBadge";
+import { computeRisk, visitAssessments } from "@/lib/risk-score";
 
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -546,10 +548,11 @@ function StartStep({ patients, pid, setPid, onBegin, startedAt }: {
   );
 }
 
-function SummaryStep({ patient, ageOf, latestAssessment }: any) {
+function SummaryStep({ patient, ageOf, latestAssessment, risk }: any) {
   const age = ageOf(patient.dob);
   return (
     <div className="space-y-5">
+      {risk && <RiskBadge risk={risk} />}
       <div>
         <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Patient summary</div>
         <h2 className="mt-1 text-2xl font-bold">{patient.name}</h2>
