@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useStore, PLAN_LIMITS } from "@/lib/store";
 import { RiskPill } from "@/components/RiskBadge";
 import { computeRisk, visitAssessments } from "@/lib/risk-score";
-import { ChevronRight, Plus, Search, ShieldAlert } from "lucide-react";
+import { evaluateReferral } from "@/lib/referral";
+import { ChevronRight, Plus, Search, ShieldAlert, Send } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/app/patients")({ component: Patients });
