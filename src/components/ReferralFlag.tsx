@@ -49,7 +49,9 @@ export function ReferralFlagCard({ patient, assessments, risk, className }: Prop
     ? { ...auto, flagged: true, criteria: [`Manually flagged by nurse: ${state.manual.note || "needs referral"}`, ...auto.criteria], headline: auto.flagged ? auto.headline : "This visit was manually flagged as needing referral." }
     : auto;
 
-  const dismissed = !!state.dismissed;
+  const signature = useMemo(() => flagSignature(auto), [auto]);
+  const staleDismissal = !!state.dismissed && state.dismissed.signature !== undefined && state.dismissed.signature !== signature;
+  const dismissed = !!state.dismissed && !staleDismissal;
 
   const summary = useMemo(
     () => buildReferralSummary({
