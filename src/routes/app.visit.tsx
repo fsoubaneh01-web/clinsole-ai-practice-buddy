@@ -397,7 +397,7 @@ function VisitFlow() {
           )}
 
           {step.id === "summary" && patient && (
-            <SummaryStep patient={patient} ageOf={ageOf} latestAssessment={latestAssessment} />
+            <SummaryStep patient={patient} ageOf={ageOf} latestAssessment={latestAssessment} risk={visitRisk} />
           )}
 
           {step.id === "assessment" && patient && (
