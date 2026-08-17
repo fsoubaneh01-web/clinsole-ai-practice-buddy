@@ -31,6 +31,9 @@ function PatientProfile() {
   const [editing, setEditing] = useState(false);
   if (!p) throw notFound();
 
+  const currentVisit = visitAssessments(footAssessments, p.id);
+  const risk = computeRisk(currentVisit, p);
+
   const initials = p.name.split(" ").map((x) => x[0]).slice(0, 2).join("");
   const age = ageOf(p.dob);
 
