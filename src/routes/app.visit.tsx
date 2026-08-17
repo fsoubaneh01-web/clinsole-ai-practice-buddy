@@ -27,6 +27,7 @@ import { checkAppointmentOverlap } from "@/lib/appointments.functions";
 import { parseLocalDateTime } from "@/lib/datetime";
 import { RiskBadge } from "@/components/RiskBadge";
 import { computeRisk, visitAssessments } from "@/lib/risk-score";
+import { ReferralFlagCard } from "@/components/ReferralFlag";
 
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -104,9 +105,13 @@ function VisitFlow() {
   const step = STEPS[stepIdx];
   const patient = patients.find((p) => p.id === pid);
   const latestAssessment = pid ? latestAssessmentFor(pid) : undefined;
-  const visitRisk = useMemo(
-    () => (patient ? computeRisk(visitAssessments(footAssessments, patient.id), patient) : null),
+  const visitFindings = useMemo(
+    () => (patient ? visitAssessments(footAssessments, patient.id) : []),
     [footAssessments, patient],
+  );
+  const visitRisk = useMemo(
+    () => (patient ? computeRisk(visitFindings, patient) : null),
+    [visitFindings, patient],
   );
 
   // Auto-save draft per patient so nurses can move back/forward and resume.
@@ -397,7 +402,7 @@ function VisitFlow() {
           )}
 
           {step.id === "summary" && patient && (
-            <SummaryStep patient={patient} ageOf={ageOf} latestAssessment={latestAssessment} risk={visitRisk} />
+            <SummaryStep patient={patient} ageOf={ageOf} latestAssessment={latestAssessment} risk={visitRisk} visitFindings={visitFindings} />
           )}
 
           {step.id === "assessment" && patient && (
@@ -552,11 +557,14 @@ function StartStep({ patients, pid, setPid, onBegin, startedAt }: {
   );
 }
 
-function SummaryStep({ patient, ageOf, latestAssessment, risk }: any) {
+function SummaryStep({ patient, ageOf, latestAssessment, risk, visitFindings }: any) {
   const age = ageOf(patient.dob);
   return (
     <div className="space-y-5">
       {risk && <RiskBadge risk={risk} />}
+      {risk?.hasData && visitFindings?.length > 0 && (
+        <ReferralFlagCard patient={patient} assessments={visitFindings} risk={risk} />
+      )}
       <div>
         <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Patient summary</div>
         <h2 className="mt-1 text-2xl font-bold">{patient.name}</h2>

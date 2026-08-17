@@ -15,6 +15,7 @@ import { useStore, type DiabetesStatus, type FootAssessment, summarizeAssessment
 import { ZoneTrends } from "@/components/ZoneTrends";
 import { RiskBadge as RiskSummaryCard } from "@/components/RiskBadge";
 import { computeRisk, visitAssessments } from "@/lib/risk-score";
+import { ReferralFlagCard } from "@/components/ReferralFlag";
 import { format } from "date-fns";
 import { ArrowLeft, CalendarPlus, ClipboardPlus, Footprints, Mail, MapPin, Pencil, Phone, ShieldAlert, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -118,7 +119,10 @@ function PatientProfile() {
       </div>
 
       <Container className="py-6">
-        {!editing && <RiskSummaryCard risk={risk} className="mb-5" />}
+        {!editing && <RiskSummaryCard risk={risk} className="mb-3" />}
+        {!editing && currentVisit.length > 0 && (
+          <ReferralFlagCard patient={p} assessments={currentVisit} risk={risk} className="mb-5" />
+        )}
         {editing ? (
           <EditForm
             patient={p}
