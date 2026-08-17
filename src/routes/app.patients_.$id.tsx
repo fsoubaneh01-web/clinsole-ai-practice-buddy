@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useStore, type DiabetesStatus, type FootAssessment, summarizeAssessment } from "@/lib/store";
 import { ZoneTrends } from "@/components/ZoneTrends";
+import { RiskBadge as RiskSummaryCard } from "@/components/RiskBadge";
+import { computeRisk, visitAssessments } from "@/lib/risk-score";
 import { format } from "date-fns";
 import { ArrowLeft, CalendarPlus, ClipboardPlus, Footprints, Mail, MapPin, Pencil, Phone, ShieldAlert, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -28,6 +30,9 @@ function PatientProfile() {
   const patientAssessments = footAssessments.filter((a) => a.patientId === id);
   const [editing, setEditing] = useState(false);
   if (!p) throw notFound();
+
+  const currentVisit = visitAssessments(footAssessments, p.id);
+  const risk = computeRisk(currentVisit, p);
 
   const initials = p.name.split(" ").map((x) => x[0]).slice(0, 2).join("");
   const age = ageOf(p.dob);
@@ -113,6 +118,7 @@ function PatientProfile() {
       </div>
 
       <Container className="py-6">
+        {!editing && <RiskSummaryCard risk={risk} className="mb-5" />}
         {editing ? (
           <EditForm
             patient={p}

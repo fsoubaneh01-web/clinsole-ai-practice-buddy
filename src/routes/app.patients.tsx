@@ -3,13 +3,15 @@ import { AppShell, Container } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStore, PLAN_LIMITS } from "@/lib/store";
+import { RiskPill } from "@/components/RiskBadge";
+import { computeRisk, visitAssessments } from "@/lib/risk-score";
 import { ChevronRight, Plus, Search, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/app/patients")({ component: Patients });
 
 function Patients() {
-  const { patients, ageOf, nurse } = useStore();
+  const { patients, ageOf, nurse, footAssessments } = useStore();
   const [q, setQ] = useState("");
   const filtered = patients.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
   const limit = PLAN_LIMITS[nurse?.plan || "free"].patients;
@@ -36,29 +38,32 @@ function Patients() {
         </div>
 
         <ul className="mt-5 grid gap-2 lg:grid-cols-2">
-          {filtered.map((p) => (
+          {filtered.map((p) => {
+            const risk = computeRisk(visitAssessments(footAssessments, p.id), p);
+            return (
             <li key={p.id}>
               <Link to="/app/patients/$id" params={{ id: p.id }} className="flex items-center gap-3 rounded-2xl border bg-surface p-3 shadow-soft hover:shadow-card">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                   {p.name.split(" ").map((x) => x[0]).slice(0,2).join("")}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <div className="truncate text-sm font-semibold">{p.name}</div>
                     {p.diabetesStatus !== "none" && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-warning/20 px-2 py-0.5 text-[10px] font-medium text-warning-foreground">
                         <ShieldAlert className="h-3 w-3" />Diabetic
                       </span>
                     )}
+                    {risk.hasData && <RiskPill risk={risk} />}
                   </div>
                   <div className="truncate text-xs text-muted-foreground">
-                    {ageOf(p.dob)} yrs · {p.conditions[0] || "No conditions on file"}
+                    {risk.hasData ? risk.explanation : `${ageOf(p.dob)} yrs · ${p.conditions[0] || "No conditions on file"}`}
                   </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
             </li>
-          ))}
+          );})}
           {filtered.length === 0 && (
             <li className="rounded-2xl border border-dashed bg-surface-muted p-8 text-center text-sm text-muted-foreground lg:col-span-2">
               No patients found.
