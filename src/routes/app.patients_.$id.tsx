@@ -30,7 +30,12 @@ function PatientProfile() {
   const p = patients.find((x) => x.id === id);
   const patientAssessments = footAssessments.filter((a) => a.patientId === id);
   const [editing, setEditing] = useState(false);
-  if (loading && !p) {
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
+  if (!p && (loading || !settled)) {
     return (
       <AppShell title="Patient">
         <Container className="py-16">
