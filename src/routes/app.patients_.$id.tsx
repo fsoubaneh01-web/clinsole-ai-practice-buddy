@@ -26,10 +26,20 @@ export const Route = createFileRoute("/app/patients_/$id")({ component: PatientP
 function PatientProfile() {
   const { id } = Route.useParams();
   const nav = useNavigate();
-  const { patients, ageOf, updatePatient, deletePatient, footAssessments, deleteFootAssessment } = useStore();
+  const { patients, ageOf, updatePatient, deletePatient, footAssessments, deleteFootAssessment, loading } = useStore();
   const p = patients.find((x) => x.id === id);
   const patientAssessments = footAssessments.filter((a) => a.patientId === id);
   const [editing, setEditing] = useState(false);
+  if (loading && !p) {
+    return (
+      <AppShell title="Patient">
+        <Container className="py-16">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="mt-4 text-center text-sm text-muted-foreground">Loading patient…</p>
+        </Container>
+      </AppShell>
+    );
+  }
   if (!p) throw notFound();
 
   const currentVisit = visitAssessments(footAssessments, p.id);
