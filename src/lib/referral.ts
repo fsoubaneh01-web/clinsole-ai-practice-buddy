@@ -108,7 +108,7 @@ export function saveFlagState(patientId: string, dayISO: string, state: ManualFl
 
 function findingLines(a: FootAssessment): string[] {
   const out: string[] = [];
-  const site = [a.side ? `${a.side === "left" ? "Left" : "Right"} foot` : null, a.regionLabel]
+  const site = [a.side ? `${a.side === "L" ? "Left" : "Right"} foot` : null, a.regionLabel]
     .filter(Boolean)
     .join(" · ");
   const skin = [
