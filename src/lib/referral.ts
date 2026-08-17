@@ -79,7 +79,7 @@ export function evaluateReferral(
 
   const flagged = criteria.length > 0 && risk.hasData;
   const headline = flagged
-    ? `This visit may warrant referral to ${specialty === "specialist" ? "a specialist" : specialty}.`
+    ? `This visit may warrant referral to ${specialty === "specialist" ? "a specialist" : specialty === "podiatry" ? "podiatry" : specialty === "vascular" ? "vascular surgery" : "a wound care specialist"}.`
     : "No referral criteria met from documented findings.";
 
   return { flagged, specialty, criteria, headline, urgency };
