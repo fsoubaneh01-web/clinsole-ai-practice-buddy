@@ -360,7 +360,8 @@ function VisitFlow() {
     setFinishing(true);
     try {
       const now = new Date().toISOString();
-      await addTreatment(patient.id, { date: now, soap, fee });
+      const treatmentRes = await addTreatment(patient.id, { date: now, soap, fee });
+      if (treatmentRes.error) throw new Error(treatmentRes.error);
       await addTransaction({
         type: "income", amount: fee, date: now,
         category: `Visit · ${paymentMethod}`, patientId: patient.id,
