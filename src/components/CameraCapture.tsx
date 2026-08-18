@@ -23,6 +23,7 @@ export function CameraCapture({
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const runRef = useRef(0);
 
   const [phase, setPhase] = useState<Phase>("starting");
   const [error, setError] = useState<string>("");
@@ -58,6 +59,7 @@ export function CameraCapture({
         video: { facingMode: "environment" },
         audio: false,
       });
+      if (run !== runRef.current) { stream.getTracks().forEach((t) => t.stop()); return; }
       streamRef.current = stream;
       const v = videoRef.current;
       if (!v) { stopStream(); return; }
@@ -69,6 +71,7 @@ export function CameraCapture({
       // never advertise HAVE_ENOUGH_DATA for a live stream, so accept
       // HAVE_CURRENT_DATA with known dimensions too.
       timerRef.current = setTimeout(() => {
+        if (run !== runRef.current) return;
         const el = videoRef.current;
         const hasFrame = !!el && el.videoWidth > 0 && el.readyState >= 2;
         if (!hasFrame) {
@@ -79,6 +82,7 @@ export function CameraCapture({
       }, START_TIMEOUT_MS);
     } catch (e: unknown) {
       const name = (e as { name?: string })?.name || "";
+      if (run !== runRef.current) return;
       stopStream();
       setError(
         name === "NotAllowedError" || name === "SecurityError"
