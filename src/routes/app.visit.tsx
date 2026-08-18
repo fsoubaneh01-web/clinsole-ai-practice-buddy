@@ -220,22 +220,31 @@ function VisitFlow() {
 
 
   const addPhotoFile = async (files: FileList | null) => {
-    if (!files) return;
+    // Snapshot synchronously: on iOS the FileList can be detached after an await.
+    const list = files ? Array.from(files) : [];
+    console.info("[photo] input change", { count: list.length, types: list.map((f) => `${f.type || "?"}/${Math.round(f.size / 1024)}KB`) });
+    if (list.length === 0) {
+      toast.error("No photo came back from the camera. Try again, or use “Choose from library”.");
+      return;
+    }
     if (!pid) { toast.error("Select a patient first."); return; }
     // Compress + upload every selected photo in parallel; thumbnails are
     // self-contained data URLs so they survive re-renders and re-decodes.
     await Promise.all(
-      Array.from(files).map(async (f) => {
-        const id = crypto.randomUUID();
+      list.map(async (f) => {
+        const id = (crypto.randomUUID?.() ?? `p-${Date.now()}-${Math.random().toString(36).slice(2)}`);
         let thumbnail = "";
         try {
           const prepared = await preparePhoto(f);
           thumbnail = prepared.thumbnail;
+          console.info("[photo] prepared", { id, from: f.size, to: prepared.file.size });
           setPhotos((p) => [{ id, url: thumbnail, note: "", uploading: true }, ...p]);
           const res = await uploadClinicalPhotos(pid, [prepared.file]);
           if (res.error || !res.paths?.[0]) throw new Error(res.error || "Photo upload failed.");
+          console.info("[photo] uploaded", { id, path: res.paths[0] });
           setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, path: res.paths![0] } : x)));
         } catch (e: any) {
+          console.error("[photo] failed", e);
           toast.error(e?.message || "Photo upload failed.");
           if (thumbnail.startsWith("blob:")) URL.revokeObjectURL(thumbnail);
           setPhotos((p) => p.filter((x) => x.id !== id));
@@ -243,6 +252,7 @@ function VisitFlow() {
       }),
     );
   };
+
 
   const generateSoap = async () => {
     if (!patient) return toast.error("Select a patient first.");
