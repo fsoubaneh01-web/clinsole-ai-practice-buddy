@@ -364,30 +364,9 @@ function VisitFlow() {
       const now = new Date().toISOString();
       const treatmentRes = await addTreatment(patient.id, { date: now, soap, fee });
       if (treatmentRes.error) throw new Error(treatmentRes.error);
-      await addTransaction({
-        type: "income", amount: fee, date: now,
-        category: `Visit · ${paymentMethod}`, patientId: patient.id,
-      });
 
-      // Only schedule a follow-up when the nurse hasn't skipped it and both date/time are valid.
-      if (wantsFollowup) {
-        if (fuValid) {
-          await addAppointment({
-            patientId: patient.id,
-            date: fuDate!.toISOString(),
-            duration: 45,
-            type: followupType,
-            expectedFee: fee,
-            recurring: null,
-          });
-        } else if (followupDate && followupTime) {
-          toast.warning("Follow-up date/time was invalid; skipping appointment.");
-        } else {
-          toast.warning("Follow-up date/time missing; appointment not scheduled.");
-        }
-      }
-
-      // Link the uploaded clinical photos to the treatment so they're recoverable later.
+      // Link clinical photos FIRST: the treatment row now exists, and a later
+      // failure (billing / follow-up) must never orphan the uploaded photos.
       const uploaded = photos.filter((p) => p.path);
       if (treatmentRes.treatment && uploaded.length) {
         const stepIndex = STEPS.findIndex((s) => s.id === "photos");
@@ -399,6 +378,41 @@ function VisitFlow() {
         if (res.error) toast.warning("Visit saved, but photos could not be attached to the record.");
         else { setPhotos([]); if (photoKey) try { sessionStorage.removeItem(photoKey); } catch {} }
       }
+
+      // Billing + follow-up are non-fatal: the clinical record is already saved.
+      try {
+        await addTransaction({
+          type: "income", amount: fee, date: now,
+          category: `Visit · ${paymentMethod}`, patientId: patient.id,
+        });
+      } catch (e) {
+        console.error("[visit] transaction failed", e);
+        toast.warning("Visit saved, but the income entry could not be recorded.");
+      }
+
+      // Only schedule a follow-up when the nurse hasn't skipped it and both date/time are valid.
+      if (wantsFollowup) {
+        if (fuValid) {
+          try {
+            await addAppointment({
+              patientId: patient.id,
+              date: fuDate!.toISOString(),
+              duration: 45,
+              type: followupType,
+              expectedFee: fee,
+              recurring: null,
+            });
+          } catch (e) {
+            console.error("[visit] follow-up failed", e);
+            toast.warning("Visit saved, but the follow-up appointment could not be booked.");
+          }
+        } else if (followupDate && followupTime) {
+          toast.warning("Follow-up date/time was invalid; skipping appointment.");
+        } else {
+          toast.warning("Follow-up date/time missing; appointment not scheduled.");
+        }
+      }
+
 
       if (draftKey) try { localStorage.removeItem(draftKey); } catch {}
       toast.success("Visit completed and saved");
