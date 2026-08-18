@@ -115,6 +115,30 @@ function VisitFlow() {
     } catch { /* quota — ignore */ }
   }, [photoKey, photos]);
 
+  // ONE shared file input for every "add photo" affordance. No `capture` attribute:
+  // forcing the iOS full-screen camera lets the OS evict the web view, and the file
+  // is silently lost on return.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const openPhotoPicker = (multiple: boolean) => {
+    const el = fileInputRef.current;
+    if (!el) return;
+    el.multiple = multiple;
+    try {
+      sessionStorage.setItem(PENDING_CAPTURE_KEY, JSON.stringify({ pendingCapture: true, stepIndex: stepIdx }));
+    } catch { /* ignore */ }
+    el.click();
+  };
+  // If the web view was torn down mid-capture, the flag survives but no file arrived.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(PENDING_CAPTURE_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(PENDING_CAPTURE_KEY);
+      if (JSON.parse(raw)?.pendingCapture) toast.error("Photo capture interrupted, please try again");
+    } catch { /* ignore */ }
+  }, []);
+
+
 
   const observations = useMemo(
     () => footAssessments.filter(
