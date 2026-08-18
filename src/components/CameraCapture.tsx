@@ -37,6 +37,9 @@ export function CameraCapture({
   }, []);
 
   const start = useCallback(async () => {
+    // Each attempt gets a generation id so a slow/aborted attempt can never
+    // stop the stream or flip state belonging to a newer one.
+    const run = ++runRef.current;
     stopStream();
     setError("");
     setShot((s) => {
