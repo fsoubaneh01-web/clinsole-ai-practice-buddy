@@ -413,7 +413,7 @@ function VisitFlow() {
 
   return (
     <AppShell title="Visit Flow">
-      {/* Single shared photo input — no `capture` so iOS uses the system sheet. */}
+      {/* Library picker only — no `capture` attribute. */}
       <input
         ref={fileInputRef}
         type="file"
@@ -421,6 +421,13 @@ function VisitFlow() {
         hidden
         onChange={(e) => { addPhotoFile(e.target.files); e.target.value = ""; }}
       />
+      {cameraOpen && (
+        <CameraCapture
+          onCapture={(file) => { void addPhotoFile([file]); }}
+          onClose={() => setCameraOpen(false)}
+          onUseLibrary={() => openPhotoPicker(true)}
+        />
+      )}
       <Container className="py-6 lg:py-8">
         {/* Progress bar */}
         <div className="mb-4">
