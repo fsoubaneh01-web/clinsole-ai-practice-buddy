@@ -242,7 +242,7 @@ function VisitFlow() {
   const addPhotoFile = async (files: FileList | null) => {
     // Snapshot synchronously: on iOS the FileList can be detached after an await.
     const list = files ? Array.from(files) : [];
-    console.info("[photo] input change", { count: list.length, types: list.map((f) => `${f.type || "?"}/${Math.round(f.size / 1024)}KB`) });
+    if (import.meta.env.DEV) console.info("[photo] input change", { count: list.length, types: list.map((f) => `${f.type || "?"}/${Math.round(f.size / 1024)}KB`) });
     if (list.length === 0) {
       toast.error("No photo came back from the camera. Try again, or use “Choose from library”.");
       return;
@@ -257,11 +257,11 @@ function VisitFlow() {
         try {
           const prepared = await preparePhoto(f);
           thumbnail = prepared.thumbnail;
-          console.info("[photo] prepared", { id, from: f.size, to: prepared.file.size });
+          if (import.meta.env.DEV) console.info("[photo] prepared", { id, from: f.size, to: prepared.file.size });
           setPhotos((p) => [{ id, url: thumbnail, note: "", uploading: true }, ...p]);
           const res = await uploadClinicalPhotos(pid, [prepared.file]);
           if (res.error || !res.paths?.[0]) throw new Error(res.error || "Photo upload failed.");
-          console.info("[photo] uploaded", { id, path: res.paths[0] });
+          if (import.meta.env.DEV) console.info("[photo] uploaded", { id, path: res.paths[0] });
           setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, path: res.paths![0] } : x)));
         } catch (e: any) {
           console.error("[photo] failed", e);
