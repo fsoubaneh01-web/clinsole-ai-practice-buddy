@@ -69,12 +69,14 @@ const EDUCATION_TOPICS = [
   { id: "when-to-call",  title: "When to seek care",    body: "Call promptly for any new wound, drainage, redness, foul odor, or unexplained pain." },
 ];
 
+const PENDING_CAPTURE_KEY = "clinsole:pending-capture";
+
 function VisitFlow() {
   const { patientId } = Route.useSearch();
   const navigate = useNavigate();
   const {
     patients, nurse, ageOf, latestAssessmentFor, footAssessments, uploadClinicalPhotos,
-    addTreatment, addTransaction, addAppointment,
+    addTreatment, addTransaction, addAppointment, saveVisitPhotos,
   } = useStore();
   const generate = useServerFn(generateSoapNote);
   const checkOverlap = useServerFn(checkAppointmentOverlap);
@@ -114,6 +116,30 @@ function VisitFlow() {
       else sessionStorage.removeItem(photoKey);
     } catch { /* quota — ignore */ }
   }, [photoKey, photos]);
+
+  // ONE shared file input for every "add photo" affordance. No `capture` attribute:
+  // forcing the iOS full-screen camera lets the OS evict the web view, and the file
+  // is silently lost on return.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const openPhotoPicker = (multiple: boolean) => {
+    const el = fileInputRef.current;
+    if (!el) return;
+    el.multiple = multiple;
+    try {
+      sessionStorage.setItem(PENDING_CAPTURE_KEY, JSON.stringify({ pendingCapture: true, stepIndex: stepIdx }));
+    } catch { /* ignore */ }
+    el.click();
+  };
+  // If the web view was torn down mid-capture, the flag survives but no file arrived.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(PENDING_CAPTURE_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(PENDING_CAPTURE_KEY);
+      if (JSON.parse(raw)?.pendingCapture) toast.error("Photo capture interrupted, please try again");
+    } catch { /* ignore */ }
+  }, []);
+
 
 
   const observations = useMemo(
@@ -242,7 +268,8 @@ function VisitFlow() {
   const addPhotoFile = async (files: FileList | null) => {
     // Snapshot synchronously: on iOS the FileList can be detached after an await.
     const list = files ? Array.from(files) : [];
-    if (import.meta.env.DEV) console.info("[photo] input change", { count: list.length, types: list.map((f) => `${f.type || "?"}/${Math.round(f.size / 1024)}KB`) });
+    console.info("[photo] input change", { count: list.length, types: list.map((f) => `${f.type || "?"}/${Math.round(f.size / 1024)}KB`) });
+    try { sessionStorage.removeItem(PENDING_CAPTURE_KEY); } catch { /* ignore */ }
     if (list.length === 0) {
       toast.error("No photo came back from the camera. Try again, or use “Choose from library”.");
       return;
@@ -333,7 +360,8 @@ function VisitFlow() {
     setFinishing(true);
     try {
       const now = new Date().toISOString();
-      await addTreatment(patient.id, { date: now, soap, fee });
+      const treatmentRes = await addTreatment(patient.id, { date: now, soap, fee });
+      if (treatmentRes.error) throw new Error(treatmentRes.error);
       await addTransaction({
         type: "income", amount: fee, date: now,
         category: `Visit · ${paymentMethod}`, patientId: patient.id,
@@ -357,6 +385,19 @@ function VisitFlow() {
         }
       }
 
+      // Link the uploaded clinical photos to the treatment so they're recoverable later.
+      const uploaded = photos.filter((p) => p.path);
+      if (treatmentRes.treatment && uploaded.length) {
+        const stepIndex = STEPS.findIndex((s) => s.id === "photos");
+        const res = await saveVisitPhotos(
+          treatmentRes.treatment.id,
+          patient.id,
+          uploaded.map((p) => ({ path: p.path!, caption: p.note, stepIndex })),
+        );
+        if (res.error) toast.warning("Visit saved, but photos could not be attached to the record.");
+        else { setPhotos([]); if (photoKey) try { sessionStorage.removeItem(photoKey); } catch {} }
+      }
+
       if (draftKey) try { localStorage.removeItem(draftKey); } catch {}
       toast.success("Visit completed and saved");
       navigate({ to: "/app/patients/$id", params: { id: patient.id } });
@@ -371,6 +412,14 @@ function VisitFlow() {
 
   return (
     <AppShell title="Visit Flow">
+      {/* Single shared photo input — no `capture` so iOS uses the system sheet. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => { addPhotoFile(e.target.files); e.target.value = ""; }}
+      />
       <Container className="py-6 lg:py-8">
         {/* Progress bar */}
         <div className="mb-4">
@@ -451,7 +500,7 @@ function VisitFlow() {
           )}
 
           {step.id === "photos" && (
-            <PhotosStep photos={photos} onAdd={addPhotoFile} onRemove={(id) => setPhotos((p) => p.filter((x) => x.id !== id))} onNote={(id, note) => setPhotos((p) => p.map((x) => x.id === id ? { ...x, note } : x))} />
+            <PhotosStep photos={photos} onPick={openPhotoPicker} onRemove={(id) => setPhotos((p) => p.filter((x) => x.id !== id))} onNote={(id, note) => setPhotos((p) => p.map((x) => x.id === id ? { ...x, note } : x))} />
           )}
 
           {step.id === "dictation" && (
@@ -640,19 +689,13 @@ function InfoCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PhotosStep({ photos, onAdd, onRemove, onNote }: {
+function PhotosStep({ photos, onPick, onRemove, onNote }: {
   photos: { id: string; url: string; path?: string; uploading?: boolean; note: string }[];
-  onAdd: (files: FileList | null) => void;
+  onPick: (multiple: boolean) => void;
   onRemove: (id: string) => void;
   onNote: (id: string, note: string) => void;
 }) {
-  // iOS ignores/breaks `multiple` when combined with `capture`, often handing back an
-  // empty FileList. Keep the camera input single-shot and give multi-select its own
-  // library input without `capture`.
-  const handle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onAdd(e.target.files);
-    e.target.value = "";
-  };
+  // All affordances trigger the single shared input owned by VisitFlow.
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -661,24 +704,34 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
           <p className="text-sm text-muted-foreground">Capture wound sites, calluses, or overall foot condition.</p>
         </div>
         <div className="flex gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90">
+          <button
+            type="button"
+            onClick={() => onPick(false)}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90"
+          >
             <Camera className="h-4 w-4" /> Take photo
-            <input type="file" accept="image/*" capture="environment" hidden onChange={handle} />
-          </label>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-soft hover:bg-muted">
+          </button>
+          <button
+            type="button"
+            onClick={() => onPick(true)}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-soft hover:bg-muted"
+          >
             <ImageIcon className="h-4 w-4" /> Library
-            <input type="file" accept="image/*" multiple hidden onChange={handle} />
-          </label>
+          </button>
         </div>
       </div>
       {photos.length === 0 ? (
-        <label className="grid h-56 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-center text-sm text-muted-foreground hover:bg-muted/50">
+        <button
+          type="button"
+          onClick={() => onPick(false)}
+          className="grid h-56 w-full cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-center text-sm text-muted-foreground hover:bg-muted/50"
+        >
           <div>
             <ImageIcon className="mx-auto h-8 w-8 opacity-60" />
             <div className="mt-2">Tap to add clinical photos</div>
           </div>
-          <input type="file" accept="image/*" capture="environment" hidden onChange={handle} />
-        </label>
+        </button>
+
 
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
