@@ -681,19 +681,13 @@ function InfoCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PhotosStep({ photos, onAdd, onRemove, onNote }: {
+function PhotosStep({ photos, onPick, onRemove, onNote }: {
   photos: { id: string; url: string; path?: string; uploading?: boolean; note: string }[];
-  onAdd: (files: FileList | null) => void;
+  onPick: (multiple: boolean) => void;
   onRemove: (id: string) => void;
   onNote: (id: string, note: string) => void;
 }) {
-  // iOS ignores/breaks `multiple` when combined with `capture`, often handing back an
-  // empty FileList. Keep the camera input single-shot and give multi-select its own
-  // library input without `capture`.
-  const handle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onAdd(e.target.files);
-    e.target.value = "";
-  };
+  // All affordances trigger the single shared input owned by VisitFlow.
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -702,24 +696,34 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
           <p className="text-sm text-muted-foreground">Capture wound sites, calluses, or overall foot condition.</p>
         </div>
         <div className="flex gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90">
+          <button
+            type="button"
+            onClick={() => onPick(false)}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90"
+          >
             <Camera className="h-4 w-4" /> Take photo
-            <input type="file" accept="image/*" capture="environment" hidden onChange={handle} />
-          </label>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-soft hover:bg-muted">
+          </button>
+          <button
+            type="button"
+            onClick={() => onPick(true)}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-soft hover:bg-muted"
+          >
             <ImageIcon className="h-4 w-4" /> Library
-            <input type="file" accept="image/*" multiple hidden onChange={handle} />
-          </label>
+          </button>
         </div>
       </div>
       {photos.length === 0 ? (
-        <label className="grid h-56 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-center text-sm text-muted-foreground hover:bg-muted/50">
+        <button
+          type="button"
+          onClick={() => onPick(false)}
+          className="grid h-56 w-full cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-center text-sm text-muted-foreground hover:bg-muted/50"
+        >
           <div>
             <ImageIcon className="mx-auto h-8 w-8 opacity-60" />
             <div className="mt-2">Tap to add clinical photos</div>
           </div>
-          <input type="file" accept="image/*" capture="environment" hidden onChange={handle} />
-        </label>
+        </button>
+
 
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
