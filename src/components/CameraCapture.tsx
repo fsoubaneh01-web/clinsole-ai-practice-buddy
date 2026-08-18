@@ -41,6 +41,7 @@ export function CameraCapture({
     // Each attempt gets a generation id so a slow/aborted attempt can never
     // stop the stream or flip state belonging to a newer one.
     const run = ++runRef.current;
+    if (import.meta.env.DEV) console.info("[camera] start", run);
     stopStream();
     setError("");
     setShot((s) => {
@@ -71,6 +72,7 @@ export function CameraCapture({
       // never advertise HAVE_ENOUGH_DATA for a live stream, so accept
       // HAVE_CURRENT_DATA with known dimensions too.
       timerRef.current = setTimeout(() => {
+        if (import.meta.env.DEV) console.info("[camera] watchdog", run, runRef.current);
         if (run !== runRef.current) return;
         const el = videoRef.current;
         const hasFrame = !!el && el.videoWidth > 0 && el.readyState >= 2;
@@ -123,6 +125,7 @@ export function CameraCapture({
     );
     if (!blob) { setError("Couldn't save the frame. Try again."); setPhase("error"); return; }
     const file = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+    if (import.meta.env.DEV) console.info("[camera] shutter");
     runRef.current++; // invalidate any in-flight start attempt / watchdog
     stopStream();
     setShot({ url: URL.createObjectURL(blob), file });
