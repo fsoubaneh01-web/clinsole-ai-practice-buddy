@@ -475,6 +475,54 @@ export type Database = {
         }
         Relationships: []
       }
+      visit_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          nurse_id: string
+          patient_id: string
+          step_index: number | null
+          storage_path: string
+          treatment_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          nurse_id: string
+          patient_id: string
+          step_index?: number | null
+          storage_path: string
+          treatment_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          nurse_id?: string
+          patient_id?: string
+          step_index?: number | null
+          storage_path?: string
+          treatment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visit_photos_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visit_photos_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
