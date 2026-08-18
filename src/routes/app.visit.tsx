@@ -74,7 +74,7 @@ function VisitFlow() {
   const navigate = useNavigate();
   const {
     patients, nurse, ageOf, latestAssessmentFor, footAssessments, uploadClinicalPhotos,
-    addTreatment, addTransaction, addAppointment,
+    addTreatment, addTransaction, addAppointment, saveVisitPhotos,
   } = useStore();
   const generate = useServerFn(generateSoapNote);
   const checkOverlap = useServerFn(checkAppointmentOverlap);
