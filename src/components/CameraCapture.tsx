@@ -104,7 +104,7 @@ export function CameraCapture({
 
   // Release the camera if the page is hidden/navigated away from.
   useEffect(() => {
-    const onHide = () => stopStream();
+    const onHide = () => { runRef.current++; stopStream(); };
     window.addEventListener("pagehide", onHide);
     return () => window.removeEventListener("pagehide", onHide);
   }, [stopStream]);
@@ -123,6 +123,7 @@ export function CameraCapture({
     );
     if (!blob) { setError("Couldn't save the frame. Try again."); setPhase("error"); return; }
     const file = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+    runRef.current++; // invalidate any in-flight start attempt / watchdog
     stopStream();
     setShot({ url: URL.createObjectURL(blob), file });
     setPhase("review");
