@@ -739,18 +739,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     uploadClinicalPhotos: async (patientId, files) => {
       const userId = session?.user?.id;
       if (!userId) return { error: "You must be signed in." };
-      const paths: string[] = [];
-      for (const file of files) {
-        const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-        const path = `${userId}/${patientId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("clinical-photos").upload(path, file, {
-          contentType: file.type || "image/jpeg",
-          upsert: false,
-        });
-        if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
-        paths.push(path);
-      }
-      return { paths };
+      // Upload in parallel so multi-photo selections don't queue up.
+      const results = await Promise.all(
+        files.map(async (file) => {
+          const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+          const path = `${userId}/${patientId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+          const { error: upErr } = await supabase.storage.from("clinical-photos").upload(path, file, {
+            contentType: file.type || "image/jpeg",
+            upsert: false,
+          });
+          if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
+          return { path };
+        }),
+      );
+      const failed = results.find((r) => "error" in r && r.error);
+      if (failed && "error" in failed) return { error: failed.error };
+      return { paths: results.map((r) => ("path" in r ? r.path! : "")).filter(Boolean) };
     },
     addFootObservation: async (o, photos) => {
       const userId = session?.user?.id;
