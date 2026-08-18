@@ -698,13 +698,14 @@ function InfoCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PhotosStep({ photos, onPick, onRemove, onNote }: {
+function PhotosStep({ photos, onPick, onCamera, onRemove, onNote }: {
   photos: { id: string; url: string; path?: string; uploading?: boolean; note: string }[];
-  onPick: (multiple: boolean) => void;
+  onPick: (multiple?: boolean) => void;
+  onCamera: () => void;
   onRemove: (id: string) => void;
   onNote: (id: string, note: string) => void;
 }) {
-  // All affordances trigger the single shared input owned by VisitFlow.
+  // "Take photo" opens the in-page getUserMedia camera; "Library" uses the file input.
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -715,7 +716,7 @@ function PhotosStep({ photos, onPick, onRemove, onNote }: {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => onPick(false)}
+            onClick={onCamera}
             className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90"
           >
             <Camera className="h-4 w-4" /> Take photo
@@ -732,7 +733,7 @@ function PhotosStep({ photos, onPick, onRemove, onNote }: {
       {photos.length === 0 ? (
         <button
           type="button"
-          onClick={() => onPick(false)}
+          onClick={onCamera}
           className="grid h-56 w-full cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-center text-sm text-muted-foreground hover:bg-muted/50"
         >
           <div>
@@ -740,6 +741,7 @@ function PhotosStep({ photos, onPick, onRemove, onNote }: {
             <div className="mt-2">Tap to add clinical photos</div>
           </div>
         </button>
+
 
 
       ) : (
