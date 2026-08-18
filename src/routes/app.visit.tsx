@@ -642,6 +642,14 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
             <div key={p.id} className="overflow-hidden rounded-2xl border bg-background shadow-soft">
               <div className="relative aspect-square bg-muted">
                 <img src={p.url} alt="Clinical" className="h-full w-full object-cover" />
+                {p.uploading && (
+                  <div className="absolute inset-0 grid place-items-center bg-background/60 backdrop-blur-[2px]">
+                    <div className="flex flex-col items-center gap-1.5 text-xs font-medium text-foreground">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      Uploading…
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={() => onRemove(p.id)}
                   className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
