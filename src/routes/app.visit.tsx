@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { FootAssessmentModule } from "@/components/FootAssessmentModule";
+import { preparePhoto } from "@/lib/image-compress";
 import { useStore, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -221,20 +222,26 @@ function VisitFlow() {
   const addPhotoFile = async (files: FileList | null) => {
     if (!files) return;
     if (!pid) { toast.error("Select a patient first."); return; }
-    for (const f of Array.from(files)) {
-      const id = crypto.randomUUID();
-      const url = URL.createObjectURL(f);
-      setPhotos((p) => [{ id, url, note: "", uploading: true }, ...p]);
-      const res = await uploadClinicalPhotos(pid, [f]);
-      if (res.error || !res.paths?.[0]) {
-        toast.error(res.error || "Photo upload failed.");
-        URL.revokeObjectURL(url);
-        setPhotos((p) => p.filter((x) => x.id !== id));
-        continue;
-      }
-      setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, path: res.paths![0] } : x)));
-      URL.revokeObjectURL(url);
-    }
+    // Compress + upload every selected photo in parallel; thumbnails are
+    // self-contained data URLs so they survive re-renders and re-decodes.
+    await Promise.all(
+      Array.from(files).map(async (f) => {
+        const id = crypto.randomUUID();
+        let thumbnail = "";
+        try {
+          const prepared = await preparePhoto(f);
+          thumbnail = prepared.thumbnail;
+          setPhotos((p) => [{ id, url: thumbnail, note: "", uploading: true }, ...p]);
+          const res = await uploadClinicalPhotos(pid, [prepared.file]);
+          if (res.error || !res.paths?.[0]) throw new Error(res.error || "Photo upload failed.");
+          setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, path: res.paths![0] } : x)));
+        } catch (e: any) {
+          toast.error(e?.message || "Photo upload failed.");
+          if (thumbnail.startsWith("blob:")) URL.revokeObjectURL(thumbnail);
+          setPhotos((p) => p.filter((x) => x.id !== id));
+        }
+      }),
+    );
   };
 
   const generateSoap = async () => {
@@ -635,6 +642,14 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
             <div key={p.id} className="overflow-hidden rounded-2xl border bg-background shadow-soft">
               <div className="relative aspect-square bg-muted">
                 <img src={p.url} alt="Clinical" className="h-full w-full object-cover" />
+                {p.uploading && (
+                  <div className="absolute inset-0 grid place-items-center bg-background/60 backdrop-blur-[2px]">
+                    <div className="flex flex-col items-center gap-1.5 text-xs font-medium text-foreground">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      Uploading…
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={() => onRemove(p.id)}
                   className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
