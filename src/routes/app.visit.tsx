@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { FootAssessmentModule } from "@/components/FootAssessmentModule";
 import { preparePhoto } from "@/lib/image-compress";
+import { CameraCapture } from "@/components/CameraCapture";
 import { useStore, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
 import { useServerFn } from "@tanstack/react-start";
