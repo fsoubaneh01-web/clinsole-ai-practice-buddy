@@ -412,6 +412,14 @@ function VisitFlow() {
 
   return (
     <AppShell title="Visit Flow">
+      {/* Single shared photo input — no `capture` so iOS uses the system sheet. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => { addPhotoFile(e.target.files); e.target.value = ""; }}
+      />
       <Container className="py-6 lg:py-8">
         {/* Progress bar */}
         <div className="mb-4">
