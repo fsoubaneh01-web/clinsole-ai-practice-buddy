@@ -367,17 +367,33 @@ function VisitFlow() {
 
       // Link clinical photos FIRST: the treatment row now exists, and a later
       // failure (billing / follow-up) must never orphan the uploaded photos.
-      const uploaded = photos.filter((p) => p.path);
+      // Merge in anything persisted to sessionStorage so a wiped/re-mounted
+      // step can never silently drop already-uploaded photos.
+      const persisted: { path?: string; note?: string }[] = (() => {
+        if (!photoKey) return [];
+        try { return JSON.parse(sessionStorage.getItem(photoKey) || "[]"); } catch { return []; }
+      })();
+      const byPath = new Map<string, string>();
+      for (const p of [...persisted, ...photos]) if (p.path) byPath.set(p.path, p.note || "");
+      const uploaded = [...byPath.entries()].map(([path, note]) => ({ path, note }));
       if (treatmentRes.treatment && uploaded.length) {
         const stepIndex = STEPS.findIndex((s) => s.id === "photos");
         const res = await saveVisitPhotos(
           treatmentRes.treatment.id,
           patient.id,
-          uploaded.map((p) => ({ path: p.path!, caption: p.note, stepIndex })),
+          uploaded.map((p) => ({ path: p.path, caption: p.note, stepIndex })),
         );
-        if (res.error) toast.warning("Visit saved, but photos could not be attached to the record.");
-        else { setPhotos([]); if (photoKey) try { sessionStorage.removeItem(photoKey); } catch {} }
+        if (res.error) {
+          console.error("[visit] saveVisitPhotos", res.error);
+          toast.error("Visit saved, but photos could not be attached to the record.");
+        } else {
+          setPhotos([]);
+          if (photoKey) try { sessionStorage.removeItem(photoKey); } catch { /* ignore */ }
+        }
+      } else if (photos.length && !uploaded.length) {
+        toast.warning("Photos were still uploading and were not attached to this visit.");
       }
+
 
       // Billing + follow-up are non-fatal: the clinical record is already saved.
       try {
