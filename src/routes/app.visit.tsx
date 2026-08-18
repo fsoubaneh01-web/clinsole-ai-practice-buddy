@@ -96,6 +96,26 @@ function VisitFlow() {
   const [finishing, setFinishing] = useState(false);
   const [followupConflict, setFollowupConflict] = useState<{ date: string; patientName?: string | null } | null>(null);
 
+  // iOS can evict/reload the web view while the native camera is open, which would
+  // otherwise wipe already-uploaded photos from this step. Persist per patient.
+  const photoKey = pid ? `clinsole:visit-photos:${pid}` : null;
+  useEffect(() => {
+    if (!photoKey) return;
+    try {
+      const raw = sessionStorage.getItem(photoKey);
+      if (raw) setPhotos(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, [photoKey]);
+  useEffect(() => {
+    if (!photoKey) return;
+    try {
+      const done = photos.filter((p) => p.path).map(({ id, url, path, note }) => ({ id, url, path, note }));
+      if (done.length) sessionStorage.setItem(photoKey, JSON.stringify(done));
+      else sessionStorage.removeItem(photoKey);
+    } catch { /* quota — ignore */ }
+  }, [photoKey, photos]);
+
+
   const observations = useMemo(
     () => footAssessments.filter(
       (a) => a.region && a.patientId === pid && (!visitStartedAt || a.date >= visitStartedAt),
@@ -220,22 +240,31 @@ function VisitFlow() {
 
 
   const addPhotoFile = async (files: FileList | null) => {
-    if (!files) return;
+    // Snapshot synchronously: on iOS the FileList can be detached after an await.
+    const list = files ? Array.from(files) : [];
+    console.info("[photo] input change", { count: list.length, types: list.map((f) => `${f.type || "?"}/${Math.round(f.size / 1024)}KB`) });
+    if (list.length === 0) {
+      toast.error("No photo came back from the camera. Try again, or use “Choose from library”.");
+      return;
+    }
     if (!pid) { toast.error("Select a patient first."); return; }
     // Compress + upload every selected photo in parallel; thumbnails are
     // self-contained data URLs so they survive re-renders and re-decodes.
     await Promise.all(
-      Array.from(files).map(async (f) => {
-        const id = crypto.randomUUID();
+      list.map(async (f) => {
+        const id = (crypto.randomUUID?.() ?? `p-${Date.now()}-${Math.random().toString(36).slice(2)}`);
         let thumbnail = "";
         try {
           const prepared = await preparePhoto(f);
           thumbnail = prepared.thumbnail;
+          console.info("[photo] prepared", { id, from: f.size, to: prepared.file.size });
           setPhotos((p) => [{ id, url: thumbnail, note: "", uploading: true }, ...p]);
           const res = await uploadClinicalPhotos(pid, [prepared.file]);
           if (res.error || !res.paths?.[0]) throw new Error(res.error || "Photo upload failed.");
+          console.info("[photo] uploaded", { id, path: res.paths[0] });
           setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, path: res.paths![0] } : x)));
         } catch (e: any) {
+          console.error("[photo] failed", e);
           toast.error(e?.message || "Photo upload failed.");
           if (thumbnail.startsWith("blob:")) URL.revokeObjectURL(thumbnail);
           setPhotos((p) => p.filter((x) => x.id !== id));
@@ -243,6 +272,7 @@ function VisitFlow() {
       }),
     );
   };
+
 
   const generateSoap = async () => {
     if (!patient) return toast.error("Select a patient first.");
@@ -616,17 +646,30 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
   onRemove: (id: string) => void;
   onNote: (id: string, note: string) => void;
 }) {
+  // iOS ignores/breaks `multiple` when combined with `capture`, often handing back an
+  // empty FileList. Keep the camera input single-shot and give multi-select its own
+  // library input without `capture`.
+  const handle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onAdd(e.target.files);
+    e.target.value = "";
+  };
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-lg font-bold">Clinical photos</h2>
           <p className="text-sm text-muted-foreground">Capture wound sites, calluses, or overall foot condition.</p>
         </div>
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90">
-          <Camera className="h-4 w-4" /> Add photo
-          <input type="file" accept="image/*" capture="environment" multiple hidden onChange={(e) => onAdd(e.target.files)} />
-        </label>
+        <div className="flex gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90">
+            <Camera className="h-4 w-4" /> Take photo
+            <input type="file" accept="image/*" capture="environment" hidden onChange={handle} />
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-soft hover:bg-muted">
+            <ImageIcon className="h-4 w-4" /> Library
+            <input type="file" accept="image/*" multiple hidden onChange={handle} />
+          </label>
+        </div>
       </div>
       {photos.length === 0 ? (
         <label className="grid h-56 cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-center text-sm text-muted-foreground hover:bg-muted/50">
@@ -634,8 +677,9 @@ function PhotosStep({ photos, onAdd, onRemove, onNote }: {
             <ImageIcon className="mx-auto h-8 w-8 opacity-60" />
             <div className="mt-2">Tap to add clinical photos</div>
           </div>
-          <input type="file" accept="image/*" capture="environment" multiple hidden onChange={(e) => onAdd(e.target.files)} />
+          <input type="file" accept="image/*" capture="environment" hidden onChange={handle} />
         </label>
+
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {photos.map((p) => (
