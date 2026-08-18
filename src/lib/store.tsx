@@ -175,6 +175,12 @@ type Ctx = {
   deleteFootAssessment: (id: string) => Promise<void>;
   setAssessmentTrend: (id: string, trend: TrendTag | null) => Promise<{ error?: string }>;
   getPhotoUrl: (path: string) => Promise<string | null>;
+  saveVisitPhotos: (
+    treatmentId: string,
+    patientId: string,
+    photos: { path: string; caption?: string; stepIndex?: number }[],
+  ) => Promise<{ error?: string }>;
+  listVisitPhotos: (scope: { treatmentId?: string; patientId?: string }) => Promise<VisitPhoto[]>;
   latestAssessmentFor: (patientId: string) => FootAssessment | undefined;
   addTransaction: (t: Omit<Transaction, "id">) => Promise<void>;
   upgradeToPremium: () => Promise<void>;
