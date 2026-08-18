@@ -62,9 +62,13 @@ export function CameraCapture({
       try { await v.play(); } catch { /* autoplay retried by the element */ }
       setPhase("live");
       // If no decodable frame arrives, say so instead of showing a black box.
+      // A real frame means non-zero dimensions plus decoded data — some devices
+      // never advertise HAVE_ENOUGH_DATA for a live stream, so accept
+      // HAVE_CURRENT_DATA with known dimensions too.
       timerRef.current = setTimeout(() => {
         const el = videoRef.current;
-        if (!el || el.readyState < 4 /* HAVE_ENOUGH_DATA */) {
+        const hasFrame = !!el && el.videoWidth > 0 && el.readyState >= 2;
+        if (!hasFrame) {
           stopStream();
           setError("Camera didn't start — try again or use Library.");
           setPhase("error");
