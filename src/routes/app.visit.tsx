@@ -221,20 +221,26 @@ function VisitFlow() {
   const addPhotoFile = async (files: FileList | null) => {
     if (!files) return;
     if (!pid) { toast.error("Select a patient first."); return; }
-    for (const f of Array.from(files)) {
-      const id = crypto.randomUUID();
-      const url = URL.createObjectURL(f);
-      setPhotos((p) => [{ id, url, note: "", uploading: true }, ...p]);
-      const res = await uploadClinicalPhotos(pid, [f]);
-      if (res.error || !res.paths?.[0]) {
-        toast.error(res.error || "Photo upload failed.");
-        URL.revokeObjectURL(url);
-        setPhotos((p) => p.filter((x) => x.id !== id));
-        continue;
-      }
-      setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, path: res.paths![0] } : x)));
-      URL.revokeObjectURL(url);
-    }
+    // Compress + upload every selected photo in parallel; thumbnails are
+    // self-contained data URLs so they survive re-renders and re-decodes.
+    await Promise.all(
+      Array.from(files).map(async (f) => {
+        const id = crypto.randomUUID();
+        let thumbnail = "";
+        try {
+          const prepared = await preparePhoto(f);
+          thumbnail = prepared.thumbnail;
+          setPhotos((p) => [{ id, url: thumbnail, note: "", uploading: true }, ...p]);
+          const res = await uploadClinicalPhotos(pid, [prepared.file]);
+          if (res.error || !res.paths?.[0]) throw new Error(res.error || "Photo upload failed.");
+          setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, path: res.paths![0] } : x)));
+        } catch (e: any) {
+          toast.error(e?.message || "Photo upload failed.");
+          if (thumbnail.startsWith("blob:")) URL.revokeObjectURL(thumbnail);
+          setPhotos((p) => p.filter((x) => x.id !== id));
+        }
+      }),
+    );
   };
 
   const generateSoap = async () => {
