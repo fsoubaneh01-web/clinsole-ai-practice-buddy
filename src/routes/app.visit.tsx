@@ -385,6 +385,19 @@ function VisitFlow() {
         }
       }
 
+      // Link the uploaded clinical photos to the treatment so they're recoverable later.
+      const uploaded = photos.filter((p) => p.path);
+      if (treatmentRes.treatment && uploaded.length) {
+        const stepIndex = STEPS.findIndex((s) => s.id === "photos");
+        const res = await saveVisitPhotos(
+          treatmentRes.treatment.id,
+          patient.id,
+          uploaded.map((p) => ({ path: p.path!, caption: p.note, stepIndex })),
+        );
+        if (res.error) toast.warning("Visit saved, but photos could not be attached to the record.");
+        else { setPhotos([]); if (photoKey) try { sessionStorage.removeItem(photoKey); } catch {} }
+      }
+
       if (draftKey) try { localStorage.removeItem(draftKey); } catch {}
       toast.success("Visit completed and saved");
       navigate({ to: "/app/patients/$id", params: { id: patient.id } });
