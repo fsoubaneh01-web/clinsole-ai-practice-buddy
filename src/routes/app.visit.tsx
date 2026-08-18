@@ -117,11 +117,11 @@ function VisitFlow() {
     } catch { /* quota — ignore */ }
   }, [photoKey, photos]);
 
-  // ONE shared file input for every "add photo" affordance. No `capture` attribute:
-  // forcing the iOS full-screen camera lets the OS evict the web view, and the file
-  // is silently lost on return.
+  // Library picker only — camera capture happens in-page via getUserMedia, so it
+  // never hands off to the native camera app and can't be evicted mid-capture.
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const openPhotoPicker = (multiple: boolean) => {
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const openPhotoPicker = (multiple = true) => {
     const el = fileInputRef.current;
     if (!el) return;
     el.multiple = multiple;
@@ -130,13 +130,14 @@ function VisitFlow() {
     } catch { /* ignore */ }
     el.click();
   };
-  // If the web view was torn down mid-capture, the flag survives but no file arrived.
+  // Library path only: if iOS tore the tab down during a large picker session,
+  // the flag survives but no file arrived.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(PENDING_CAPTURE_KEY);
       if (!raw) return;
       sessionStorage.removeItem(PENDING_CAPTURE_KEY);
-      if (JSON.parse(raw)?.pendingCapture) toast.error("Photo capture interrupted, please try again");
+      if (JSON.parse(raw)?.pendingCapture) toast.error("Photo selection interrupted, please try again");
     } catch { /* ignore */ }
   }, []);
 
