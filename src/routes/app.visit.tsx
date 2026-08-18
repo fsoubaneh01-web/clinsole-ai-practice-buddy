@@ -265,13 +265,13 @@ function VisitFlow() {
   };
 
 
-  const addPhotoFile = async (files: FileList | null) => {
+  const addPhotoFile = async (files: FileList | File[] | null) => {
     // Snapshot synchronously: on iOS the FileList can be detached after an await.
     const list = files ? Array.from(files) : [];
-    console.info("[photo] input change", { count: list.length, types: list.map((f) => `${f.type || "?"}/${Math.round(f.size / 1024)}KB`) });
+    if (import.meta.env.DEV) console.info("[photo] add", { count: list.length });
     try { sessionStorage.removeItem(PENDING_CAPTURE_KEY); } catch { /* ignore */ }
     if (list.length === 0) {
-      toast.error("No photo came back from the camera. Try again, or use “Choose from library”.");
+      toast.error("No photo came back. Try again, or pick one from your library.");
       return;
     }
     if (!pid) { toast.error("Select a patient first."); return; }
