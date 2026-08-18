@@ -96,6 +96,26 @@ function VisitFlow() {
   const [finishing, setFinishing] = useState(false);
   const [followupConflict, setFollowupConflict] = useState<{ date: string; patientName?: string | null } | null>(null);
 
+  // iOS can evict/reload the web view while the native camera is open, which would
+  // otherwise wipe already-uploaded photos from this step. Persist per patient.
+  const photoKey = pid ? `clinsole:visit-photos:${pid}` : null;
+  useEffect(() => {
+    if (!photoKey) return;
+    try {
+      const raw = sessionStorage.getItem(photoKey);
+      if (raw) setPhotos(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, [photoKey]);
+  useEffect(() => {
+    if (!photoKey) return;
+    try {
+      const done = photos.filter((p) => p.path).map(({ id, url, path, note }) => ({ id, url, path, note }));
+      if (done.length) sessionStorage.setItem(photoKey, JSON.stringify(done));
+      else sessionStorage.removeItem(photoKey);
+    } catch { /* quota — ignore */ }
+  }, [photoKey, photos]);
+
+
   const observations = useMemo(
     () => footAssessments.filter(
       (a) => a.region && a.patientId === pid && (!visitStartedAt || a.date >= visitStartedAt),
