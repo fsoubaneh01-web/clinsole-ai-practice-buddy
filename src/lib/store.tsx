@@ -554,6 +554,39 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (error) { console.error("signed url", error); return null; }
       return data.signedUrl;
     },
+    saveVisitPhotos: async (treatmentId, patientId, photos) => {
+      const userId = session?.user?.id;
+      if (!userId) return { error: "You must be signed in." };
+      if (!photos.length) return {};
+      const { error } = await supabase.from("visit_photos").insert(
+        photos.map((p) => ({
+          treatment_id: treatmentId,
+          patient_id: patientId,
+          nurse_id: userId,
+          storage_path: p.path,
+          caption: p.caption || null,
+          step_index: p.stepIndex ?? null,
+        })),
+      );
+      if (error) { console.error("saveVisitPhotos", error); return { error: error.message }; }
+      return {};
+    },
+    listVisitPhotos: async ({ treatmentId, patientId }) => {
+      let q = supabase.from("visit_photos").select("*").order("created_at", { ascending: true });
+      if (treatmentId) q = q.eq("treatment_id", treatmentId);
+      if (patientId) q = q.eq("patient_id", patientId);
+      const { data, error } = await q;
+      if (error || !data) { console.error("listVisitPhotos", error); return []; }
+      return data.map((r) => ({
+        id: r.id as string,
+        treatmentId: r.treatment_id as string,
+        patientId: r.patient_id as string,
+        path: r.storage_path as string,
+        caption: (r.caption as string | null) ?? "",
+        stepIndex: (r.step_index as number | null) ?? null,
+        createdAt: r.created_at as string,
+      }));
+    },
 
 
     signIn: async (email, password) => {
