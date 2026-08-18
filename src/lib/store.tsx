@@ -147,6 +147,16 @@ export const PLAN_LIMITS = {
 } as const;
 
 
+export type VisitPhoto = {
+  id: string;
+  treatmentId: string;
+  patientId: string;
+  path: string;
+  caption: string;
+  stepIndex: number | null;
+  createdAt: string;
+};
+
 type Ctx = {
   session: Session | null;
   loading: boolean;
