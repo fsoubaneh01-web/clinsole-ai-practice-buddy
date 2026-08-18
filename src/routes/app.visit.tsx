@@ -492,7 +492,7 @@ function VisitFlow() {
           )}
 
           {step.id === "photos" && (
-            <PhotosStep photos={photos} onAdd={addPhotoFile} onRemove={(id) => setPhotos((p) => p.filter((x) => x.id !== id))} onNote={(id, note) => setPhotos((p) => p.map((x) => x.id === id ? { ...x, note } : x))} />
+            <PhotosStep photos={photos} onPick={openPhotoPicker} onRemove={(id) => setPhotos((p) => p.filter((x) => x.id !== id))} onNote={(id, note) => setPhotos((p) => p.map((x) => x.id === id ? { ...x, note } : x))} />
           )}
 
           {step.id === "dictation" && (
