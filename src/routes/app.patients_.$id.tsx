@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useStore, type DiabetesStatus, type FootAssessment, summarizeAssessment } from "@/lib/store";
 import { ZoneTrends } from "@/components/ZoneTrends";
+import { TreatmentPhotoStrip, PatientPhotoGallery } from "@/components/VisitPhotos";
 import { RiskBadge as RiskSummaryCard } from "@/components/RiskBadge";
 import { computeRisk, visitAssessments } from "@/lib/risk-score";
 import { ReferralFlagCard } from "@/components/ReferralFlag";
@@ -156,6 +157,7 @@ function PatientProfile() {
                 <TabsTrigger value="history">Visit history</TabsTrigger>
                 <TabsTrigger value="assess">Assessments</TabsTrigger>
                 <TabsTrigger value="treat">Treatments</TabsTrigger>
+                <TabsTrigger value="photos">Photos</TabsTrigger>
                 <TabsTrigger value="trends">Trends</TabsTrigger>
               </TabsList>
             </div>
@@ -193,6 +195,7 @@ function PatientProfile() {
                     <div><b className="text-foreground">A:</b> {t.soap.a}</div>
                     <div><b className="text-foreground">P:</b> {t.soap.p}</div>
                   </div>
+                  <TreatmentPhotoStrip treatmentId={t.id} />
                 </div>
               ))}
             </TabsContent>
@@ -225,6 +228,9 @@ function PatientProfile() {
                   </div>
                 </div>
               ))}
+            </TabsContent>
+            <TabsContent value="photos" className="mt-4">
+              <PatientPhotoGallery patientId={p.id} />
             </TabsContent>
             <TabsContent value="trends" className="mt-4">
               <ZoneTrends patientId={p.id} />
