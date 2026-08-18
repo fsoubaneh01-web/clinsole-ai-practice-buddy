@@ -69,6 +69,8 @@ const EDUCATION_TOPICS = [
   { id: "when-to-call",  title: "When to seek care",    body: "Call promptly for any new wound, drainage, redness, foul odor, or unexplained pain." },
 ];
 
+const PENDING_CAPTURE_KEY = "clinsole:pending-capture";
+
 function VisitFlow() {
   const { patientId } = Route.useSearch();
   const navigate = useNavigate();
