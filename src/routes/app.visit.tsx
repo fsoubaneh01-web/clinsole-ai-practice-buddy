@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { FootAssessmentModule } from "@/components/FootAssessmentModule";
 import { preparePhoto } from "@/lib/image-compress";
+import { CameraCapture } from "@/components/CameraCapture";
 import { useStore, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -117,11 +118,11 @@ function VisitFlow() {
     } catch { /* quota — ignore */ }
   }, [photoKey, photos]);
 
-  // ONE shared file input for every "add photo" affordance. No `capture` attribute:
-  // forcing the iOS full-screen camera lets the OS evict the web view, and the file
-  // is silently lost on return.
+  // Library picker only — camera capture happens in-page via getUserMedia, so it
+  // never hands off to the native camera app and can't be evicted mid-capture.
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const openPhotoPicker = (multiple: boolean) => {
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const openPhotoPicker = (multiple = true) => {
     const el = fileInputRef.current;
     if (!el) return;
     el.multiple = multiple;
@@ -130,13 +131,14 @@ function VisitFlow() {
     } catch { /* ignore */ }
     el.click();
   };
-  // If the web view was torn down mid-capture, the flag survives but no file arrived.
+  // Library path only: if iOS tore the tab down during a large picker session,
+  // the flag survives but no file arrived.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(PENDING_CAPTURE_KEY);
       if (!raw) return;
       sessionStorage.removeItem(PENDING_CAPTURE_KEY);
-      if (JSON.parse(raw)?.pendingCapture) toast.error("Photo capture interrupted, please try again");
+      if (JSON.parse(raw)?.pendingCapture) toast.error("Photo selection interrupted, please try again");
     } catch { /* ignore */ }
   }, []);
 
@@ -265,13 +267,13 @@ function VisitFlow() {
   };
 
 
-  const addPhotoFile = async (files: FileList | null) => {
+  const addPhotoFile = async (files: FileList | File[] | null) => {
     // Snapshot synchronously: on iOS the FileList can be detached after an await.
     const list = files ? Array.from(files) : [];
-    console.info("[photo] input change", { count: list.length, types: list.map((f) => `${f.type || "?"}/${Math.round(f.size / 1024)}KB`) });
+    if (import.meta.env.DEV) console.info("[photo] add", { count: list.length });
     try { sessionStorage.removeItem(PENDING_CAPTURE_KEY); } catch { /* ignore */ }
     if (list.length === 0) {
-      toast.error("No photo came back from the camera. Try again, or use “Choose from library”.");
+      toast.error("No photo came back. Try again, or pick one from your library.");
       return;
     }
     if (!pid) { toast.error("Select a patient first."); return; }
@@ -412,7 +414,7 @@ function VisitFlow() {
 
   return (
     <AppShell title="Visit Flow">
-      {/* Single shared photo input — no `capture` so iOS uses the system sheet. */}
+      {/* Library picker only — no `capture` attribute. */}
       <input
         ref={fileInputRef}
         type="file"
@@ -420,6 +422,13 @@ function VisitFlow() {
         hidden
         onChange={(e) => { addPhotoFile(e.target.files); e.target.value = ""; }}
       />
+      {cameraOpen && (
+        <CameraCapture
+          onCapture={(file) => { void addPhotoFile([file]); }}
+          onClose={() => setCameraOpen(false)}
+          onUseLibrary={() => openPhotoPicker(true)}
+        />
+      )}
       <Container className="py-6 lg:py-8">
         {/* Progress bar */}
         <div className="mb-4">
@@ -500,7 +509,7 @@ function VisitFlow() {
           )}
 
           {step.id === "photos" && (
-            <PhotosStep photos={photos} onPick={openPhotoPicker} onRemove={(id) => setPhotos((p) => p.filter((x) => x.id !== id))} onNote={(id, note) => setPhotos((p) => p.map((x) => x.id === id ? { ...x, note } : x))} />
+            <PhotosStep photos={photos} onPick={openPhotoPicker} onCamera={() => setCameraOpen(true)} onRemove={(id) => setPhotos((p) => p.filter((x) => x.id !== id))} onNote={(id, note) => setPhotos((p) => p.map((x) => x.id === id ? { ...x, note } : x))} />
           )}
 
           {step.id === "dictation" && (
@@ -689,13 +698,14 @@ function InfoCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PhotosStep({ photos, onPick, onRemove, onNote }: {
+function PhotosStep({ photos, onPick, onCamera, onRemove, onNote }: {
   photos: { id: string; url: string; path?: string; uploading?: boolean; note: string }[];
-  onPick: (multiple: boolean) => void;
+  onPick: (multiple?: boolean) => void;
+  onCamera: () => void;
   onRemove: (id: string) => void;
   onNote: (id: string, note: string) => void;
 }) {
-  // All affordances trigger the single shared input owned by VisitFlow.
+  // "Take photo" opens the in-page getUserMedia camera; "Library" uses the file input.
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -706,7 +716,7 @@ function PhotosStep({ photos, onPick, onRemove, onNote }: {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => onPick(false)}
+            onClick={onCamera}
             className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90"
           >
             <Camera className="h-4 w-4" /> Take photo
@@ -723,7 +733,7 @@ function PhotosStep({ photos, onPick, onRemove, onNote }: {
       {photos.length === 0 ? (
         <button
           type="button"
-          onClick={() => onPick(false)}
+          onClick={onCamera}
           className="grid h-56 w-full cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-center text-sm text-muted-foreground hover:bg-muted/50"
         >
           <div>
@@ -731,6 +741,7 @@ function PhotosStep({ photos, onPick, onRemove, onNote }: {
             <div className="mt-2">Tap to add clinical photos</div>
           </div>
         </button>
+
 
 
       ) : (
