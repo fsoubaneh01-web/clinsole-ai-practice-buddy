@@ -45,12 +45,15 @@ function SoapNote() {
       toast.error("Add a few quick visit notes to generate from.");
       return;
     }
-    if (!(await useAiCredit())) {
-      toast.error("You've used all AI notes on the Free plan this month.");
-      return;
-    }
+    // Loading starts before the credit check so a slow or stuck check still
+    // shows the spinner, and everything after it is inside the try so a thrown
+    // error surfaces as a toast instead of an unhandled rejection.
     setLoading(true);
     try {
+      if (!(await useAiCredit())) {
+        toast.error("You've used all AI notes on the Free plan this month.");
+        return;
+      }
       const age = ageOf(patient.dob);
       const out = await generate({
         data: {
@@ -66,6 +69,7 @@ function SoapNote() {
       setSoap(out);
       toast.success("SOAP note generated");
     } catch (e) {
+      console.error("soap generate", e);
       const msg = e instanceof Error ? e.message : "Failed to generate note";
       toast.error(msg);
     } finally { setLoading(false); }
@@ -130,7 +134,7 @@ function SoapNote() {
                   </div>
                 )
               )}
-              <Button onClick={gen} disabled={loading || !patient || outOfCredit} className="w-full gradient-primary text-primary-foreground">
+              <Button onClick={gen} disabled={loading || !patient} className="w-full gradient-primary text-primary-foreground">
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</> : <><Sparkles className="mr-2 h-4 w-4" />Generate SOAP note</>}
               </Button>
               {outOfCredit && <p className="text-center text-xs text-muted-foreground">Upgrade to Premium for unlimited notes.</p>}
