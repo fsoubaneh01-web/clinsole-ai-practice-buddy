@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Container } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { generateAssistant, type AssistantKind } from "@/lib/ai-mock";
+import { generateAssistantContent, type AssistantKind } from "@/lib/assistant.functions";
 import { useStore, PLAN_LIMITS } from "@/lib/store";
+import { useServerFn } from "@tanstack/react-start";
 import { Copy, GraduationCap, Loader2, Megaphone, MessageCircle, Sparkles, TrendingUp, Crown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -23,17 +24,37 @@ function Assistant() {
   const [prompt, setPrompt] = useState("");
   const [out, setOut] = useState("");
   const [loading, setLoading] = useState(false);
+  const generate = useServerFn(generateAssistantContent);
 
   const limit = PLAN_LIMITS[nurse?.plan || "free"].aiPerMonth;
   const used = nurse?.aiUsedThisMonth || 0;
+  const outOfCredit = used >= limit;
 
   const run = async () => {
-    if (!(await useAiCredit())) {
+    if (!prompt.trim()) {
+      toast.error("Add a little context to generate from.");
+      return;
+    }
+    if (!(await useAiCredit("assistant"))) {
       toast.error("You've used all AI credits on the Free plan this month.");
       return;
     }
     setLoading(true);
-    try { setOut(await generateAssistant(kind, prompt)); } finally { setLoading(false); }
+    try {
+      const res = await generate({
+        data: {
+          kind,
+          prompt: prompt.trim(),
+          nurseName: nurse?.name || "",
+          credentials: nurse?.credentials || "",
+          serviceArea: nurse?.serviceArea || "",
+          yearsExperience: nurse?.yearsExperience || null,
+        },
+      });
+      setOut(res.text);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to generate content");
+    } finally { setLoading(false); }
   };
 
   const current = kinds.find((k) => k.id === kind)!;
@@ -79,9 +100,10 @@ function Assistant() {
           <div className="rounded-2xl border bg-surface p-5 shadow-soft">
             <div className="mb-2 text-xs font-medium text-muted-foreground">{current.hint}</div>
             <Textarea rows={6} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder={current.hint} />
-            <Button onClick={run} disabled={loading} className="mt-3 w-full gradient-primary text-primary-foreground">
+            <Button onClick={run} disabled={loading || outOfCredit} className="mt-3 w-full gradient-primary text-primary-foreground">
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Thinking…</> : <><Sparkles className="mr-2 h-4 w-4" />Generate</>}
             </Button>
+            {outOfCredit && <p className="mt-2 text-center text-xs text-muted-foreground">Upgrade to Premium for unlimited generations.</p>}
           </div>
 
           <div className="rounded-2xl border bg-surface p-5 shadow-soft">

@@ -194,7 +194,7 @@ type Ctx = {
   latestAssessmentFor: (patientId: string) => FootAssessment | undefined;
   addTransaction: (t: Omit<Transaction, "id">) => Promise<void>;
   upgradeToPremium: () => Promise<void>;
-  useAiCredit: () => Promise<boolean>;
+  useAiCredit: (kind?: "soap" | "assistant") => Promise<boolean>;
   ageOf: (dob: string) => number;
 };
 
@@ -958,7 +958,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
      * created since the start of the current calendar month, so credits reset
      * automatically on month rollover and cannot be reset by clearing storage.
      */
-    useAiCredit: async () => {
+    useAiCredit: async (kind = "soap") => {
       const userId = session?.user?.id;
       if (!userId) return false;
       const plan = nurse?.plan || "free";
@@ -971,7 +971,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const used = count ?? 0;
       setNurseState((n) => (n ? { ...n, aiUsedThisMonth: used } : n));
       if (used >= limit) return false;
-      const { error: insErr } = await supabase.from("ai_usage_events").insert({ user_id: userId, kind: "soap" });
+      const { error: insErr } = await supabase.from("ai_usage_events").insert({ user_id: userId, kind });
       if (insErr) { console.error("aiUsage insert", insErr); return false; }
       setNurseState((n) => (n ? { ...n, aiUsedThisMonth: used + 1 } : n));
       return true;
