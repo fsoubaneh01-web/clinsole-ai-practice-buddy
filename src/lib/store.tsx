@@ -141,6 +141,9 @@ export type Nurse = {
   aiUsedThisMonth: number;
 };
 
+/** A clinical photo upload that has not settled by now is treated as failed. */
+const UPLOAD_TIMEOUT_MS = 45_000;
+
 export const PLAN_LIMITS = {
   free: { patients: 10, aiPerMonth: 5 },
   premium: { patients: Infinity, aiPerMonth: Infinity },
@@ -793,12 +796,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         files.map(async (file) => {
           const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
           const path = `${userId}/${patientId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-          const { error: upErr } = await supabase.storage.from("clinical-photos").upload(path, file, {
-            contentType: file.type || "image/jpeg",
-            upsert: false,
-          });
-          if (upErr) { console.error("photo upload", upErr); return { error: `Photo upload failed: ${upErr.message}` }; }
-          return { path };
+          // storage-js takes no AbortSignal, so a stalled request cannot be
+          // cancelled — only abandoned. Racing a timeout turns an indefinite
+          // hang (which previously left the photo "uploading" forever, with no
+          // error and nothing written) into a reported failure. The retry
+          // re-uses the same path with upsert so a first attempt that lands
+          // late cannot leave a duplicate object behind.
+          const attempt = async (upsert: boolean) => {
+            let timer: ReturnType<typeof setTimeout> | undefined;
+            try {
+              return await Promise.race([
+                supabase.storage.from("clinical-photos").upload(path, file, {
+                  contentType: file.type || "image/jpeg",
+                  upsert,
+                }),
+                new Promise<never>((_, reject) => {
+                  timer = setTimeout(
+                    () => reject(new Error("Upload timed out. Check your connection and retry.")),
+                    UPLOAD_TIMEOUT_MS,
+                  );
+                }),
+              ]);
+            } finally {
+              if (timer) clearTimeout(timer);
+            }
+          };
+          try {
+            const { error: upErr } = await attempt(false);
+            if (upErr) throw new Error(upErr.message);
+            return { path };
+          } catch (first) {
+            console.warn("photo upload failed, retrying once", first);
+            try {
+              const { error: upErr } = await attempt(true);
+              if (upErr) throw new Error(upErr.message);
+              return { path };
+            } catch (second) {
+              console.error("photo upload", second);
+              const msg = second instanceof Error ? second.message : "unknown error";
+              return { error: `Photo upload failed: ${msg}` };
+            }
+          }
         }),
       );
       const failed = results.find((r) => "error" in r && r.error);
