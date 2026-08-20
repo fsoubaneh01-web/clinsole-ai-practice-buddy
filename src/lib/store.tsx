@@ -560,18 +560,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     saveVisitPhotos: async (treatmentId, patientId, photos) => {
       const userId = session?.user?.id;
       if (!userId) return { error: "You must be signed in." };
-      if (!photos.length) return {};
-      const { error } = await supabase.from("visit_photos").insert(
-        photos.map((p) => ({
-          treatment_id: treatmentId,
-          patient_id: patientId,
-          nurse_id: userId,
-          storage_path: p.path,
-          caption: p.caption || null,
-          step_index: p.stepIndex ?? null,
-        })),
-      );
+      // An empty batch is a caller bug, not a success. Returning the success
+      // shape here would leave a visit silently photo-less, which is the exact
+      // failure this function exists to prevent.
+      if (!photos.length) return { error: "No photos were provided to attach." };
+      const rows = photos.map((p) => ({
+        treatment_id: treatmentId,
+        patient_id: patientId,
+        nurse_id: userId,
+        storage_path: p.path,
+        caption: p.caption || null,
+        step_index: p.stepIndex ?? null,
+      }));
+      // .select() makes the write verifiable: without it a bare insert returns
+      // no body, so a partial write is indistinguishable from a complete one.
+      const { data, error } = await supabase.from("visit_photos").insert(rows).select("id");
       if (error) { console.error("saveVisitPhotos", error); return { error: error.message }; }
+      const written = data?.length ?? 0;
+      if (written !== rows.length) {
+        console.error("saveVisitPhotos partial write", { sent: rows.length, written });
+        return { error: `Only ${written} of ${rows.length} photos were attached to the record.` };
+      }
       return {};
     },
     listVisitPhotos: async ({ treatmentId, patientId }) => {
