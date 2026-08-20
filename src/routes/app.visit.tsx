@@ -101,6 +101,10 @@ function VisitFlow() {
   const [skipFollowup, setSkipFollowup] = useState(false);
   const [visitStartedAt, setVisitStartedAt] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
+  // Synchronous double-submit guard: `finishing` state is not visible to a
+  // second tap in the same tick, and the button stays enabled across the
+  // awaited overlap check below.
+  const finishingRef = useRef(false);
   const [followupConflict, setFollowupConflict] = useState<{ date: string; patientName?: string | null } | null>(null);
   // Capture ledger: survives remounts and stalled uploads, unlike `photos`.
   const [ledger, setLedger] = useState<PhotoLedgerEntry[]>([]);
@@ -395,6 +399,22 @@ function VisitFlow() {
 
   const finishVisit = async (opts?: { forceFollowup?: boolean; dropFollowup?: boolean; forcePhotos?: boolean }) => {
     if (!patient || !soap) return;
+    // Claimed before anything can await, so a second tap cannot start a second
+    // visit. Two runs previously created two treatment rows, with the photos
+    // attached to the first and the second saved silently without them.
+    if (finishingRef.current) return;
+    finishingRef.current = true;
+    setFinishing(true);
+    try {
+      await runFinish(opts);
+    } finally {
+      finishingRef.current = false;
+      setFinishing(false);
+    }
+  };
+
+  const runFinish = async (opts?: { forceFollowup?: boolean; dropFollowup?: boolean; forcePhotos?: boolean }) => {
+    if (!patient || !soap) return;
 
     // Photos that were captured but never reached storage would be lost by
     // finishing. The ledger is the authority here: component state is exactly
@@ -422,7 +442,6 @@ function VisitFlow() {
       }
     }
 
-    setFinishing(true);
     try {
       const now = new Date().toISOString();
       const treatmentRes = await addTreatment(patient.id, { date: now, soap, fee });
@@ -460,8 +479,18 @@ function VisitFlow() {
           if (photoKey) try { sessionStorage.removeItem(photoKey); } catch { /* ignore */ }
         }
       } else if (pid) {
-        // Nothing to attach. Anything captured was already caught by the gate
-        // above, so clear the ledger rather than carry it into the next visit.
+        // Nothing to attach. The gate above should have caught any captured
+        // photo, so reaching here with one means something upstream lost it —
+        // say so rather than saving a photo-less visit in silence.
+        const captured = readLedger(pid).length || photos.length;
+        if (captured) {
+          console.error("[visit] photos captured but none attached", {
+            captured,
+            hasTreatment: !!treatmentRes.treatment,
+            uploaded: uploaded.length,
+          });
+          toast.warning("This visit was saved without its photos.");
+        }
         clearLedger(pid);
         refreshLedger();
       }
@@ -507,8 +536,6 @@ function VisitFlow() {
       navigate({ to: "/app/patients/$id", params: { id: patient.id } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to finish visit");
-    } finally {
-      setFinishing(false);
     }
   };
 
