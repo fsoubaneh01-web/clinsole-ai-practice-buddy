@@ -35,12 +35,15 @@ function Assistant() {
       toast.error("Add a little context to generate from.");
       return;
     }
-    if (!(await useAiCredit("assistant"))) {
-      toast.error("You've used all AI credits on the Free plan this month.");
-      return;
-    }
+    // Loading starts before the credit check so a slow or stuck check still
+    // shows the spinner, and everything after it is inside the try so a thrown
+    // error surfaces as a toast instead of an unhandled rejection.
     setLoading(true);
     try {
+      if (!(await useAiCredit("assistant"))) {
+        toast.error("You've used all AI credits on the Free plan this month.");
+        return;
+      }
       const res = await generate({
         data: {
           kind,
@@ -53,6 +56,7 @@ function Assistant() {
       });
       setOut(res.text);
     } catch (e) {
+      console.error("assistant generate", e);
       toast.error(e instanceof Error ? e.message : "Failed to generate content");
     } finally { setLoading(false); }
   };
@@ -100,7 +104,7 @@ function Assistant() {
           <div className="rounded-2xl border bg-surface p-5 shadow-soft">
             <div className="mb-2 text-xs font-medium text-muted-foreground">{current.hint}</div>
             <Textarea rows={6} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder={current.hint} />
-            <Button onClick={run} disabled={loading || outOfCredit} className="mt-3 w-full gradient-primary text-primary-foreground">
+            <Button onClick={run} disabled={loading} className="mt-3 w-full gradient-primary text-primary-foreground">
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Thinking…</> : <><Sparkles className="mr-2 h-4 w-4" />Generate</>}
             </Button>
             {outOfCredit && <p className="mt-2 text-center text-xs text-muted-foreground">Upgrade to Premium for unlimited generations.</p>}
