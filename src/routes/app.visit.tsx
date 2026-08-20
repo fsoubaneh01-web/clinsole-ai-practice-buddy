@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { format, addDays } from "date-fns";
 import {
   Play, User, Footprints, Camera, Mic, FileText, DollarSign,
   BookOpen, CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight,
-  Loader2, Sparkles, X, Image as ImageIcon, Check, Printer,
+  Loader2, Sparkles, X, Image as ImageIcon, Check, Printer, RotateCcw, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,6 +19,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { FootAssessmentModule } from "@/components/FootAssessmentModule";
 import { preparePhoto } from "@/lib/image-compress";
+import {
+  clearLedger, forgetCapture, markFailed, markUploaded, readLedger,
+  recordCapture, setLedgerNote, unattachedEntries, type PhotoLedgerEntry,
+} from "@/lib/photo-ledger";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useStore, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
@@ -84,7 +88,7 @@ function VisitFlow() {
 
   const [stepIdx, setStepIdx] = useState(0);
   const [pid, setPid] = useState(patientId || patients[0]?.id || "");
-  const [photos, setPhotos] = useState<{ id: string; url: string; path?: string; uploading?: boolean; note: string }[]>([]);
+  const [photos, setPhotos] = useState<{ id: string; url: string; path?: string; uploading?: boolean; failed?: boolean; file?: File; note: string }[]>([]);
   const [dictation, setDictation] = useState("");
   const [soap, setSoap] = useState<{ s: string; o: string; a: string; p: string } | null>(null);
   const [soapLoading, setSoapLoading] = useState(false);
@@ -98,10 +102,15 @@ function VisitFlow() {
   const [visitStartedAt, setVisitStartedAt] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
   const [followupConflict, setFollowupConflict] = useState<{ date: string; patientName?: string | null } | null>(null);
+  // Capture ledger: survives remounts and stalled uploads, unlike `photos`.
+  const [ledger, setLedger] = useState<PhotoLedgerEntry[]>([]);
+  const [photoBlock, setPhotoBlock] = useState<PhotoLedgerEntry[] | null>(null);
 
   // iOS can evict/reload the web view while the native camera is open, which would
   // otherwise wipe already-uploaded photos from this step. Persist per patient.
   const photoKey = pid ? `clinsole:visit-photos:${pid}` : null;
+  const refreshLedger = useCallback(() => { setLedger(pid ? readLedger(pid) : []); }, [pid]);
+  useEffect(() => { refreshLedger(); }, [refreshLedger]);
   useEffect(() => {
     if (!photoKey) return;
     try {
@@ -282,24 +291,70 @@ function VisitFlow() {
     await Promise.all(
       list.map(async (f) => {
         const id = (crypto.randomUUID?.() ?? `p-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-        let thumbnail = "";
+        let prepared;
         try {
-          const prepared = await preparePhoto(f);
-          thumbnail = prepared.thumbnail;
-          if (import.meta.env.DEV) console.info("[photo] prepared", { id, from: f.size, to: prepared.file.size });
-          setPhotos((p) => [{ id, url: thumbnail, note: "", uploading: true }, ...p]);
-          const res = await uploadClinicalPhotos(pid, [prepared.file]);
-          if (res.error || !res.paths?.[0]) throw new Error(res.error || "Photo upload failed.");
-          if (import.meta.env.DEV) console.info("[photo] uploaded", { id, path: res.paths[0] });
-          setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, path: res.paths![0] } : x)));
-        } catch (e: any) {
-          console.error("[photo] failed", e);
-          toast.error(e?.message || "Photo upload failed.");
-          if (thumbnail.startsWith("blob:")) URL.revokeObjectURL(thumbnail);
-          setPhotos((p) => p.filter((x) => x.id !== id));
+          prepared = await preparePhoto(f);
+        } catch (e) {
+          console.error("[photo] prepare failed", e);
+          toast.error("Could not process that photo. Try again.");
+          return;
         }
+        if (import.meta.env.DEV) console.info("[photo] prepared", { id, from: f.size, to: prepared.file.size });
+        // Record the capture before uploading. If the upload then stalls, or
+        // this step remounts, the ledger still knows a photo was taken and the
+        // finish gate can say so instead of saving a visit without it.
+        recordCapture(pid, id);
+        refreshLedger();
+        setPhotos((p) => [
+          { id, url: prepared!.thumbnail, note: "", uploading: true, file: prepared!.file },
+          ...p,
+        ]);
+        await runUpload(id, prepared.file);
       }),
     );
+  };
+
+  /** Upload one already-prepared photo. Shared by first attempt and retry. */
+  const runUpload = async (id: string, file: File) => {
+    if (!pid) return;
+    setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: true, failed: false } : x)));
+    try {
+      const res = await uploadClinicalPhotos(pid, [file]);
+      if (res.error || !res.paths?.[0]) throw new Error(res.error || "Photo upload failed.");
+      if (import.meta.env.DEV) console.info("[photo] uploaded", { id, path: res.paths[0] });
+      markUploaded(pid, id, res.paths[0]);
+      setPhotos((p) =>
+        p.map((x) => (x.id === id ? { ...x, uploading: false, failed: false, path: res.paths![0] } : x)),
+      );
+    } catch (e) {
+      console.error("[photo] upload failed", { id, error: e });
+      markFailed(pid, id);
+      // Keep the thumbnail and the file: a captured clinical photo is never
+      // discarded because the upload failed, so the nurse can retry it.
+      setPhotos((p) => p.map((x) => (x.id === id ? { ...x, uploading: false, failed: true } : x)));
+      toast.error(e instanceof Error ? e.message : "Photo upload failed.");
+    } finally {
+      refreshLedger();
+    }
+  };
+
+  const retryPhoto = (id: string) => {
+    const target = photos.find((x) => x.id === id);
+    if (!target?.file) {
+      toast.error("This photo can no longer be retried — please retake it.");
+      return;
+    }
+    void runUpload(id, target.file);
+  };
+
+  const removePhoto = (id: string) => {
+    if (pid) { forgetCapture(pid, id); refreshLedger(); }
+    setPhotos((p) => p.filter((x) => x.id !== id));
+  };
+
+  const notePhoto = (id: string, note: string) => {
+    if (pid) { setLedgerNote(pid, id, note); refreshLedger(); }
+    setPhotos((p) => p.map((x) => (x.id === id ? { ...x, note } : x)));
   };
 
 
@@ -338,8 +393,16 @@ function VisitFlow() {
     }
   };
 
-  const finishVisit = async (opts?: { forceFollowup?: boolean; dropFollowup?: boolean }) => {
+  const finishVisit = async (opts?: { forceFollowup?: boolean; dropFollowup?: boolean; forcePhotos?: boolean }) => {
     if (!patient || !soap) return;
+
+    // Photos that were captured but never reached storage would be lost by
+    // finishing. The ledger is the authority here: component state is exactly
+    // what a stalled upload or a remount destroys.
+    if (!opts?.forcePhotos && pid) {
+      const stranded = unattachedEntries(readLedger(pid));
+      if (stranded.length) { setPhotoBlock(stranded); return; }
+    }
 
     const wantsFollowup = !skipFollowup && !opts?.dropFollowup;
     // Local wall-clock interpretation, converted to a UTC instant on save.
@@ -374,7 +437,12 @@ function VisitFlow() {
         try { return JSON.parse(sessionStorage.getItem(photoKey) || "[]"); } catch { return []; }
       })();
       const byPath = new Map<string, string>();
-      for (const p of [...persisted, ...photos]) if (p.path) byPath.set(p.path, p.note || "");
+      const ledgerUploaded = pid
+        ? readLedger(pid).filter((e) => e.status === "uploaded" && e.path)
+        : [];
+      for (const p of [...ledgerUploaded, ...persisted, ...photos]) {
+        if (p.path) byPath.set(p.path, p.note || "");
+      }
       const uploaded = [...byPath.entries()].map(([path, note]) => ({ path, note }));
       if (treatmentRes.treatment && uploaded.length) {
         const stepIndex = STEPS.findIndex((s) => s.id === "photos");
@@ -388,10 +456,14 @@ function VisitFlow() {
           toast.error("Visit saved, but photos could not be attached to the record.");
         } else {
           setPhotos([]);
+          if (pid) { clearLedger(pid); refreshLedger(); }
           if (photoKey) try { sessionStorage.removeItem(photoKey); } catch { /* ignore */ }
         }
-      } else if (photos.length && !uploaded.length) {
-        toast.warning("Photos were still uploading and were not attached to this visit.");
+      } else if (pid) {
+        // Nothing to attach. Anything captured was already caught by the gate
+        // above, so clear the ledger rather than carry it into the next visit.
+        clearLedger(pid);
+        refreshLedger();
       }
 
 
@@ -539,7 +611,7 @@ function VisitFlow() {
           )}
 
           {step.id === "photos" && (
-            <PhotosStep photos={photos} onPick={openPhotoPicker} onCamera={() => setCameraOpen(true)} onRemove={(id) => setPhotos((p) => p.filter((x) => x.id !== id))} onNote={(id, note) => setPhotos((p) => p.map((x) => x.id === id ? { ...x, note } : x))} />
+            <PhotosStep photos={photos} onPick={openPhotoPicker} onCamera={() => setCameraOpen(true)} onRemove={removePhoto} onNote={notePhoto} onRetry={retryPhoto} />
           )}
 
           {step.id === "dictation" && (
@@ -577,7 +649,7 @@ function VisitFlow() {
             <FinishStep
               patient={patient}
               observations={observations.length}
-              photos={photos.length}
+              photos={ledger.length || photos.length}
               soap={!!soap}
               fee={fee}
               followup={skipFollowup ? "Skipped" : (() => { const d = parseLocalDateTime(followupDate, followupTime); return d ? format(d, "EEE, MMM d · HH:mm") : "Not scheduled"; })()}
@@ -607,6 +679,32 @@ function VisitFlow() {
               <AlertDialogAction
                 onClick={() => { setFollowupConflict(null); void finishVisit({ forceFollowup: true }); }}
               >Book anyway</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!photoBlock} onOpenChange={(v) => !v && setPhotoBlock(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Photos not attached</AlertDialogTitle>
+              <AlertDialogDescription>
+                {photoBlock?.length === 1
+                  ? "1 photo taken during this visit did not finish uploading, so it will not be saved to the patient record."
+                  : `${photoBlock?.length ?? 0} photos taken during this visit did not finish uploading, so they will not be saved to the patient record.`}
+                {" "}Go back to the photos step to retry, or finish without them.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Go back</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setPhotoBlock(null);
+                  goto(STEPS.findIndex((x) => x.id === "photos"));
+                }}
+              >Back to photos</AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => { setPhotoBlock(null); void finishVisit({ forcePhotos: true }); }}
+              >Finish without them</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -728,12 +826,13 @@ function InfoCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PhotosStep({ photos, onPick, onCamera, onRemove, onNote }: {
-  photos: { id: string; url: string; path?: string; uploading?: boolean; note: string }[];
+function PhotosStep({ photos, onPick, onCamera, onRemove, onNote, onRetry }: {
+  photos: { id: string; url: string; path?: string; uploading?: boolean; failed?: boolean; note: string }[];
   onPick: (multiple?: boolean) => void;
   onCamera: () => void;
   onRemove: (id: string) => void;
   onNote: (id: string, note: string) => void;
+  onRetry: (id: string) => void;
 }) {
   // "Take photo" opens the in-page getUserMedia camera; "Library" uses the file input.
   return (
@@ -785,6 +884,21 @@ function PhotosStep({ photos, onPick, onCamera, onRemove, onNote }: {
                     <div className="flex flex-col items-center gap-1.5 text-xs font-medium text-foreground">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       Uploading…
+                    </div>
+                  </div>
+                )}
+                {p.failed && !p.uploading && (
+                  <div className="absolute inset-0 grid place-items-center bg-destructive/15 backdrop-blur-[2px]">
+                    <div className="flex flex-col items-center gap-2 px-2 text-center">
+                      <AlertTriangle className="h-6 w-6 text-destructive" />
+                      <div className="text-xs font-semibold text-destructive">Not uploaded</div>
+                      <button
+                        type="button"
+                        onClick={() => onRetry(p.id)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-xs font-semibold shadow-soft"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" /> Retry
+                      </button>
                     </div>
                   </div>
                 )}
