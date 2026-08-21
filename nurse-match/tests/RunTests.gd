@@ -137,15 +137,13 @@ func _test_level_data() -> void:
 			well_formed = false
 		if level.objective == LevelData.Objective.COLLECT and level.target_count <= 0:
 			well_formed = false
-		if level.star_three_score <= level.star_two_score:
-			well_formed = false
 	_check(ids.size() == 10, "level ids are unique")
-	_check(well_formed, "every level has moves, a target, and rising star thresholds")
-	_check(levels[0].objective_text() == "Reach 500 points", "score objectives read naturally")
-	_check(levels[2].objective_text() == "Clear 15 bandages", "collect objectives name the piece")
-	_check(levels[4].objective_text() == "Reach 1,500 points", "large numbers are grouped")
-	_check(levels[0].stars_for_score(1000) == 3 and levels[0].stars_for_score(500) == 1,
-		"stars follow the level's score thresholds")
+	_check(well_formed, "every level has moves and a target")
+	_check(levels[0].objective_text() == "Reach 900 points", "score objectives read naturally")
+	_check(levels[2].objective_text() == "Clear 16 bandages", "collect objectives name the piece")
+	_check(levels[4].objective_text() == "Reach 1,700 points", "large numbers are grouped")
+	_check(levels[0].stars_for(9) == 3 and levels[0].stars_for(5) == 2 and levels[0].stars_for(1) == 1,
+		"stars are earned by finishing with moves to spare")
 	_check(LevelManager.count() == 10 and LevelManager.next_level_id(10) == 0,
 		"LevelManager knows where the prototype ends")
 

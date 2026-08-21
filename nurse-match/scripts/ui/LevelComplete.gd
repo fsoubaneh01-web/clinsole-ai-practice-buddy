@@ -12,6 +12,8 @@ func _ready() -> void:
 	var level_id: int = int(result.get("level_id", 1))
 	var score: int = int(result.get("score", 0))
 	var stars_earned: int = int(result.get("stars", 1))
+	var moves_left: int = int(result.get("moves_left", 0))
+	var level := LevelManager.get_level(level_id)
 
 	var centre := CenterContainer.new()
 	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -42,8 +44,13 @@ func _ready() -> void:
 	column.add_child(UIKit.spacer(4))
 	column.add_child(UIKit.stat_row("SCORE", "%06d" % score, Palette.TEXT))
 	column.add_child(UIKit.stat_row("OBJECTIVE", "CLEARED", Palette.SUCCESS))
-	column.add_child(UIKit.stat_row("MOVES LEFT", str(int(result.get("moves_left", 0)))))
-	column.add_child(UIKit.stat_row("REWARD", "+%d ★" % stars_earned, Palette.ACCENT))
+	# Stars are earned by moves left over, so the card shows the number that
+	# produced them — and what the next star would cost.
+	column.add_child(UIKit.stat_row("MOVES LEFT", str(moves_left), Palette.STAR))
+	if level and stars_earned < 3:
+		var ratio := LevelData.STAR_THREE_MOVES_LEFT if stars_earned == 2 else LevelData.STAR_TWO_MOVES_LEFT
+		column.add_child(UIKit.stat_row("NEXT STAR",
+			"FINISH WITH %d" % int(ceil(ratio * float(level.moves))), Palette.TEXT_DIM))
 	column.add_child(UIKit.spacer(8))
 
 	var next_id := LevelManager.next_level_id(level_id)

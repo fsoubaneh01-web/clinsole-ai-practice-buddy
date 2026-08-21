@@ -25,6 +25,8 @@ const FALL_MAX := 0.34
 const SETTLE_PAUSE := 0.05
 ## A drag has to travel this fraction of a cell before it counts as a swipe.
 const SWIPE_THRESHOLD := 0.32
+## How long the player may sit idle before the board offers a move.
+const HINT_DELAY := 5.0
 
 @export var columns: int = 8
 @export var rows: int = 8
@@ -34,6 +36,12 @@ var interactive := true:
 	set(value):
 		interactive = value
 		queue_redraw()
+
+## Simulation hook. With animations off the whole swap-to-settled sequence runs
+## synchronously, letting the balance tool play thousands of moves in seconds.
+## The rules are untouched either way — only the waiting disappears. Gameplay
+## always leaves this on, and the test suite exercises the animated path.
+var animations_enabled := true
 
 var _grid: Array = [] ## Array[Array[Piece]] indexed [x][y], y=0 at the top.
 var _cell_size: float = 64.0
@@ -45,12 +53,39 @@ var _press_position := Vector2.ZERO
 var _pressed := false
 var _dragged := false
 var _scorer: ScoreManager
+var _idle_time := 0.0
+var _hint: Array[Vector2i] = []
+var _hint_phase := 0.0
 
 
 func _ready() -> void:
 	clip_contents = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	resized.connect(_relayout)
+
+
+## Offers a move when the player stalls. `MatchManager` already guarantees one
+## exists, so the hint can never come up empty on a settled board.
+func _process(delta: float) -> void:
+	if _busy or not interactive or not animations_enabled:
+		_idle_time = 0.0
+		_forget_hint()
+		return
+	_idle_time += delta
+	if _idle_time < HINT_DELAY:
+		return
+	if _hint.is_empty():
+		_hint = MatchManager.find_hint(type_grid(), columns, rows)
+		_hint_phase = 0.0
+	_hint_phase += delta
+	queue_redraw()
+
+
+func _forget_hint() -> void:
+	if _hint.is_empty():
+		return
+	_hint = [] as Array[Vector2i]
+	queue_redraw()
 
 
 ## Called by the game screen before play starts.
@@ -150,6 +185,8 @@ func _pick_safe_type_ignoring(cell: Vector2i) -> int:
 func _create_piece(cell: Vector2i, type: int, special: int = PieceKind.Special.NONE) -> Piece:
 	var piece: Piece = PIECE_SCENE.instantiate()
 	add_child(piece)
+	if not animations_enabled:
+		piece.set_process(false)
 	piece.configure(type, special, _cell_size)
 	piece.grid_pos = cell
 	piece.position = cell_to_position(cell)
@@ -208,6 +245,8 @@ func _on_pointer_down(point: Vector2) -> void:
 	_dragged = false
 	_press_cell = cell
 	_press_position = point
+	_idle_time = 0.0
+	_forget_hint()
 
 
 func _on_pointer_move(point: Vector2) -> void:
@@ -289,12 +328,13 @@ func try_swap(from: Vector2i, to: Vector2i) -> void:
 		# Illegal move — put both pieces back and tell the player so.
 		AudioManager.play(&"invalid")
 		AudioManager.vibrate(18)
-		var direction := Vector2(to - from)
-		a.shake(direction)
-		b.shake(-direction)
-		await get_tree().create_timer(0.18).timeout
-		if not is_inside_tree():
-			return
+		if animations_enabled:
+			var direction := Vector2(to - from)
+			a.shake(direction)
+			b.shake(-direction)
+			await get_tree().create_timer(0.18).timeout
+			if not is_inside_tree():
+				return
 		await _animate_swap(a, b)
 		_place(a, from)
 		_place(b, to)
@@ -316,6 +356,10 @@ func _finish_turn() -> void:
 func _animate_swap(a: Piece, b: Piece) -> void:
 	var a_target := b.position
 	var b_target := a.position
+	if not animations_enabled:
+		a.position = a_target
+		b.position = b_target
+		return
 	a.z_index = 3
 	a.animate_to(a_target, SWAP_TIME)
 	b.animate_to(b_target, SWAP_TIME)
@@ -438,13 +482,17 @@ func _remove_cells(cells: Array[Vector2i]) -> void:
 			continue
 		tally[piece.type] = int(tally.get(piece.type, 0)) + 1
 		_grid[cell.x][cell.y] = null
-		piece.pop()
-		get_tree().create_timer(POP_TIME).timeout.connect(piece.queue_free)
+		if animations_enabled:
+			piece.pop()
+			get_tree().create_timer(POP_TIME).timeout.connect(piece.queue_free)
+		else:
+			piece.free()
 	AudioManager.play(&"match")
 	AudioManager.vibrate(20)
 	for type: int in tally:
 		pieces_cleared.emit(type, int(tally[type]))
-	await get_tree().create_timer(POP_TIME * 0.75).timeout
+	if animations_enabled:
+		await get_tree().create_timer(POP_TIME * 0.75).timeout
 
 
 ## Gravity, then spawn replacements above the board and drop them in.
@@ -460,17 +508,23 @@ func _collapse_and_refill() -> void:
 				_grid[x][y] = null
 				_grid[x][write_y] = piece
 				piece.grid_pos = Vector2i(x, write_y)
-				var distance := write_y - y
-				var duration := minf(FALL_BASE + FALL_PER_CELL * distance, FALL_MAX)
-				piece.fall_to(cell_to_position(Vector2i(x, write_y)), duration)
-				longest = maxf(longest, duration)
+				var landing := cell_to_position(Vector2i(x, write_y))
+				if not animations_enabled:
+					piece.position = landing
+				else:
+					var distance := write_y - y
+					var duration := minf(FALL_BASE + FALL_PER_CELL * distance, FALL_MAX)
+					piece.fall_to(landing, duration)
+					longest = maxf(longest, duration)
 			write_y -= 1
 		var empty_count := write_y + 1
 		for i in empty_count:
 			var target_cell := Vector2i(x, write_y - i)
 			var piece := _create_piece(target_cell, randi() % PieceKind.COUNT)
-			piece.position = cell_to_position(Vector2i(x, -1 - i))
 			_grid[x][target_cell.y] = piece
+			if not animations_enabled:
+				continue
+			piece.position = cell_to_position(Vector2i(x, -1 - i))
 			var duration := minf(FALL_BASE + FALL_PER_CELL * (empty_count + i), FALL_MAX)
 			piece.spawn_in(cell_to_position(target_cell), duration)
 			longest = maxf(longest, duration)
@@ -488,6 +542,8 @@ func _ensure_playable() -> void:
 
 func _award(points: int, cell: Vector2i) -> void:
 	score_awarded.emit(points, cell)
+	if not animations_enabled:
+		return
 	var popup := POPUP_SCENE.instantiate()
 	add_child(popup)
 	popup.position = cell_to_position(cell)
@@ -509,6 +565,20 @@ func _draw() -> void:
 	if in_bounds(_selected):
 		var cell_rect := Rect2(_origin + Vector2(_selected) * _cell_size, Vector2.ONE * _cell_size)
 		draw_rect(cell_rect.grow(-_cell_size * 0.05), Palette.ACCENT, false, maxf(2.0, _cell_size * 0.05))
+	_draw_hint()
+
+
+## A soft pulse around the two pieces worth swapping. Deliberately quieter than
+## the selection ring so it reads as a suggestion, not as the player's own doing.
+func _draw_hint() -> void:
+	if _hint.size() != 2:
+		return
+	var pulse := 0.5 + 0.5 * sin(_hint_phase * 3.4)
+	var tint := Palette.ACCENT
+	tint.a = 0.30 + 0.45 * pulse
+	for cell: Vector2i in _hint:
+		var centre := cell_to_position(cell)
+		draw_arc(centre, _cell_size * (0.40 + 0.05 * pulse), 0.0, TAU, 28, tint, maxf(2.0, _cell_size * 0.045), true)
 
 
 func _board_style() -> StyleBoxFlat:

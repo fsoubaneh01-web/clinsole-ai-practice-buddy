@@ -81,7 +81,7 @@ func objective_met() -> bool:
 
 
 func stars() -> int:
-	return level.stars_for_score(score) if level else 0
+	return level.stars_for(moves_left) if level else 0
 
 
 ## Called once the board has finished settling, so a winning cascade on the last

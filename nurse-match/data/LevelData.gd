@@ -17,9 +17,12 @@ enum Objective {
 @export var target_score: int = 500
 @export var collect_type: PieceKind.Type = PieceKind.Type.BANDAGE
 @export var target_count: int = 15
-## Score thresholds for the 2nd and 3rd star. The 1st star is completion itself.
-@export var star_two_score: int = 800
-@export var star_three_score: int = 1200
+
+## Stars measure efficiency, not score. A level ends the moment its objective is
+## met, so the final score barely clears the target however well the level was
+## played — it cannot separate a good run from a lucky one. Moves left over can.
+const STAR_TWO_MOVES_LEFT := 0.20
+const STAR_THREE_MOVES_LEFT := 0.40
 
 
 ## Human-readable objective for the HUD and the level-complete card.
@@ -40,10 +43,12 @@ func target_label() -> String:
 			return str(target_score)
 
 
-func stars_for_score(score: int) -> int:
-	if score >= star_three_score:
+## 1 star for clearing it, 2 or 3 for clearing it with moves to spare.
+func stars_for(moves_left: int) -> int:
+	var spare := float(moves_left) / float(maxi(moves, 1))
+	if spare >= STAR_THREE_MOVES_LEFT:
 		return 3
-	if score >= star_two_score:
+	if spare >= STAR_TWO_MOVES_LEFT:
 		return 2
 	return 1
 

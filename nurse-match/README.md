@@ -42,6 +42,40 @@ godot --headless --path nurse-match res://tests/TestRunner.tscn
 
 It exits non-zero on failure, so it can gate a build.
 
+### Balance
+
+Level targets are measured, not guessed. As tuned, a random-swap bot clears
+level 1 about 94% of the time and level 10 about 25%, while the stronger bot
+runs from 100% down to 66% — a curve that declines steadily and peaks on the
+last level. `tools/BalanceSim.gd` plays every level
+with two bots — one taking random legal swaps, one taking the swap that clears
+most and chases the level's objective — and reports win rate, score, stars and
+moves used:
+
+```sh
+godot --headless --path nurse-match res://tools/BalanceSim.tscn -- --runs=100
+godot --headless --path nurse-match res://tools/BalanceSim.tscn -- --mode=probe --runs=60
+```
+
+`--mode=probe` answers the prior question: with no win condition, what score and
+how many of each supply are actually reachable in N moves? Targets are then set
+from those percentiles. Re-run it after touching `LevelLibrary` or the scoring
+constants — it flags levels that clear themselves and levels that are walls.
+
+Two caveats when reading the output. The strong bot only looks one move ahead,
+so a thinking human beats it and real win rates run higher than SKILLED shows.
+
+And the numbers are noisier than the sample size suggests: one level read 36%
+then 57% across two identical 100-run passes. Board-generation luck dominates,
+so the spread is far wider than sampling error would predict. Treat anything
+under about fifteen points as noise — tune the shape of the curve, not the
+last few points of any one level.
+
+The board resolves instantly for these tools (`Board.animations_enabled = false`),
+which is what makes thousands of moves take seconds. The rules are identical
+either way; only the waiting disappears, and the test suite covers the animated
+path.
+
 To eyeball every screen without a device (needs a display, or `xvfb-run`):
 
 ```sh
@@ -95,7 +129,13 @@ nurse-match/
 ### Adding levels
 
 Append one line to `LevelLibrary.build()`. The map, save system and HUD all read
-from there.
+from there. Then run the balance simulation and check the new level is neither
+free nor a wall.
+
+Stars measure efficiency, not score: one for clearing the level, two for
+finishing with 20% of the moves unspent, three for 40%. Score cannot grade a run
+here, because a level ends the instant its objective is met — every winning score
+lands just past the target however well it was played.
 
 ## Not built yet
 
