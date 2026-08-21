@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/components/NurseMascot.gd" id="1_nurse"]
+
+[node name="NurseMascot" type="Control"]
+custom_minimum_size = Vector2(280, 280)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 280.0
+offset_bottom = 280.0
+script = ExtResource("1_nurse")

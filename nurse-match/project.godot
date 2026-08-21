@@ -1,0 +1,45 @@
+; Engine configuration file.
+; Nurse Match — original healthcare-themed match-3 prototype.
+
+config_version=5
+
+[application]
+
+config/name="Nurse Match"
+config/description="CARE • MATCH • PLAY — an original healthcare-themed match-3 puzzle game."
+config/version="0.1.0-prototype"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.svg"
+boot_splash/bg_color=Color(0, 0, 0, 1)
+boot_splash/show_image=false
+
+[autoload]
+
+Palette="*res://scripts/autoload/Palette.gd"
+SaveManager="*res://scripts/autoload/SaveManager.gd"
+AudioManager="*res://scripts/autoload/AudioManager.gd"
+LevelManager="*res://scripts/autoload/LevelManager.gd"
+GameStateManager="*res://scripts/autoload/GameStateManager.gd"
+
+[display]
+
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/size/window_width_override=540
+window/size/window_height_override=960
+window/handheld/orientation=1
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_2d=1
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)
