@@ -18,7 +18,9 @@ func _ready() -> void:
 	_test_level_data()
 	_test_save_round_trip()
 	_test_board_generation()
+	await _test_pointer_input()
 	await _test_gameplay_loop()
+	await _test_ui_navigation()
 	_report()
 
 
@@ -184,6 +186,82 @@ func _test_board_generation() -> void:
 	_check(playable, "30 generated boards start with at least one legal move")
 
 
+## Drives real pointer events through the viewport, the way a finger or a mouse
+## does. Everything else here calls `try_swap` directly, so without this nothing
+## covers the path from an actual tap to a swap — and a single project setting
+## (`emulate_touch_from_mouse`) can silently sever it for every button in the
+## game as well as for the board.
+func _test_pointer_input() -> void:
+	print("Pointer input")
+	_check(not bool(ProjectSettings.get_setting("input_devices/pointing/emulate_touch_from_mouse", false)),
+		"mouse input is not rewritten into synthetic touches")
+
+	var board := Board.new()
+	board.size = Vector2(800, 800)
+	board.position = Vector2.ZERO
+	add_child(board)
+	var scorer := ScoreManager.new()
+	add_child(scorer)
+	scorer.start(LevelLibrary.build()[0])
+	board.setup(scorer)
+	board.move_spent.connect(scorer.use_move)
+	await get_tree().process_frame
+
+	# Find a swap the rules accept, then perform it as a swipe.
+	var hint := MatchManager.find_hint(board.type_grid(), board.columns, board.rows)
+	_check(hint.size() == 2, "a legal swap exists to drive")
+	if hint.size() == 2:
+		var before: int = board.type_grid()[hint[1].x][hint[1].y]
+		var from := board.cell_to_position(hint[0])
+		var to := board.cell_to_position(hint[1])
+		_press(board, from)
+		# Past the swipe threshold, toward the neighbour.
+		_move(board, from + (to - from) * 0.75)
+		_release(board, to)
+		await board.settled
+		_check(scorer.moves_left == LevelLibrary.build()[0].moves - 1,
+			"a swipe across two cells spends exactly one move")
+		_check(board.type_grid()[hint[1].x][hint[1].y] != before or scorer.score > 0,
+			"the swipe actually changed the board")
+
+	# A tap, then a tap on a neighbour, is the other supported gesture.
+	var second := MatchManager.find_hint(board.type_grid(), board.columns, board.rows)
+	if second.size() == 2:
+		var moves_before := scorer.moves_left
+		_press(board, board.cell_to_position(second[0]))
+		_release(board, board.cell_to_position(second[0]))
+		_press(board, board.cell_to_position(second[1]))
+		_release(board, board.cell_to_position(second[1]))
+		await board.settled
+		_check(scorer.moves_left == moves_before - 1, "tapping two neighbours spends one move")
+
+	# Still inside the `settled` emission, so the board cannot be freed outright.
+	board.queue_free()
+	scorer.queue_free()
+
+
+func _press(board: Board, at: Vector2) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = true
+	event.position = at
+	board._gui_input(event)
+
+
+func _move(board: Board, at: Vector2) -> void:
+	var event := InputEventMouseMotion.new()
+	event.position = at
+	board._gui_input(event)
+
+
+func _release(board: Board, at: Vector2) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = false
+	event.position = at
+	board._gui_input(event)
+
+
 ## Plays a real board through many moves, checking it never corrupts itself.
 func _test_gameplay_loop() -> void:
 	print("Gameplay loop")
@@ -261,6 +339,75 @@ func _find_dud_swap(board: Board) -> Array[Vector2i]:
 			if not produces:
 				return [a, b] as Array[Vector2i]
 	return [] as Array[Vector2i]
+
+
+## Clicks the real buttons in the real scene tree. Every other test reaches past
+## the interface and calls gameplay directly, so without this nothing proves a
+## screen is reachable — a full-screen host that merely absorbs the mouse pick
+## can make the entire game unclickable while every other check still passes.
+func _test_ui_navigation() -> void:
+	print("UI navigation")
+	GameStateManager.state = GameStateManager.State.MAIN_MENU
+	var main: Control = load("res://scenes/Main.tscn").instantiate()
+	add_child(main)
+	await _settle()
+
+	var route := [
+		{"button": "PLAY", "expect": GameStateManager.State.PLAYING, "why": "PLAY starts a level"},
+		{"button": "II", "expect": GameStateManager.State.PAUSED, "why": "the pause button opens the pause menu"},
+		{"button": "RESUME", "expect": GameStateManager.State.PLAYING, "why": "RESUME returns to the board"},
+		{"button": "II", "expect": GameStateManager.State.PAUSED, "why": "the board is still live after resuming"},
+		{"button": "LEVELS", "expect": GameStateManager.State.LEVEL_SELECT, "why": "LEVELS opens the map from a pause"},
+		{"button": "BACK", "expect": GameStateManager.State.MAIN_MENU, "why": "BACK returns to the menu"},
+		{"button": "HOW TO PLAY", "expect": GameStateManager.State.HOW_TO_PLAY, "why": "HOW TO PLAY opens"},
+		{"button": "BACK", "expect": GameStateManager.State.MAIN_MENU, "why": "BACK leaves how-to-play"},
+		{"button": "SETTINGS", "expect": GameStateManager.State.SETTINGS, "why": "SETTINGS opens"},
+		{"button": "BACK", "expect": GameStateManager.State.MAIN_MENU, "why": "BACK leaves settings"},
+	]
+	for step: Dictionary in route:
+		var clicked := await _click_button(main, String(step["button"]))
+		if not clicked:
+			_check(false, "%s (button '%s' was not reachable)" % [step["why"], step["button"]])
+			continue
+		_check(GameStateManager.state == step["expect"], String(step["why"]))
+
+	main.queue_free()
+	GameStateManager.state = GameStateManager.State.MAIN_MENU
+
+
+## Presses a button by its label, the way a finger does: a real event through the
+## viewport at the button's own on-screen rect.
+func _click_button(root: Node, label: String) -> bool:
+	var button := _find_button(root, label)
+	if button == null:
+		return false
+	var centre := button.get_global_rect().get_center()
+	for pressed: bool in [true, false]:
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = pressed
+		event.position = centre
+		event.global_position = centre
+		get_viewport().push_input(event, true)
+	await _settle()
+	return true
+
+
+func _find_button(node: Node, label: String) -> Button:
+	if node is Button and (node as Button).text == label and (node as Button).is_visible_in_tree():
+		return node
+	for child in node.get_children():
+		var found := _find_button(child, label)
+		if found:
+			return found
+	return null
+
+
+## Lets a screen swap, lay out and finish its entry tween.
+func _settle() -> void:
+	for i in 4:
+		await get_tree().process_frame
+	await get_tree().create_timer(0.35).timeout
 
 
 func _report() -> void:

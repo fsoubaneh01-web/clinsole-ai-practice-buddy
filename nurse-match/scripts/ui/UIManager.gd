@@ -3,6 +3,12 @@ extends Control
 ##
 ## Full screens replace each other; pause and result screens are overlays laid
 ## on top of the running game so the board stays alive underneath.
+##
+## Both hosts, and this node, use MOUSE_FILTER_IGNORE. They are full-screen and
+## empty most of the time, and a host that merely PASSes still consumes the pick
+## and hands the event to its parent rather than to the screen below — which
+## silently makes everything underneath unclickable. IGNORE does not affect
+## their children, so overlays still capture input through their own scrim.
 
 const SCREENS := {
 	GameStateManager.State.MAIN_MENU: "res://scenes/ui/MainMenu.tscn",

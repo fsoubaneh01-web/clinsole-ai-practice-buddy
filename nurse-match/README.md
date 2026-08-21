@@ -30,6 +30,31 @@ adjacent one. Matching three or more clears them; four in a row forges a *Code
 Line* that clears a row or column; five forges a *Code Blue* that wipes every
 piece of one supply when you swap it into place.
 
+## Play it in a browser
+
+Every push to this branch that touches `nurse-match/` runs the test suite and,
+if it passes, publishes a playable build to GitHub Pages —
+`https://<owner>.github.io/clinsole-ai-practice-buddy/`. Open it on a phone to
+playtest; the build is portrait-first and takes touch directly.
+
+**One-time setup:** in the repository, go to *Settings -> Pages -> Build and
+deployment* and set **Source: GitHub Actions**. Until that is set the workflow
+builds and tests fine but the deploy step has nowhere to publish.
+
+The export uses Godot's no-threads web template, so it needs no
+cross-origin-isolation headers and works as plain static hosting. To build one
+locally instead:
+
+```sh
+godot --headless --path nurse-match --import
+godot --headless --path nurse-match --export-release "Web" build/web/index.html
+python3 -m http.server -d nurse-match/build/web 8000
+```
+
+It must be served over HTTP — opening `index.html` from disk will not load the
+wasm. Build output is gitignored; the 35 MB binary is produced by CI, not
+committed.
+
 ## Tests
 
 The match-3 core has a headless suite — rules engine, level data, save

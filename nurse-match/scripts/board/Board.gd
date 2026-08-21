@@ -224,8 +224,11 @@ func piece_at(cell: Vector2i) -> Piece:
 # --- Input --------------------------------------------------------------------
 
 func _gui_input(event: InputEvent) -> void:
-	# Touch is delivered as mouse input (Godot's emulate-mouse-from-touch), so a
-	# single pointer path serves phones and desktop testing alike.
+	# Touch arrives as mouse input via Godot's emulate-mouse-from-touch, which is
+	# on by default, so one pointer path serves phones and desktop testing alike.
+	# The inverse setting (emulate_touch_from_mouse) must stay OFF: it rewrites
+	# mouse events into synthetic touches that Godot never converts back, which
+	# silently kills every Button and this handler with them.
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			_on_pointer_down(event.position)

@@ -1,0 +1,95 @@
+# Tests Nurse Match and publishes a playable browser build to GitHub Pages.
+#
+# Scoped deliberately: it only runs for changes under `nurse-match/`, on the
+# prototype branch, so it never touches the ClinSole app or its Lovable sync.
+#
+# The build uses Godot's "no threads" web template, which is why it needs no
+# cross-origin-isolation headers and can be served by Pages as plain static files.
+#
+# One-time setup: Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
+name: Nurse Match
+
+on:
+  push:
+    branches: ["claude/nurse-match-godot-prototype-pb3wjr"]
+    paths:
+      - "nurse-match/**"
+      - ".github/workflows/nurse-match.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: nurse-match-pages
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.3-stable"
+
+jobs:
+  build:
+    name: Test and export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The engine and its export templates are ~1.1 GB together, so they are
+      # cached against the version rather than fetched on every run.
+      - name: Cache Godot and export templates
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot-bin
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}
+
+      - name: Install Godot and export templates
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}"
+          mkdir -p ~/godot-bin /tmp/tpl ~/.local/share/godot/export_templates
+          curl -fsSL -o /tmp/godot.zip "${base}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot-bin
+          mv ~/godot-bin/"Godot_v${GODOT_VERSION}_linux.x86_64" ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+          curl -fsSL -o /tmp/templates.tpz "${base}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -q /tmp/templates.tpz -d /tmp/tpl
+          mv /tmp/tpl/templates ~/.local/share/godot/export_templates/"${GODOT_VERSION/-/.}"
+
+      - name: Put Godot on PATH
+        run: echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+
+      # A fresh checkout has no .godot/ cache, so resources are imported first.
+      - name: Import resources
+        run: godot --headless --path nurse-match --import
+
+      # Gates the deploy: the suite exits non-zero if anything fails.
+      - name: Run the test suite
+        run: godot --headless --path nurse-match res://tests/TestRunner.tscn
+
+      - name: Export the web build
+        run: |
+          mkdir -p nurse-match/build/web
+          godot --headless --path nurse-match --export-release "Web" build/web/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: nurse-match/build/web
+
+  deploy:
+    name: Publish to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4
