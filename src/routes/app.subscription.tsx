@@ -3,6 +3,7 @@ import { AppShell, Container } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
 import { Check, Crown } from "lucide-react";
+import { buildLabel } from "@/lib/build-info";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/subscription")({ component: Subscription });
@@ -78,6 +79,9 @@ function Subscription() {
             >Sign out</Button>
           </div>
         </div>
+        <p className="mt-8 text-center text-[11px] text-muted-foreground">
+          App version {buildLabel()}
+        </p>
       </Container>
     </AppShell>
   );
