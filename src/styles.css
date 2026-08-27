@@ -386,31 +386,31 @@
    the obsidian base, with the lightest corner parked top-right behind the hero
    visual rather than under any body copy.
 
-   Contrast, sampled from rendered pixels rather than from the token values,
-   because the ground is a gradient:
-     ink        #FCFCFC  20.1:1
-     ink-soft   #A3A3B3   7.0:1
-     signal     #6199F6   7.1–7.3:1   ← links, labels, icons
-     ink-muted  #757580   4.53–4.58:1 ← passes AA, but only just: it clears
-                                        4.5 because the gradient's lightest
-                                        corner is parked behind the hero
-                                        visual. Moving that corner under body
-                                        copy would drop it below AA.
-     halo       #4F4F80   2.6:1       ← card outlines only, never text
+   Contrast, measured per text node against the pixel actually behind it —
+   the ground is a gradient, so token-vs-token arithmetic is not enough.
+   All 102 text nodes on the page, worst case first:
+     ink-muted  #82828E  4.70–5.49:1  (20 nodes)
+     signal     #6199F6  6.21–7.31:1  (16 nodes)  ← links, labels, icons
+     ink-soft   #A3A3B3  6.90–8.39:1  (23 nodes)
+     ink        #FCFCFC 17.51–20.33:1 (41 nodes)
+     on pill    #0A0A13 19.21:1       (2 nodes)
+   Every node clears AA. ink-muted was #757580 and failed on 13 of them,
+   bottoming out at 3.92:1 over the gradient's lighter corner.
+     halo       #6A6AA6  ← frame outlines only, never text
    --------------------------------------------------------------------------- */
 
 :root {
   --canvas-bg: #0a0a13;
   --canvas-nav: #040407;
-  --canvas-raised: #08080c;
-  --canvas-elevated: #08080c;
+  --canvas-raised: #16161f;
+  --canvas-elevated: #1a1a24;
   --canvas-ink: #fcfcfc;
-  --canvas-ink-muted: #757580;
+  --canvas-ink-muted: #82828e;
   --canvas-ink-soft: #a3a3b3;
   --canvas-signal: #6199f6;
   /* One chromatic accent: what used to be two tones is now a single blue. */
   --canvas-signal-deep: #6199f6;
-  --canvas-halo: #4f4f80;
+  --canvas-halo: #6a6aa6;
   --canvas-hairline: #2a2a32;
   --canvas-depth:
     radial-gradient(115% 85% at 88% 6%, rgb(12 29 50 / 0.9) 0%, transparent 62%),
@@ -496,6 +496,7 @@
   .canvas-frame {
     border-radius: 10px;
     border: 1px solid var(--canvas-halo);
+    background-color: var(--canvas-raised);
   }
 
   /* The one filled control on screen. Full pill, no shadow — white on
