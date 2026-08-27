@@ -158,3 +158,218 @@
 @utility shadow-soft {
   box-shadow: var(--shadow-soft);
 }
+
+/* ---------------------------------------------------------------------------
+   Motion system
+   ---------------------------------------------------------------------------
+   One vocabulary of easing and duration for the whole marketing surface, so
+   every hover, reveal and crossfade feels like it came from the same hand.
+   Everything here degrades to "no movement" under prefers-reduced-motion —
+   see the reduce block at the bottom of this section.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Long, decelerating ease. Nothing overshoots or bounces on purpose. */
+  --ease-glide: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-soft: cubic-bezier(0.33, 0, 0.2, 1);
+
+  --dur-hover: 380ms;
+  --dur-reveal: 760ms;
+
+  /* Hero imagery: each frame is held, then dissolves into the next. */
+  --stage-hold: 8000ms;
+  --stage-fade: 2400ms;
+}
+
+@keyframes clin-drift-a {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to   { transform: scale(1.13) translate3d(-1.8%, -1.4%, 0); }
+}
+@keyframes clin-drift-b {
+  from { transform: scale(1.12) translate3d(1.4%, -0.8%, 0); }
+  to   { transform: scale(1.03) translate3d(-0.6%, 0.9%, 0); }
+}
+@keyframes clin-drift-c {
+  from { transform: scale(1.05) translate3d(-1.6%, 0.9%, 0); }
+  to   { transform: scale(1.12) translate3d(1.5%, -0.7%, 0); }
+}
+@keyframes clin-drift-d {
+  from { transform: scale(1.11) translate3d(0.4%, 1.4%, 0); }
+  to   { transform: scale(1.04) translate3d(-1.2%, -1.1%, 0); }
+}
+
+/* Wide, lateral drift for full-bleed section backgrounds. */
+@keyframes clin-pan {
+  from { transform: scale(1.12) translate3d(-1.6%, 0, 0); }
+  to   { transform: scale(1.12) translate3d(1.6%, 0, 0); }
+}
+
+/* Availability halo. Deliberately shallow — a breath, not a blink. */
+@keyframes clin-halo {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%      { opacity: 0.9;  transform: scale(1.6); }
+}
+
+@layer components {
+  /* --- Scroll reveal ----------------------------------------------------- */
+  .clin-reveal,
+  .clin-reveal-media {
+    transition-property: opacity, transform, filter;
+    transition-duration: var(--dur-reveal);
+    transition-timing-function: var(--ease-glide);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+  .clin-reveal {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  /* Media reveals from a touch of scale and blur, so images resolve into
+     focus rather than simply appearing. */
+  .clin-reveal-media {
+    opacity: 0;
+    transform: scale(1.03);
+    filter: blur(10px);
+  }
+  .clin-reveal[data-revealed="true"],
+  .clin-reveal-media[data-revealed="true"] {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    will-change: auto;
+  }
+
+  /* --- Hover cards ------------------------------------------------------- */
+  .clin-card {
+    transition-property: transform, box-shadow, border-color;
+    transition-duration: var(--dur-hover);
+    transition-timing-function: var(--ease-glide);
+  }
+  .clin-card:hover,
+  .clin-card:focus-within {
+    transform: translate3d(0, -3px, 0);
+  }
+
+  .clin-media {
+    overflow: hidden;
+  }
+  .clin-media > * {
+    transition: transform 440ms var(--ease-glide);
+    transform-origin: 50% 50%;
+    will-change: transform;
+  }
+  .clin-card:hover .clin-media > *,
+  .clin-card:focus-within .clin-media > * {
+    transform: scale(1.045) translate3d(-0.9%, -0.9%, 0);
+  }
+
+  .clin-nudge {
+    transition: transform var(--dur-hover) var(--ease-glide);
+  }
+  .clin-card:hover .clin-nudge,
+  .clin-card:focus-within .clin-nudge {
+    transform: translate3d(4px, 0, 0);
+  }
+
+  /* --- Crossfading image stage ------------------------------------------- */
+  .clin-stage {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .clin-stage__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity var(--stage-fade) var(--ease-soft);
+  }
+  .clin-stage__slide[data-active="true"] {
+    opacity: 1;
+  }
+  /* Bleeds past the frame so the drift never exposes an edge. */
+  .clin-stage__drift {
+    position: absolute;
+    inset: -7%;
+    animation-duration: var(--drift-duration, 26s);
+    animation-timing-function: var(--ease-soft);
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    /* Paused rather than removed, so a frame leaving the stage holds its
+       position instead of snapping back mid-crossfade. */
+    animation-play-state: paused;
+    will-change: transform;
+  }
+  .clin-stage[data-motion="on"] .clin-stage__slide[data-active="true"] .clin-stage__drift {
+    animation-play-state: running;
+  }
+  .clin-stage__drift[data-drift="a"] { animation-name: clin-drift-a; }
+  .clin-stage__drift[data-drift="b"] { animation-name: clin-drift-b; }
+  .clin-stage__drift[data-drift="c"] { animation-name: clin-drift-c; }
+  .clin-stage__drift[data-drift="d"] { animation-name: clin-drift-d; }
+
+  /* --- Slow lateral background ------------------------------------------- */
+  .clin-pan {
+    animation: clin-pan 34s var(--ease-soft) infinite alternate;
+    will-change: transform;
+  }
+
+  /* --- Availability indicator -------------------------------------------- */
+  .clin-halo {
+    animation: clin-halo 3.8s var(--ease-soft) infinite;
+  }
+
+  /* --- Horizontal showcase ----------------------------------------------- */
+  .clin-track {
+    display: flex;
+    transition: transform 900ms var(--ease-glide);
+    will-change: transform;
+  }
+  .clin-dot {
+    transition:
+      width var(--dur-hover) var(--ease-glide),
+      background-color var(--dur-hover) var(--ease-glide);
+  }
+}
+
+/* No script, no reveal observer — never leave content stranded at opacity 0. */
+@media (scripting: none) {
+  .clin-reveal,
+  .clin-reveal-media {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion
+   Movement is the decoration, never the message: with the preference set the
+   page keeps its full layout and content and simply stops moving.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .clin-reveal,
+  .clin-reveal-media {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .clin-card,
+  .clin-media > *,
+  .clin-nudge,
+  .clin-track,
+  .clin-stage__slide {
+    transition: none !important;
+  }
+  .clin-card:hover,
+  .clin-card:focus-within,
+  .clin-card:hover .clin-media > *,
+  .clin-card:focus-within .clin-media > * {
+    transform: none !important;
+  }
+  .clin-stage__drift,
+  .clin-pan,
+  .clin-halo {
+    animation: none !important;
+  }
+}
