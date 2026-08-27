@@ -126,8 +126,8 @@ function FieldSvg({ field, id, delaySeconds }: { field: Field; id: string; delay
 
       <g mask={`url(#${id}-mask)`}>
         <g
-          className="ivory-breathe"
-          stroke="var(--ivory-gold)"
+          className="canvas-breathe"
+          stroke="var(--canvas-signal)"
           strokeWidth="1.1"
           style={{ animationDelay: `${delaySeconds}s` }}
         >
@@ -155,10 +155,10 @@ function FieldSvg({ field, id, delaySeconds }: { field: Field; id: string; delay
                 cy={node.y}
                 r={node.r + 7}
                 fill="none"
-                stroke="var(--ivory-gold)"
+                stroke="var(--canvas-signal)"
                 strokeOpacity="0.5"
               />
-              <circle cx={node.x} cy={node.y} r={node.r} fill="var(--ivory-bronze)" />
+              <circle cx={node.x} cy={node.y} r={node.r} fill="var(--canvas-signal-deep)" />
             </g>
           ) : (
             <circle
@@ -166,7 +166,7 @@ function FieldSvg({ field, id, delaySeconds }: { field: Field; id: string; delay
               cx={node.x}
               cy={node.y}
               r={node.r}
-              fill="var(--ivory-gold)"
+              fill="var(--canvas-signal)"
               fillOpacity="0.9"
             />
           ),

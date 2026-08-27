@@ -118,7 +118,7 @@ export function FeaturedShowcase({ items }: { items: ShowcaseItem[] }) {
                       {item.status}
                     </span>
                   </div>
-                  <h3 className="ivory-display-sm mt-5 text-[34px] lg:text-[44px]">{item.role}</h3>
+                  <h3 className="canvas-display-sm mt-5 text-[34px] lg:text-[44px]">{item.role}</h3>
                   <div className="mt-2 text-[15px] font-light text-ink-soft">{item.setting}</div>
                   <p className="mt-6 max-w-xl text-[17px] leading-relaxed font-extralight text-ink-muted">
                     {item.summary}
@@ -129,7 +129,7 @@ export function FeaturedShowcase({ items }: { items: ShowcaseItem[] }) {
                         key={highlight}
                         className="flex items-start gap-3 border-t border-rule pt-3 text-[15px] font-light text-ink"
                       >
-                        <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-gold" />
+                        <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-signal" />
                         {highlight}
                       </li>
                     ))}
@@ -158,7 +158,7 @@ export function FeaturedShowcase({ items }: { items: ShowcaseItem[] }) {
               aria-current={i === index}
               className={cn(
                 "clin-dot h-2 rounded-full",
-                i === index ? "w-8 bg-gold" : "w-2 bg-gold/30 hover:bg-gold/60",
+                i === index ? "w-8 bg-signal" : "w-2 bg-signal/30 hover:bg-signal/60",
               )}
             />
           ))}
@@ -191,7 +191,7 @@ function ShowcaseButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="grid h-10 w-10 place-items-center rounded-full border border-rule text-bronze transition-[color,border-color,transform] duration-300 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-0.5 hover:border-gold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      className="grid h-10 w-10 place-items-center rounded-full border border-rule text-signal-deep transition-[color,border-color,transform] duration-300 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-0.5 hover:border-signal focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:translate-y-0"
     >
       {children}
     </button>

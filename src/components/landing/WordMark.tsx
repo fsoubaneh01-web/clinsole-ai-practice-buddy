@@ -9,11 +9,11 @@ import { cn } from "@/lib/utils";
 export function WordMark({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      <span className="grid h-8 w-8 place-items-center rounded-full bg-gold text-ink">
+      <span className="grid h-8 w-8 place-items-center rounded-full bg-signal text-ink">
         <Footprints className="h-4 w-4" />
       </span>
       <span className="text-[17px] tracking-[-0.02em] text-ink">
-        ClinSole <span className="text-bronze">AI</span>
+        ClinSole <span className="text-signal-deep">AI</span>
       </span>
     </div>
   );

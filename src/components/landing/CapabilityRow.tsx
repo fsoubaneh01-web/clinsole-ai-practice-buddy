@@ -15,12 +15,12 @@ export function CapabilityRow({
   description: string;
 }) {
   return (
-    <article className="ivory-row border-t border-rule pt-6">
+    <article className="canvas-row border-t border-rule pt-6">
       <div className="flex items-start justify-between gap-4">
         <span className="text-[11px] tracking-[0.18em] text-ink-soft tabular-nums">
           {String(index).padStart(2, "0")}
         </span>
-        <ArrowUpRight className="clin-nudge h-4 w-4 text-gold" aria-hidden="true" />
+        <ArrowUpRight className="clin-nudge h-4 w-4 text-signal" aria-hidden="true" />
       </div>
       <h3 className="mt-6 text-[22px] font-normal tracking-[-0.02em] text-ink">{title}</h3>
       <p className="mt-2.5 text-[15px] leading-relaxed font-extralight text-ink-muted">

@@ -43,8 +43,8 @@ export function ProfileCard({ profile }: { profile: Profile }) {
 export function StatusDot() {
   return (
     <span className="relative grid h-1.5 w-1.5 place-items-center">
-      <span className="clin-halo absolute h-1.5 w-1.5 rounded-full bg-gold/50" />
-      <span className="relative h-1.5 w-1.5 rounded-full bg-gold" />
+      <span className="clin-halo absolute h-1.5 w-1.5 rounded-full bg-signal/50" />
+      <span className="relative h-1.5 w-1.5 rounded-full bg-signal" />
     </span>
   );
 }

@@ -118,7 +118,7 @@ const PREMIUM_PLAN = [
 
 function Landing() {
   return (
-    <div className="theme-ivory min-h-screen bg-background">
+    <div className="theme-canvas min-h-screen bg-background">
       {/* Nav — one hairline, no fill. The page's single filled control lives
           in the hero, not up here. */}
       <header className="sticky top-0 z-30 border-b border-rule bg-background/85 backdrop-blur">
@@ -133,7 +133,7 @@ function Landing() {
             <Link to="/login" className="text-[15px] font-light text-ink-muted transition-colors duration-300 hover:text-ink">
               Sign in
             </Link>
-            <Link to="/signup" className="ivory-link">Start free</Link>
+            <Link to="/signup" className="canvas-link">Start free</Link>
           </div>
         </div>
       </header>
@@ -143,24 +143,24 @@ function Landing() {
         <div className="grid items-center gap-16 py-[64px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-20 lg:py-[104px]">
           <div>
             <Reveal>
-              <div className="ivory-eyebrow">Practice assistant for foot care nurses</div>
+              <div className="canvas-eyebrow">Practice assistant for foot care nurses</div>
             </Reveal>
             <Reveal delay={90}>
-              <h1 className="ivory-display mt-8 text-[clamp(48px,7.2vw,113px)]">
+              <h1 className="canvas-display mt-8 text-[clamp(48px,7.2vw,113px)]">
                 Your whole practice, quietly handled.
               </h1>
             </Reveal>
             <Reveal delay={170}>
-              <p className="ivory-body mt-8 max-w-xl">
+              <p className="canvas-body mt-8 max-w-xl">
                 ClinSole AI is the practice assistant for independent foot care nurses. Document visits with AI SOAP notes, keep patient records in order, schedule follow-ups, and track what you earn — in one place.
               </p>
             </Reveal>
             <Reveal delay={250}>
               <div className="mt-10 flex flex-wrap items-center gap-8">
-                <Link to="/signup" className="ivory-pill">
+                <Link to="/signup" className="canvas-pill">
                   Start free <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link to="/login" className="ivory-link">I have an account</Link>
+                <Link to="/login" className="canvas-link">I have an account</Link>
               </div>
               <div className="mt-8 text-[13px] font-light text-ink-soft">
                 No credit card required · Free plan available forever
@@ -186,15 +186,15 @@ function Landing() {
           </Reveal>
 
           <Reveal>
-            <div className="ivory-eyebrow">Everything you need</div>
-            <h2 className="ivory-display mt-7 text-[clamp(38px,4.4vw,68px)]">
+            <div className="canvas-eyebrow">Everything you need</div>
+            <h2 className="canvas-display mt-7 text-[clamp(38px,4.4vw,68px)]">
               Built specifically for foot care nurses.
             </h2>
-            <p className="ivory-body mt-7 max-w-xl">
+            <p className="canvas-body mt-7 max-w-xl">
               Not another generic EMR. ClinSole AI is designed around how mobile foot care actually works — from diabetic assessments to recurring nail care visits.
             </p>
             <div className="mt-9">
-              <Link to="/signup" className="ivory-link">
+              <Link to="/signup" className="canvas-link">
                 See what's included <ArrowUpRight className="h-4 w-4" />
               </Link>
             </div>
@@ -218,11 +218,11 @@ function Landing() {
       <section id="practices" className={`${SHELL} ${SECTION}`}>
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
           <Reveal>
-            <div className="ivory-eyebrow">Who it's for</div>
-            <h2 className="ivory-display mt-7 text-[clamp(38px,4.4vw,68px)]">
+            <div className="canvas-eyebrow">Who it's for</div>
+            <h2 className="canvas-display mt-7 text-[clamp(38px,4.4vw,68px)]">
               Three shapes of practice. One assistant.
             </h2>
-            <p className="ivory-body mt-7 max-w-xl">
+            <p className="canvas-body mt-7 max-w-xl">
               Illustrative profiles, not real practitioners — but the working days behind them are the ones ClinSole AI was designed around.
             </p>
           </Reveal>
@@ -248,8 +248,8 @@ function Landing() {
       {/* Showcase */}
       <section className={`${SHELL} pb-[72px] lg:pb-[120px]`}>
         <Reveal className="max-w-2xl">
-          <div className="ivory-eyebrow">A closer look</div>
-          <h2 className="ivory-display mt-7 text-[clamp(38px,4.4vw,68px)]">A day in each practice.</h2>
+          <div className="canvas-eyebrow">A closer look</div>
+          <h2 className="canvas-display mt-7 text-[clamp(38px,4.4vw,68px)]">A day in each practice.</h2>
         </Reveal>
         <Reveal className="mt-14" delay={80}>
           <FeaturedShowcase items={SHOWCASE} />
@@ -259,46 +259,46 @@ function Landing() {
       {/* Pricing — two columns, a hairline between them, one filled button. */}
       <section id="pricing" className={`${SHELL} ${SECTION}`}>
         <Reveal className="max-w-2xl">
-          <div className="ivory-eyebrow">Simple pricing</div>
-          <h2 className="ivory-display mt-7 text-[clamp(38px,4.4vw,68px)]">
+          <div className="canvas-eyebrow">Simple pricing</div>
+          <h2 className="canvas-display mt-7 text-[clamp(38px,4.4vw,68px)]">
             Start free. Upgrade when you're ready.
           </h2>
         </Reveal>
 
         <div className="mt-16 grid gap-14 md:grid-cols-2 md:gap-0">
           <Reveal delay={80} className="border-t border-rule pt-10 md:pr-16">
-            <div className="ivory-eyebrow">Free</div>
-            <div className="ivory-display mt-6 text-[56px]">$0</div>
+            <div className="canvas-eyebrow">Free</div>
+            <div className="canvas-display mt-6 text-[56px]">$0</div>
             <div className="mt-2 text-[14px] font-light text-ink-soft">Forever. Perfect for getting started.</div>
             <ul className="mt-9 space-y-3.5">
               {FREE_PLAN.map((feature) => (
                 <li key={feature} className="flex items-start gap-3 text-[15px] font-light text-ink">
-                  <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-gold" />
+                  <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-signal" />
                   {feature}
                 </li>
               ))}
             </ul>
             <div className="mt-10">
-              <Link to="/signup" className="ivory-link">Get started free</Link>
+              <Link to="/signup" className="canvas-link">Get started free</Link>
             </div>
           </Reveal>
 
           <Reveal delay={170} className="border-t border-rule pt-10 md:border-l md:pl-16">
-            <div className="ivory-eyebrow">Premium</div>
-            <div className="ivory-display mt-6 text-[56px]">
+            <div className="canvas-eyebrow">Premium</div>
+            <div className="canvas-display mt-6 text-[56px]">
               $29<span className="text-[18px] font-light text-ink-soft"> /month</span>
             </div>
             <div className="mt-2 text-[14px] font-light text-ink-soft">For a serious mobile practice.</div>
             <ul className="mt-9 space-y-3.5">
               {PREMIUM_PLAN.map((feature) => (
                 <li key={feature} className="flex items-start gap-3 text-[15px] font-light text-ink">
-                  <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-gold" />
+                  <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-signal" />
                   {feature}
                 </li>
               ))}
             </ul>
             <div className="mt-10">
-              <Link to="/signup" className="ivory-pill">
+              <Link to="/signup" className="canvas-pill">
                 Start with Premium <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -309,24 +309,24 @@ function Landing() {
       {/* Support — no panel, no fill behind it. Just a rule, the question, and
           one place to press. */}
       <section className={`${SHELL} pb-[72px] lg:pb-[120px]`}>
-        <div className="ivory-rule pt-16 lg:pt-24">
+        <div className="canvas-rule pt-16 lg:pt-24">
           <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-end lg:gap-20">
             <Reveal>
               <div className="flex items-center gap-2">
                 <StatusDot />
-                <span className="ivory-eyebrow">Support</span>
+                <span className="canvas-eyebrow">Support</span>
               </div>
-              <h2 className="ivory-display mt-7 text-[clamp(38px,4.8vw,76px)]">Need help now?</h2>
+              <h2 className="canvas-display mt-7 text-[clamp(38px,4.8vw,76px)]">Need help now?</h2>
             </Reveal>
             <Reveal delay={110}>
-              <p className="ivory-body max-w-md">
+              <p className="canvas-body max-w-md">
                 Import your patient list, set up your first week of visits, or get a note reviewed. A real person answers, and setup help is included on every plan — including the free one.
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-8">
-                <Link to="/signup" className="ivory-link">
+                <Link to="/signup" className="canvas-link">
                   Get set up free <ArrowUpRight className="h-4 w-4" />
                 </Link>
-                <a href="mailto:support@clinsole.ai" className="ivory-link">Talk to support</a>
+                <a href="mailto:support@clinsole.ai" className="canvas-link">Talk to support</a>
               </div>
             </Reveal>
           </div>
