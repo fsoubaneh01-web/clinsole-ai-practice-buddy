@@ -1,4 +1,4 @@
-import type { SceneArtKey } from "@/components/landing/SceneArt";
+import type { SceneArtKey, SceneTone } from "@/components/landing/SceneArt";
 
 export type Scene = {
   id: string;
@@ -11,60 +11,52 @@ export type Scene = {
    */
   src?: string;
   art: SceneArtKey;
+  /** Which palette the built-in artwork is drawn in. Defaults to "cool". */
+  tone?: SceneTone;
 };
 
 /**
- * The hero sequence, crossfaded in order — arrive, assess, document, plan.
- * Each frame is held eight seconds and dissolves over a further 2.4.
+ * Section visuals, drawn in the warm palette so they read as paper on the
+ * ivory ground rather than as dark panels dropped onto it.
  */
-export const HERO_SCENES: Scene[] = [
-  {
-    id: "hero-arrival",
-    alt: "A foot care nurse arriving for a home visit in late-afternoon light",
-    art: "home-visit",
-  },
-  {
-    id: "hero-assessment",
-    alt: "A diabetic foot assessment in progress",
-    art: "assessment",
-  },
-  {
-    id: "hero-notes",
-    alt: "Visit notes written up on a tablet straight after the appointment",
-    art: "documentation",
-  },
-  {
-    id: "hero-schedule",
-    alt: "The week's visits laid out in the schedule",
-    art: "care-plan",
-  },
-];
-
-export const SERVICE_SCENES = {
-  soap: { id: "svc-soap", alt: "A visit written up as a clinical note", art: "documentation" },
-  patients: { id: "svc-patients", alt: "A patient record open mid-assessment", art: "assessment" },
-  scheduling: { id: "svc-scheduling", alt: "A week of visits laid out", art: "care-plan" },
-  income: { id: "svc-income", alt: "A month of visits and payments totalled up", art: "support" },
-  assistant: {
-    id: "svc-assistant",
-    alt: "Follow-up wording drafted between visits",
-    art: "home-visit",
-  },
-  privacy: { id: "svc-privacy", alt: "Patient data held securely", art: "documentation" },
-} satisfies Record<string, Scene>;
+export const SECTION_SCENES = {
+  capabilities: [
+    {
+      id: "sec-notes",
+      alt: "A visit written up as a clinical note",
+      art: "documentation",
+      tone: "warm",
+    },
+    {
+      id: "sec-assessment",
+      alt: "A diabetic foot assessment in progress",
+      art: "assessment",
+      tone: "warm",
+    },
+  ],
+  practices: [
+    { id: "sec-round", alt: "A round of home visits under way", art: "home-visit", tone: "warm" },
+    { id: "sec-week", alt: "The week's visits laid out", art: "care-plan", tone: "warm" },
+  ],
+} satisfies Record<string, Scene[]>;
 
 export const PROFILE_SCENES = {
-  mobile: { id: "pro-mobile", alt: "A nurse on the road between home visits", art: "home-visit" },
-  clinic: { id: "pro-clinic", alt: "A treatment chair in a foot care clinic", art: "assessment" },
+  mobile: {
+    id: "pro-mobile",
+    alt: "A nurse on the road between home visits",
+    art: "home-visit",
+    tone: "warm",
+  },
+  clinic: {
+    id: "pro-clinic",
+    alt: "A treatment chair in a foot care clinic",
+    art: "assessment",
+    tone: "warm",
+  },
   residences: {
     id: "pro-residences",
     alt: "A round of visits inside a care residence",
     art: "care-plan",
+    tone: "warm",
   },
 } satisfies Record<string, Scene>;
-
-export const SUPPORT_SCENE: Scene = {
-  id: "support",
-  alt: "A practice light still on at the end of the day",
-  art: "support",
-};

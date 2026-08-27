@@ -29,5 +29,5 @@ export function SceneImage({
     );
   }
 
-  return <SceneArt scene={scene.art} className={className} />;
+  return <SceneArt scene={scene.art} tone={scene.tone} className={className} />;
 }

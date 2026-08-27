@@ -373,3 +373,192 @@
     animation: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Ivory & gold — landing surface
+   ---------------------------------------------------------------------------
+   A warm, paper-like theme for the marketing page only. It is scoped to
+   `.theme-ivory` rather than :root so the signed-in app keeps its own palette:
+   the shadcn tokens are redefined inside that one class, and every Tailwind
+   colour utility on the page picks the new values up automatically.
+
+   Contrast, measured against the #F5F0E6 ground:
+     ink        #1A1A1A  17.4:1
+     ink-muted  #6B6B6B   4.6:1
+     ink-soft   #7A7069   4.3:1
+     bronze     #8A5F2B   4.9:1   ← link + label text
+     gold       #B8935A   2.5:1   ← fills, marks and rules only, never text
+   Gold is a surface colour here. Anything that has to be read uses bronze.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --ivory-bg: #f5f0e6;
+  --ivory-raised: #faf7f0;
+  --ivory-sand: #e8dfcd;
+  --ivory-ink: #1a1a1a;
+  --ivory-ink-muted: #6b6b6b;
+  --ivory-ink-soft: #7a7069;
+  --ivory-gold: #b8935a;
+  --ivory-bronze: #8a5f2b;
+  --ivory-hairline: rgb(184 147 90 / 0.28);
+}
+
+@theme inline {
+  --color-gold: var(--ivory-gold);
+  --color-bronze: var(--ivory-bronze);
+  --color-ink: var(--ivory-ink);
+  --color-ink-muted: var(--ivory-ink-muted);
+  --color-ink-soft: var(--ivory-ink-soft);
+  --color-sand: var(--ivory-sand);
+  --color-rule: var(--ivory-hairline);
+}
+
+.theme-ivory {
+  --background: var(--ivory-bg);
+  --foreground: var(--ivory-ink);
+  --surface: var(--ivory-raised);
+  --surface-muted: var(--ivory-sand);
+  --card: var(--ivory-raised);
+  --card-foreground: var(--ivory-ink);
+  --popover: var(--ivory-raised);
+  --popover-foreground: var(--ivory-ink);
+  --primary: var(--ivory-gold);
+  --primary-foreground: var(--ivory-ink);
+  --secondary: var(--ivory-sand);
+  --secondary-foreground: var(--ivory-ink);
+  --muted: var(--ivory-sand);
+  --muted-foreground: var(--ivory-ink-muted);
+  --accent: #efe6d6;
+  --accent-foreground: var(--ivory-bronze);
+  --border: var(--ivory-hairline);
+  --input: var(--ivory-hairline);
+  --ring: var(--ivory-bronze);
+}
+
+@layer components {
+  /* Display type is never bold: the size does the work, and the negative
+     tracking is what keeps it from reading as loose at 100px. */
+  .ivory-display {
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    line-height: 1.02;
+    color: var(--ivory-ink);
+  }
+  .ivory-display-sm {
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--ivory-ink);
+  }
+  .ivory-body {
+    font-weight: 200;
+    font-size: 18px;
+    line-height: 1.65;
+    color: var(--ivory-ink-muted);
+  }
+  .ivory-eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ivory-bronze);
+  }
+  .ivory-rule {
+    border-top: 1px solid var(--ivory-hairline);
+  }
+
+  /* The one filled control on screen. 22.5px radius, no shadow — the fill is
+     the whole emphasis. */
+  .ivory-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 22.5px;
+    padding: 0.9rem 1.9rem;
+    font-size: 15px;
+    font-weight: 500;
+    background-color: var(--ivory-gold);
+    color: var(--ivory-ink);
+    transition:
+      background-color var(--dur-hover) var(--ease-glide),
+      transform var(--dur-hover) var(--ease-glide);
+  }
+  .ivory-pill:hover {
+    background-color: #a8834b;
+    transform: translate3d(0, -2px, 0);
+  }
+
+  /* Quiet counterpart: bronze label over a gold hairline that fills in on
+     hover. Never competes with the pill. */
+  .ivory-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--ivory-bronze);
+    padding-bottom: 2px;
+    background-image: linear-gradient(var(--ivory-gold), var(--ivory-gold));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 1px;
+    transition: background-size var(--dur-hover) var(--ease-glide);
+  }
+  .ivory-link:hover,
+  .ivory-link:focus-visible {
+    background-size: 100% 2px;
+  }
+
+  /* Rows replace cards: a hairline for separation, and the whole row shifts a
+     couple of pixels toward its arrow on hover. */
+  .ivory-row {
+    transition:
+      transform var(--dur-hover) var(--ease-glide),
+      border-color var(--dur-hover) var(--ease-glide);
+  }
+  .ivory-row:hover,
+  .ivory-row:focus-within {
+    transform: translate3d(3px, 0, 0);
+    border-color: rgb(184 147 90 / 0.55);
+  }
+  /* The shared arrow nudge, re-pointed for a row's diagonal arrow. */
+  .ivory-row:hover .clin-nudge,
+  .ivory-row:focus-within .clin-nudge {
+    transform: translate3d(3px, -3px, 0);
+  }
+}
+
+/* Ambient motion for the hero field: a slow breathe on the connecting lines,
+   well under the threshold where it would read as blinking. */
+@keyframes ivory-breathe {
+  0%,
+  100% {
+    opacity: 0.34;
+  }
+  50% {
+    opacity: 0.62;
+  }
+}
+
+@layer components {
+  .ivory-breathe {
+    animation: ivory-breathe 14s var(--ease-soft) infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ivory-pill,
+  .ivory-link,
+  .ivory-row {
+    transition: none !important;
+  }
+  .ivory-pill:hover,
+  .ivory-row:hover,
+  .ivory-row:focus-within {
+    transform: none !important;
+  }
+  .ivory-breathe {
+    animation: none !important;
+  }
+}

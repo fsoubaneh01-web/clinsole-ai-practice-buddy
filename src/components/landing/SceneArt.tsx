@@ -3,19 +3,106 @@ import { cn } from "@/lib/utils";
 
 export type SceneArtKey = "home-visit" | "assessment" | "documentation" | "care-plan" | "support";
 
+export type SceneTone = "cool" | "warm";
+
 type Palette = {
   from: string;
   to: string;
   light: string;
   accent: string;
+  /** Colour the compositions darken with. */
+  shade: string;
+  /** Scales every shading opacity — warm scenes sit on ivory and need far less. */
+  depth: number;
 };
 
-const PALETTES: Record<SceneArtKey, Palette> = {
-  "home-visit": { from: "#2A1B63", to: "#5B3FD6", light: "#FFCB8E", accent: "#8C6BFF" },
-  assessment: { from: "#0F3B4C", to: "#1F9A96", light: "#A8F2E4", accent: "#20C4B4" },
-  documentation: { from: "#1B1550", to: "#3E2CAA", light: "#AEC8FF", accent: "#6C4CF1" },
-  "care-plan": { from: "#4433B4", to: "#8E77FF", light: "#FFFFFF", accent: "#20C4B4" },
-  support: { from: "#141039", to: "#2E2185", light: "#FFB673", accent: "#6C4CF1" },
+const PALETTES: Record<SceneTone, Record<SceneArtKey, Palette>> = {
+  cool: {
+    "home-visit": {
+      from: "#2A1B63",
+      to: "#5B3FD6",
+      light: "#FFCB8E",
+      accent: "#8C6BFF",
+      shade: "#000000",
+      depth: 1,
+    },
+    assessment: {
+      from: "#0F3B4C",
+      to: "#1F9A96",
+      light: "#A8F2E4",
+      accent: "#20C4B4",
+      shade: "#000000",
+      depth: 1,
+    },
+    documentation: {
+      from: "#1B1550",
+      to: "#3E2CAA",
+      light: "#AEC8FF",
+      accent: "#6C4CF1",
+      shade: "#000000",
+      depth: 1,
+    },
+    "care-plan": {
+      from: "#4433B4",
+      to: "#8E77FF",
+      light: "#FFFFFF",
+      accent: "#20C4B4",
+      shade: "#000000",
+      depth: 1,
+    },
+    support: {
+      from: "#141039",
+      to: "#2E2185",
+      light: "#FFB673",
+      accent: "#6C4CF1",
+      shade: "#000000",
+      depth: 1,
+    },
+  },
+  /* Ivory-ground variants: the same compositions lit from white instead of
+     black, so they read as warm paper rather than as dark panels. */
+  warm: {
+    "home-visit": {
+      from: "#FAF5EA",
+      to: "#DCC79E",
+      light: "#FFFFFF",
+      accent: "#E0CBA4",
+      shade: "#7C6440",
+      depth: 0.5,
+    },
+    assessment: {
+      from: "#FBF7EE",
+      to: "#D6C7A6",
+      light: "#FFFFFF",
+      accent: "#CBB489",
+      shade: "#6E5A38",
+      depth: 0.45,
+    },
+    documentation: {
+      from: "#F8F2E4",
+      to: "#DAC49B",
+      light: "#FFFDF7",
+      accent: "#C9A86A",
+      shade: "#7C6440",
+      depth: 0.5,
+    },
+    "care-plan": {
+      from: "#FCF8F0",
+      to: "#E2D2B0",
+      light: "#FFFFFF",
+      accent: "#D3BE95",
+      shade: "#6E5A38",
+      depth: 0.42,
+    },
+    support: {
+      from: "#F6EFE0",
+      to: "#DCC69C",
+      light: "#FFFFFF",
+      accent: "#C9A86A",
+      shade: "#7C6440",
+      depth: 0.5,
+    },
+  },
 };
 
 /**
@@ -27,9 +114,17 @@ const PALETTES: Record<SceneArtKey, Palette> = {
  * entry in `landing-media.ts` a `src` and `SceneImage` will render an <img>
  * instead; nothing else in the motion system changes.
  */
-export function SceneArt({ scene, className }: { scene: SceneArtKey; className?: string }) {
+export function SceneArt({
+  scene,
+  tone = "cool",
+  className,
+}: {
+  scene: SceneArtKey;
+  tone?: SceneTone;
+  className?: string;
+}) {
   const uid = useId().replace(/:/g, "");
-  const palette = PALETTES[scene];
+  const palette = PALETTES[tone][scene];
 
   return (
     <svg
@@ -58,8 +153,8 @@ export function SceneArt({ scene, className }: { scene: SceneArtKey; className?:
           <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.02" />
         </linearGradient>
         <linearGradient id={`${uid}-floor`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#000000" stopOpacity="0.05" />
-          <stop offset="100%" stopColor="#000000" stopOpacity="0.45" />
+          <stop offset="0%" stopColor={palette.shade} stopOpacity={shade(0.05, palette)} />
+          <stop offset="100%" stopColor={palette.shade} stopOpacity={shade(0.45, palette)} />
         </linearGradient>
         <filter id={`${uid}-soft`} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="34" />
@@ -96,6 +191,11 @@ export function SceneArt({ scene, className }: { scene: SceneArtKey; className?:
   );
 }
 
+/** Scales a shading opacity to the palette's ground. */
+function shade(value: number, palette: Palette) {
+  return Number((value * palette.depth).toFixed(3));
+}
+
 function SceneBody({ scene, uid, palette }: { scene: SceneArtKey; uid: string; palette: Palette }) {
   switch (scene) {
     /* A room at golden hour: window, light falling across the floor, and an
@@ -110,14 +210,14 @@ function SceneBody({ scene, uid, palette }: { scene: SceneArtKey; uid: string; p
             <rect x="690" y="278" width="392" height="4" fill={palette.light} opacity="0.35" />
           </g>
           <path d="M690 478 L1082 478 L1200 800 L440 800 Z" fill={palette.light} opacity="0.14" />
-          <path d="M0 560 H1200 V800 H0 Z" fill="#000000" opacity="0.16" />
+          <path d="M0 560 H1200 V800 H0 Z" fill={`url(#${uid}-floor)`} opacity="0.7" />
           <ellipse
             cx="180"
             cy="640"
             rx="240"
             ry="260"
-            fill="#000000"
-            opacity="0.32"
+            fill={palette.shade}
+            opacity={shade(0.32, palette)}
             filter={`url(#${uid}-soft)`}
           />
           <ellipse
@@ -140,8 +240,8 @@ function SceneBody({ scene, uid, palette }: { scene: SceneArtKey; uid: string; p
           <ellipse cx="380" cy="300" rx="520" ry="420" fill={`url(#${uid}-glow)`} opacity="0.7" />
           <path
             d="M-60 620 C 220 380 520 300 900 340 C 1080 360 1180 430 1260 520 L1260 800 L-60 800 Z"
-            fill="#000000"
-            opacity="0.24"
+            fill={palette.shade}
+            opacity={shade(0.24, palette)}
           />
           <path
             d="M-40 520 C 260 300 600 236 980 300"
@@ -156,8 +256,8 @@ function SceneBody({ scene, uid, palette }: { scene: SceneArtKey; uid: string; p
             cy="640"
             rx="360"
             ry="300"
-            fill="#000000"
-            opacity="0.35"
+            fill={palette.shade}
+            opacity={shade(0.35, palette)}
             filter={`url(#${uid}-soft)`}
           />
           <g filter={`url(#${uid}-haze)`} opacity="0.5">
@@ -173,7 +273,11 @@ function SceneBody({ scene, uid, palette }: { scene: SceneArtKey; uid: string; p
       return (
         <>
           <ellipse cx="300" cy="120" rx="420" ry="320" fill={`url(#${uid}-accent)`} />
-          <path d="M-40 520 L1240 452 L1240 800 L-40 800 Z" fill="#000000" opacity="0.3" />
+          <path
+            d="M-40 520 L1240 452 L1240 800 L-40 800 Z"
+            fill={`url(#${uid}-floor)`}
+            opacity="0.8"
+          />
           <g transform="rotate(-6 600 470)">
             <rect x="392" y="290" width="470" height="316" rx="26" fill={`url(#${uid}-sheen)`} />
             <rect
@@ -237,8 +341,8 @@ function SceneBody({ scene, uid, palette }: { scene: SceneArtKey; uid: string; p
             cy="700"
             rx="280"
             ry="220"
-            fill="#000000"
-            opacity="0.3"
+            fill={palette.shade}
+            opacity={shade(0.3, palette)}
             filter={`url(#${uid}-soft)`}
           />
         </>
@@ -300,7 +404,7 @@ function SceneBody({ scene, uid, palette }: { scene: SceneArtKey; uid: string; p
             opacity="0.75"
             filter={`url(#${uid}-haze)`}
           />
-          <path d="M-40 596 H1240 V800 H-40 Z" fill="#000000" opacity="0.34" />
+          <path d="M-40 596 H1240 V800 H-40 Z" fill={`url(#${uid}-floor)`} opacity="0.8" />
           <ellipse
             cx="210"
             cy="520"

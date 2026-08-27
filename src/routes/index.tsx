@@ -1,24 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Calendar,
-  Check,
-  HeartPulse,
-  ShieldCheck,
-  Sparkles,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 
-import { Brand } from "@/components/Brand";
-import { Button } from "@/components/ui/button";
+import { CapabilityRow } from "@/components/landing/CapabilityRow";
+import { CareField } from "@/components/landing/CareField";
 import { FeaturedShowcase, type ShowcaseItem } from "@/components/landing/FeaturedShowcase";
 import { ImageStage } from "@/components/landing/ImageStage";
 import { ProfileCard, StatusDot, type Profile } from "@/components/landing/ProfileCard";
 import { Reveal } from "@/components/landing/Reveal";
-import { ServiceCard } from "@/components/landing/ServiceCard";
-import { SupportBand } from "@/components/landing/SupportBand";
-import { HERO_SCENES, PROFILE_SCENES, SERVICE_SCENES, SUPPORT_SCENE } from "@/lib/landing-media";
+import { WordMark } from "@/components/landing/WordMark";
+import { PROFILE_SCENES, SECTION_SCENES } from "@/lib/landing-media";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,13 +20,16 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-const FEATURES = [
-  { icon: HeartPulse, title: "AI SOAP Notes", desc: "Turn quick visit notes into full clinical documentation in seconds.", scene: SERVICE_SCENES.soap },
-  { icon: Users, title: "Patient records", desc: "Medical history, diabetes status, allergies, assessments, and treatment history.", scene: SERVICE_SCENES.patients },
-  { icon: Calendar, title: "Smart scheduling", desc: "Book visits, set recurring appointments, and send patient reminders.", scene: SERVICE_SCENES.scheduling },
-  { icon: Wallet, title: "Income tracking", desc: "Log visits, payments, and expenses. See monthly revenue at a glance.", scene: SERVICE_SCENES.income },
-  { icon: Sparkles, title: "AI Business Assistant", desc: "Generate follow-ups, education handouts, and marketing content.", scene: SERVICE_SCENES.assistant },
-  { icon: ShieldCheck, title: "Secure & private", desc: "Your patient data is encrypted and stays private to your practice.", scene: SERVICE_SCENES.privacy },
+const SHELL = "mx-auto w-full max-w-[1280px] px-6 lg:px-10";
+const SECTION = "py-[72px] lg:py-[120px]";
+
+const CAPABILITIES = [
+  { title: "AI SOAP notes", description: "Turn quick visit notes into full clinical documentation in seconds." },
+  { title: "Patient records", description: "Medical history, diabetes status, allergies, assessments, and treatment history." },
+  { title: "Smart scheduling", description: "Book visits, set recurring appointments, and send patient reminders." },
+  { title: "Income tracking", description: "Log visits, payments, and expenses. See monthly revenue at a glance." },
+  { title: "Business assistant", description: "Generate follow-ups, education handouts, and marketing content." },
+  { title: "Secure & private", description: "Your patient data is encrypted and stays private to your practice." },
 ];
 
 /* Illustrative practice profiles — the shapes of practice ClinSole is built
@@ -113,232 +106,239 @@ const SHOWCASE: ShowcaseItem[] = [
   },
 ];
 
+const FREE_PLAN = ["Up to 10 patients", "5 AI SOAP notes / month", "Appointment calendar", "Basic income tracking"];
+const PREMIUM_PLAN = [
+  "Unlimited patients",
+  "Unlimited AI SOAP notes",
+  "AI business assistant",
+  "Recurring appointments & reminders",
+  "Advanced income & expense tracking",
+  "Priority support",
+];
+
 function Landing() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 lg:px-8">
-          <Brand size="sm" />
-          <div className="hidden gap-6 text-sm font-medium text-muted-foreground md:flex">
-            <a href="#features" className="transition-colors duration-300 hover:text-foreground">Features</a>
-            <a href="#practices" className="transition-colors duration-300 hover:text-foreground">Practices</a>
-            <a href="#pricing" className="transition-colors duration-300 hover:text-foreground">Pricing</a>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm"><Link to="/login">Sign in</Link></Button>
-            <Button asChild size="sm" className="gradient-primary text-primary-foreground">
-              <Link to="/signup">Start free</Link>
-            </Button>
+    <div className="theme-ivory min-h-screen bg-background">
+      {/* Nav — one hairline, no fill. The page's single filled control lives
+          in the hero, not up here. */}
+      <header className="sticky top-0 z-30 border-b border-rule bg-background/85 backdrop-blur">
+        <div className={`${SHELL} flex items-center justify-between py-5`}>
+          <WordMark />
+          <nav className="hidden gap-9 text-[15px] font-light text-ink-muted md:flex">
+            <a href="#capabilities" className="transition-colors duration-300 hover:text-ink">What it does</a>
+            <a href="#practices" className="transition-colors duration-300 hover:text-ink">Who it's for</a>
+            <a href="#pricing" className="transition-colors duration-300 hover:text-ink">Pricing</a>
+          </nav>
+          <div className="flex items-center gap-6">
+            <Link to="/login" className="text-[15px] font-light text-ink-muted transition-colors duration-300 hover:text-ink">
+              Sign in
+            </Link>
+            <Link to="/signup" className="ivory-link">Start free</Link>
           </div>
         </div>
       </header>
 
-      {/* Hero — the imagery drifts and crossfades behind a scrim; everything
-          the visitor came to click stays exactly where they found it. */}
-      <section className="relative overflow-hidden text-primary-foreground">
-        <ImageStage scenes={HERO_SCENES} className="absolute inset-0" />
-        <div className="gradient-hero absolute inset-0 opacity-45" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/45 to-slate-950/10" />
-
-        <div className="relative mx-auto max-w-6xl px-5 py-24 lg:px-8 lg:py-32">
-          <div className="grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr]">
-            <div>
-              <Reveal>
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium tracking-widest uppercase backdrop-blur">
-                  <Sparkles className="h-3.5 w-3.5" /> Built for independent foot care nurses
-                </div>
-              </Reveal>
-              <Reveal delay={90}>
-                <h1 className="mt-6 text-4xl leading-tight font-bold tracking-tight lg:text-6xl">
-                  Your entire foot care practice, powered by AI.
-                </h1>
-              </Reveal>
-              <Reveal delay={170}>
-                <p className="mt-5 max-w-2xl text-base leading-relaxed text-primary-foreground/90 lg:text-lg">
-                  ClinSole AI is the modern practice assistant for mobile foot care nurses. Document visits with AI SOAP notes, manage patients, schedule follow-ups, and track your income — all in one place.
-                </p>
-              </Reveal>
-              <Reveal delay={250}>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Button asChild size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
-                    <Link to="/signup">Start free <ArrowRight className="ml-1 h-4 w-4" /></Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline" className="border-white/40 bg-transparent text-primary-foreground hover:bg-white/10">
-                    <Link to="/login">I have an account</Link>
-                  </Button>
-                </div>
-                <div className="mt-6 text-xs opacity-80">No credit card required · Free plan available forever</div>
-              </Reveal>
-            </div>
-
-            {/* Fixed panel over moving imagery. It fades in once and then holds
-                still — nothing here shifts under the pointer. */}
-            <Reveal delay={330} className="hidden lg:block">
-              <div className="rounded-3xl border border-white/20 bg-white/10 p-6 shadow-card backdrop-blur-md">
-                <div className="flex items-center justify-between text-xs tracking-widest text-white/70 uppercase">
-                  Today
-                  <span className="inline-flex items-center gap-2 text-white/90 normal-case">
-                    <StatusDot /> 3 visits
-                  </span>
-                </div>
-                <div className="mt-4 space-y-3">
-                  {[
-                    { time: "09:15", label: "Diabetic foot assessment", place: "Home visit" },
-                    { time: "11:00", label: "Routine nail care", place: "Clinic" },
-                    { time: "14:30", label: "Wound review · follow-up", place: "Residence" },
-                  ].map((visit) => (
-                    <div key={visit.time} className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-3">
-                      <div className="text-sm font-semibold tabular-nums">{visit.time}</div>
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium">{visit.label}</div>
-                        <div className="text-xs text-white/70">{visit.place}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 text-xs text-white/70">Two notes still to write · ClinSole drafts both</div>
+      {/* Hero — copy left, drifting node field right. */}
+      <section className={SHELL}>
+        <div className="grid items-center gap-16 py-[64px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-20 lg:py-[104px]">
+          <div>
+            <Reveal>
+              <div className="ivory-eyebrow">Practice assistant for foot care nurses</div>
+            </Reveal>
+            <Reveal delay={90}>
+              <h1 className="ivory-display mt-8 text-[clamp(48px,7.2vw,113px)]">
+                Your whole practice, quietly handled.
+              </h1>
+            </Reveal>
+            <Reveal delay={170}>
+              <p className="ivory-body mt-8 max-w-xl">
+                ClinSole AI is the practice assistant for independent foot care nurses. Document visits with AI SOAP notes, keep patient records in order, schedule follow-ups, and track what you earn — in one place.
+              </p>
+            </Reveal>
+            <Reveal delay={250}>
+              <div className="mt-10 flex flex-wrap items-center gap-8">
+                <Link to="/signup" className="ivory-pill">
+                  Start free <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link to="/login" className="ivory-link">I have an account</Link>
+              </div>
+              <div className="mt-8 text-[13px] font-light text-ink-soft">
+                No credit card required · Free plan available forever
               </div>
             </Reveal>
           </div>
+
+          <Reveal delay={200} variant="media">
+            <CareField />
+          </Reveal>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="mx-auto max-w-6xl px-5 py-20 lg:px-8">
-        <Reveal className="max-w-2xl">
-          <div className="text-xs font-semibold tracking-widest text-primary uppercase">Everything you need</div>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight lg:text-4xl">Built specifically for foot care nurses.</h2>
-          <p className="mt-3 text-muted-foreground">Not another generic EMR. ClinSole AI is designed around how mobile foot care actually works — from diabetic assessments to recurring nail care visits.</p>
-        </Reveal>
+      {/* Capabilities — visual left, copy right. */}
+      <section id="capabilities" className={`${SHELL} ${SECTION}`}>
+        <div className="grid items-center gap-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20">
+          <Reveal variant="media" className="order-last lg:order-first">
+            <ImageStage
+              scenes={SECTION_SCENES.capabilities}
+              holdMs={9000}
+              className="aspect-4/3 w-full rounded-[24px]"
+            />
+          </Reveal>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((feature, i) => (
-            <Reveal key={feature.title} delay={i * 80} variant="media">
-              <ServiceCard
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.desc}
-                scene={feature.scene}
+          <Reveal>
+            <div className="ivory-eyebrow">Everything you need</div>
+            <h2 className="ivory-display mt-7 text-[clamp(38px,4.4vw,68px)]">
+              Built specifically for foot care nurses.
+            </h2>
+            <p className="ivory-body mt-7 max-w-xl">
+              Not another generic EMR. ClinSole AI is designed around how mobile foot care actually works — from diabetic assessments to recurring nail care visits.
+            </p>
+            <div className="mt-9">
+              <Link to="/signup" className="ivory-link">
+                See what's included <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </Reveal>
+        </div>
+
+        <div className="mt-20 grid gap-x-12 gap-y-14 sm:grid-cols-2 lg:mt-28 lg:grid-cols-3">
+          {CAPABILITIES.map((capability, i) => (
+            <Reveal key={capability.title} delay={i * 80}>
+              <CapabilityRow
+                index={i + 1}
+                title={capability.title}
+                description={capability.description}
               />
             </Reveal>
           ))}
         </div>
       </section>
 
-      {/* Practice profiles */}
-      <section id="practices" className="bg-surface-muted py-20">
-        <div className="mx-auto max-w-6xl px-5 lg:px-8">
-          <Reveal className="max-w-2xl">
-            <div className="text-xs font-semibold tracking-widest text-primary uppercase">Who it's for</div>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight lg:text-4xl">Three shapes of practice. One assistant.</h2>
-            <p className="mt-3 text-muted-foreground">Illustrative profiles, not real practitioners — but the working days behind them are the ones ClinSole AI was designed around.</p>
+      {/* Practices — copy left, visual right. */}
+      <section id="practices" className={`${SHELL} ${SECTION}`}>
+        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
+          <Reveal>
+            <div className="ivory-eyebrow">Who it's for</div>
+            <h2 className="ivory-display mt-7 text-[clamp(38px,4.4vw,68px)]">
+              Three shapes of practice. One assistant.
+            </h2>
+            <p className="ivory-body mt-7 max-w-xl">
+              Illustrative profiles, not real practitioners — but the working days behind them are the ones ClinSole AI was designed around.
+            </p>
           </Reveal>
 
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {PROFILES.map((profile, i) => (
-              <Reveal key={profile.id} delay={i * 90} variant="media">
-                <ProfileCard profile={profile} />
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal className="mt-20 max-w-2xl">
-            <div className="text-xs font-semibold tracking-widest text-primary uppercase">A closer look</div>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight lg:text-4xl">A day in each practice.</h2>
+          <Reveal variant="media" delay={120}>
+            <ImageStage
+              scenes={SECTION_SCENES.practices}
+              holdMs={9000}
+              className="aspect-4/3 w-full rounded-[24px]"
+            />
           </Reveal>
+        </div>
 
-          <Reveal className="mt-8" delay={80}>
-            <FeaturedShowcase items={SHOWCASE} />
-          </Reveal>
+        <div className="mt-20 grid gap-x-12 gap-y-16 sm:grid-cols-2 lg:mt-28 lg:grid-cols-3">
+          {PROFILES.map((profile, i) => (
+            <Reveal key={profile.id} delay={i * 90} variant="media">
+              <ProfileCard profile={profile} />
+            </Reveal>
+          ))}
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-20">
-        <div className="mx-auto max-w-4xl px-5 lg:px-8">
-          <Reveal className="text-center">
-            <div className="text-xs font-semibold tracking-widest text-primary uppercase">Simple pricing</div>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight lg:text-4xl">Start free. Upgrade when you're ready.</h2>
-          </Reveal>
-          <div className="mt-12 grid gap-6 md:grid-cols-2">
-            <Reveal delay={80}>
-              <div className="clin-card h-full rounded-3xl border bg-surface p-8 shadow-soft hover:shadow-card">
-                <div className="text-lg font-bold">Free</div>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <div className="text-5xl font-bold">$0</div>
-                  <div className="text-sm text-muted-foreground">forever</div>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">Perfect for getting started.</p>
-                <ul className="mt-6 space-y-2 text-sm">
-                  {["Up to 10 patients", "5 AI SOAP notes / month", "Appointment calendar", "Basic income tracking"].map((f) => (
-                    <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 text-primary" />{f}</li>
-                  ))}
-                </ul>
-                <Button asChild variant="outline" size="lg" className="mt-8 w-full"><Link to="/signup">Get started free</Link></Button>
-              </div>
-            </Reveal>
-
-            <Reveal delay={170}>
-              <div className="clin-card relative h-full rounded-3xl border-2 border-primary bg-surface p-8 shadow-card">
-                <span className="gradient-primary absolute -top-3 left-8 rounded-full px-3 py-1 text-xs font-semibold text-primary-foreground">Most popular</span>
-                <div className="text-lg font-bold">Premium</div>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <div className="text-5xl font-bold">$29</div>
-                  <div className="text-sm text-muted-foreground">/month</div>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">For a serious mobile practice.</p>
-                <ul className="mt-6 space-y-2 text-sm">
-                  {[
-                    "Unlimited patients",
-                    "Unlimited AI SOAP notes",
-                    "AI Business Assistant",
-                    "Recurring appointments & reminders",
-                    "Advanced income & expense tracking",
-                    "Priority support",
-                  ].map((f) => (
-                    <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 text-primary" />{f}</li>
-                  ))}
-                </ul>
-                <Button asChild size="lg" className="gradient-primary mt-8 w-full text-primary-foreground">
-                  <Link to="/signup">Start with Premium</Link>
-                </Button>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* Support */}
-      <SupportBand
-        scene={SUPPORT_SCENE}
-        eyebrow="Support"
-        title="Need help now?"
-        body="Import your patient list, set up your first week of visits, or get a note reviewed — a real person answers, and setup help is included on every plan, including the free one."
-      >
-        <Button asChild size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
-          <Link to="/signup">Get set up free <ArrowRight className="ml-1 h-4 w-4" /></Link>
-        </Button>
-        <Button asChild size="lg" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10">
-          <a href="mailto:support@clinsole.ai">Talk to support</a>
-        </Button>
-      </SupportBand>
-
-      {/* CTA */}
-      <section className="mx-auto max-w-4xl px-5 py-20 text-center lg:px-8">
-        <Reveal>
-          <h2 className="text-3xl font-bold tracking-tight lg:text-4xl">Give yourself back a few hours a week.</h2>
-          <p className="mt-3 text-muted-foreground">Join foot care nurses who've replaced paper charts and spreadsheets with ClinSole AI.</p>
-          <Button asChild size="lg" className="gradient-primary mt-6 text-primary-foreground">
-            <Link to="/signup">Create your free account <ArrowRight className="ml-1 h-4 w-4" /></Link>
-          </Button>
+      {/* Showcase */}
+      <section className={`${SHELL} pb-[72px] lg:pb-[120px]`}>
+        <Reveal className="max-w-2xl">
+          <div className="ivory-eyebrow">A closer look</div>
+          <h2 className="ivory-display mt-7 text-[clamp(38px,4.4vw,68px)]">A day in each practice.</h2>
+        </Reveal>
+        <Reveal className="mt-14" delay={80}>
+          <FeaturedShowcase items={SHOWCASE} />
         </Reveal>
       </section>
 
-      <footer className="border-t bg-surface py-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 text-xs text-muted-foreground md:flex-row lg:px-8">
-          <Brand size="sm" />
-          <div>© {new Date().getFullYear()} ClinSole AI. All rights reserved.</div>
+      {/* Pricing — two columns, a hairline between them, one filled button. */}
+      <section id="pricing" className={`${SHELL} ${SECTION}`}>
+        <Reveal className="max-w-2xl">
+          <div className="ivory-eyebrow">Simple pricing</div>
+          <h2 className="ivory-display mt-7 text-[clamp(38px,4.4vw,68px)]">
+            Start free. Upgrade when you're ready.
+          </h2>
+        </Reveal>
+
+        <div className="mt-16 grid gap-14 md:grid-cols-2 md:gap-0">
+          <Reveal delay={80} className="border-t border-rule pt-10 md:pr-16">
+            <div className="ivory-eyebrow">Free</div>
+            <div className="ivory-display mt-6 text-[56px]">$0</div>
+            <div className="mt-2 text-[14px] font-light text-ink-soft">Forever. Perfect for getting started.</div>
+            <ul className="mt-9 space-y-3.5">
+              {FREE_PLAN.map((feature) => (
+                <li key={feature} className="flex items-start gap-3 text-[15px] font-light text-ink">
+                  <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-gold" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-10">
+              <Link to="/signup" className="ivory-link">Get started free</Link>
+            </div>
+          </Reveal>
+
+          <Reveal delay={170} className="border-t border-rule pt-10 md:border-l md:pl-16">
+            <div className="ivory-eyebrow">Premium</div>
+            <div className="ivory-display mt-6 text-[56px]">
+              $29<span className="text-[18px] font-light text-ink-soft"> /month</span>
+            </div>
+            <div className="mt-2 text-[14px] font-light text-ink-soft">For a serious mobile practice.</div>
+            <ul className="mt-9 space-y-3.5">
+              {PREMIUM_PLAN.map((feature) => (
+                <li key={feature} className="flex items-start gap-3 text-[15px] font-light text-ink">
+                  <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-gold" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-10">
+              <Link to="/signup" className="ivory-pill">
+                Start with Premium <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Support — no panel, no fill behind it. Just a rule, the question, and
+          one place to press. */}
+      <section className={`${SHELL} pb-[72px] lg:pb-[120px]`}>
+        <div className="ivory-rule pt-16 lg:pt-24">
+          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-end lg:gap-20">
+            <Reveal>
+              <div className="flex items-center gap-2">
+                <StatusDot />
+                <span className="ivory-eyebrow">Support</span>
+              </div>
+              <h2 className="ivory-display mt-7 text-[clamp(38px,4.8vw,76px)]">Need help now?</h2>
+            </Reveal>
+            <Reveal delay={110}>
+              <p className="ivory-body max-w-md">
+                Import your patient list, set up your first week of visits, or get a note reviewed. A real person answers, and setup help is included on every plan — including the free one.
+              </p>
+              <div className="mt-9 flex flex-wrap items-center gap-8">
+                <Link to="/signup" className="ivory-link">
+                  Get set up free <ArrowUpRight className="h-4 w-4" />
+                </Link>
+                <a href="mailto:support@clinsole.ai" className="ivory-link">Talk to support</a>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-rule">
+        <div className={`${SHELL} flex flex-col items-start justify-between gap-5 py-10 md:flex-row md:items-center`}>
+          <WordMark />
+          <div className="text-[13px] font-light text-ink-soft">
+            © {new Date().getFullYear()} ClinSole AI. All rights reserved.
+          </div>
         </div>
       </footer>
     </div>

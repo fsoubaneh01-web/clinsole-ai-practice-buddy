@@ -90,7 +90,7 @@ export function FeaturedShowcase({ items }: { items: ShowcaseItem[] }) {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
       }}
     >
-      <div className="overflow-hidden rounded-3xl border bg-surface shadow-soft">
+      <div className="overflow-hidden border-y border-rule">
         <div
           className={cn("clin-track", reducedMotion && "transition-none")}
           style={{ transform: `translate3d(-${index * 100}%, 0, 0)` } as CSSProperties}
@@ -104,28 +104,32 @@ export function FeaturedShowcase({ items }: { items: ShowcaseItem[] }) {
               inert={i !== index}
               className="w-full shrink-0"
             >
-              <div className="grid md:grid-cols-2">
-                <div className="relative min-h-56 overflow-hidden md:min-h-full">
+              <div className="grid items-center gap-10 py-12 md:grid-cols-[0.9fr_1.1fr] md:gap-16 lg:py-16">
+                <div className="relative aspect-4/3 overflow-hidden rounded-[20px] md:aspect-square">
                   <div className="absolute inset-0">
                     <SceneImage scene={item.scene} />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/45 to-transparent md:bg-gradient-to-r" />
                 </div>
 
-                <div className="p-7 lg:p-10">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
+                <div>
+                  <div className="flex items-center gap-2">
                     <StatusDot />
-                    {item.status}
+                    <span className="text-[11px] tracking-[0.16em] text-ink-soft uppercase">
+                      {item.status}
+                    </span>
                   </div>
-                  <h3 className="mt-4 text-2xl font-bold tracking-tight">{item.role}</h3>
-                  <div className="mt-1 text-sm text-muted-foreground">{item.setting}</div>
-                  <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                  <h3 className="ivory-display-sm mt-5 text-[34px] lg:text-[44px]">{item.role}</h3>
+                  <div className="mt-2 text-[15px] font-light text-ink-soft">{item.setting}</div>
+                  <p className="mt-6 max-w-xl text-[17px] leading-relaxed font-extralight text-ink-muted">
                     {item.summary}
                   </p>
-                  <ul className="mt-5 space-y-2 text-sm">
+                  <ul className="mt-8 space-y-3">
                     {item.highlights.map((highlight) => (
-                      <li key={highlight} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <li
+                        key={highlight}
+                        className="flex items-start gap-3 border-t border-rule pt-3 text-[15px] font-light text-ink"
+                      >
+                        <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-gold" />
                         {highlight}
                       </li>
                     ))}
@@ -143,7 +147,7 @@ export function FeaturedShowcase({ items }: { items: ShowcaseItem[] }) {
         {`${index + 1} of ${items.length}: ${items[index]?.role ?? ""}`}
       </div>
 
-      <div className="mt-5 flex items-center justify-between gap-4">
+      <div className="mt-8 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           {items.map((item, i) => (
             <button
@@ -154,7 +158,7 @@ export function FeaturedShowcase({ items }: { items: ShowcaseItem[] }) {
               aria-current={i === index}
               className={cn(
                 "clin-dot h-2 rounded-full",
-                i === index ? "w-7 bg-primary" : "w-2 bg-border hover:bg-muted-foreground/50",
+                i === index ? "w-8 bg-gold" : "w-2 bg-gold/30 hover:bg-gold/60",
               )}
             />
           ))}
@@ -187,7 +191,7 @@ function ShowcaseButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="grid h-9 w-9 place-items-center rounded-full border bg-surface text-muted-foreground shadow-soft transition-[color,background-color,transform] duration-300 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      className="grid h-10 w-10 place-items-center rounded-full border border-rule text-bronze transition-[color,border-color,transform] duration-300 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-0.5 hover:border-gold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:translate-y-0"
     >
       {children}
     </button>
