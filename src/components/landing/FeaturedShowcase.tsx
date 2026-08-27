@@ -105,7 +105,7 @@ export function FeaturedShowcase({ items }: { items: ShowcaseItem[] }) {
               className="w-full shrink-0"
             >
               <div className="grid items-center gap-10 py-12 md:grid-cols-[0.9fr_1.1fr] md:gap-16 lg:py-16">
-                <div className="relative aspect-4/3 overflow-hidden rounded-[20px] md:aspect-square">
+                <div className="canvas-frame relative aspect-4/3 overflow-hidden md:aspect-square">
                   <div className="absolute inset-0">
                     <SceneImage scene={item.scene} />
                   </div>
@@ -191,7 +191,7 @@ function ShowcaseButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="grid h-10 w-10 place-items-center rounded-full border border-rule text-signal-deep transition-[color,border-color,transform] duration-300 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-0.5 hover:border-signal focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      className="grid h-10 w-10 place-items-center rounded-full border border-halo text-signal transition-[color,border-color,transform] duration-300 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-0.5 hover:border-signal focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:translate-y-0"
     >
       {children}
     </button>

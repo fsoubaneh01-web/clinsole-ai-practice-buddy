@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export type SceneArtKey = "home-visit" | "assessment" | "documentation" | "care-plan" | "support";
 
-export type SceneTone = "cool" | "warm";
+export type SceneTone = "cool" | "warm" | "night";
 
 type Palette = {
   from: string;
@@ -56,6 +56,51 @@ const PALETTES: Record<SceneTone, Record<SceneArtKey, Palette>> = {
       light: "#FFB673",
       accent: "#6C4CF1",
       shade: "#000000",
+      depth: 1,
+    },
+  },
+  /* Obsidian variants: the same compositions lit by a cold blue window on a
+     near-black ground. The accent stays violet — the blue is reserved for the
+     hero motif and for anything that has to be read. */
+  night: {
+    "home-visit": {
+      from: "#0a0a13",
+      to: "#101a2e",
+      light: "#9bb8e8",
+      accent: "#4f4f80",
+      shade: "#02000a",
+      depth: 1,
+    },
+    assessment: {
+      from: "#050510",
+      to: "#0a1828",
+      light: "#8fb3e0",
+      accent: "#4f4f80",
+      shade: "#02000a",
+      depth: 1,
+    },
+    documentation: {
+      from: "#08080c",
+      to: "#0c1d32",
+      light: "#9bb8e8",
+      accent: "#4f4f80",
+      shade: "#02000a",
+      depth: 1,
+    },
+    "care-plan": {
+      from: "#0a0a13",
+      to: "#131d33",
+      light: "#cfd8e8",
+      accent: "#4f4f80",
+      shade: "#02000a",
+      depth: 1,
+    },
+    support: {
+      from: "#040407",
+      to: "#0c1d32",
+      light: "#9bb8e8",
+      accent: "#4f4f80",
+      shade: "#02000a",
       depth: 1,
     },
   },

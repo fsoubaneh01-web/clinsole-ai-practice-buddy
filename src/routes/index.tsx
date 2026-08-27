@@ -121,7 +121,7 @@ function Landing() {
     <div className="theme-canvas min-h-screen bg-background">
       {/* Nav — one hairline, no fill. The page's single filled control lives
           in the hero, not up here. */}
-      <header className="sticky top-0 z-30 border-b border-rule bg-background/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-rule bg-nav/85 backdrop-blur">
         <div className={`${SHELL} flex items-center justify-between py-5`}>
           <WordMark />
           <nav className="hidden gap-9 text-[15px] font-light text-ink-muted md:flex">
@@ -181,7 +181,7 @@ function Landing() {
             <ImageStage
               scenes={SECTION_SCENES.capabilities}
               holdMs={9000}
-              className="aspect-4/3 w-full rounded-[24px]"
+              className="canvas-frame aspect-4/3 w-full"
             />
           </Reveal>
 
@@ -231,7 +231,7 @@ function Landing() {
             <ImageStage
               scenes={SECTION_SCENES.practices}
               holdMs={9000}
-              className="aspect-4/3 w-full rounded-[24px]"
+              className="canvas-frame aspect-4/3 w-full"
             />
           </Reveal>
         </div>

@@ -16,8 +16,8 @@ export type Scene = {
 };
 
 /**
- * Section visuals, drawn in the warm palette so they read as paper on the
- * ivory ground rather than as dark panels dropped onto it.
+ * Section visuals, drawn in the night palette so they sit in the same ground as
+ * obsidian ground rather than as bright panels dropped onto it.
  */
 export const SECTION_SCENES = {
   capabilities: [
@@ -25,18 +25,18 @@ export const SECTION_SCENES = {
       id: "sec-notes",
       alt: "A visit written up as a clinical note",
       art: "documentation",
-      tone: "warm",
+      tone: "night",
     },
     {
       id: "sec-assessment",
       alt: "A diabetic foot assessment in progress",
       art: "assessment",
-      tone: "warm",
+      tone: "night",
     },
   ],
   practices: [
-    { id: "sec-round", alt: "A round of home visits under way", art: "home-visit", tone: "warm" },
-    { id: "sec-week", alt: "The week's visits laid out", art: "care-plan", tone: "warm" },
+    { id: "sec-round", alt: "A round of home visits under way", art: "home-visit", tone: "night" },
+    { id: "sec-week", alt: "The week's visits laid out", art: "care-plan", tone: "night" },
   ],
 } satisfies Record<string, Scene[]>;
 
@@ -45,18 +45,18 @@ export const PROFILE_SCENES = {
     id: "pro-mobile",
     alt: "A nurse on the road between home visits",
     art: "home-visit",
-    tone: "warm",
+    tone: "night",
   },
   clinic: {
     id: "pro-clinic",
     alt: "A treatment chair in a foot care clinic",
     art: "assessment",
-    tone: "warm",
+    tone: "night",
   },
   residences: {
     id: "pro-residences",
     alt: "A round of visits inside a care residence",
     art: "care-plan",
-    tone: "warm",
+    tone: "night",
   },
 } satisfies Record<string, Scene>;

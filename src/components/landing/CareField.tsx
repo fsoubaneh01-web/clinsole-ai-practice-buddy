@@ -109,9 +109,9 @@ function FieldSvg({ field, id, delaySeconds }: { field: Field; id: string; delay
     <svg viewBox="0 0 800 800" className="h-full w-full" aria-hidden="true" focusable="false">
       <defs>
         <radialGradient id={`${id}-warmth`}>
-          <stop offset="0%" stopColor="#FBF4E3" />
-          <stop offset="70%" stopColor="#F7F1E3" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#F5F0E6" stopOpacity="0" />
+          <stop offset="0%" stopColor="#0F2440" />
+          <stop offset="70%" stopColor="#0C1D32" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#0A0A13" stopOpacity="0" />
         </radialGradient>
         <radialGradient id={`${id}-falloff`}>
           <stop offset="62%" stopColor="#FFFFFF" />

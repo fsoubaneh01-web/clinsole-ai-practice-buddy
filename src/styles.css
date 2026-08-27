@@ -375,32 +375,46 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Ivory & gold — landing surface
+   Obsidian — landing surface
    ---------------------------------------------------------------------------
-   A warm, paper-like theme for the marketing page only. It is scoped to
+   A dark, layered theme for the marketing page only. It is scoped to
    `.theme-canvas` rather than :root so the signed-in app keeps its own palette:
    the shadcn tokens are redefined inside that one class, and every Tailwind
    colour utility on the page picks the new values up automatically.
 
-   Contrast, measured against the #F5F0E6 ground:
-     ink        #1A1A1A  17.4:1
-     ink-muted  #6B6B6B   4.6:1
-     ink-soft   #7A7069   4.3:1
-     bronze     #8A5F2B   4.9:1   ← link + label text
-     gold       #B8935A   2.5:1   ← fills, marks and rules only, never text
-   Gold is a surface colour here. Anything that has to be read uses bronze.
+   The ground is never flat. `--canvas-depth` lays a violet-to-blue wash over
+   the obsidian base, with the lightest corner parked top-right behind the hero
+   visual rather than under any body copy.
+
+   Contrast, sampled from rendered pixels rather than from the token values,
+   because the ground is a gradient:
+     ink        #FCFCFC  20.1:1
+     ink-soft   #A3A3B3   7.0:1
+     signal     #6199F6   7.1–7.3:1   ← links, labels, icons
+     ink-muted  #757580   4.53–4.58:1 ← passes AA, but only just: it clears
+                                        4.5 because the gradient's lightest
+                                        corner is parked behind the hero
+                                        visual. Moving that corner under body
+                                        copy would drop it below AA.
+     halo       #4F4F80   2.6:1       ← card outlines only, never text
    --------------------------------------------------------------------------- */
 
 :root {
-  --canvas-bg: #f5f0e6;
-  --canvas-raised: #faf7f0;
-  --canvas-elevated: #e8dfcd;
-  --canvas-ink: #1a1a1a;
-  --canvas-ink-muted: #6b6b6b;
-  --canvas-ink-soft: #7a7069;
-  --canvas-signal: #b8935a;
-  --canvas-signal-deep: #8a5f2b;
-  --canvas-hairline: rgb(184 147 90 / 0.28);
+  --canvas-bg: #0a0a13;
+  --canvas-nav: #040407;
+  --canvas-raised: #08080c;
+  --canvas-elevated: #08080c;
+  --canvas-ink: #fcfcfc;
+  --canvas-ink-muted: #757580;
+  --canvas-ink-soft: #a3a3b3;
+  --canvas-signal: #6199f6;
+  /* One chromatic accent: what used to be two tones is now a single blue. */
+  --canvas-signal-deep: #6199f6;
+  --canvas-halo: #4f4f80;
+  --canvas-hairline: #2a2a32;
+  --canvas-depth:
+    radial-gradient(115% 85% at 88% 6%, rgb(12 29 50 / 0.9) 0%, transparent 62%),
+    linear-gradient(158deg, #0a0010 0%, #02000a 54%, #0c1d32 100%);
 }
 
 @theme inline {
@@ -411,6 +425,8 @@
   --color-ink-soft: var(--canvas-ink-soft);
   --color-elevated: var(--canvas-elevated);
   --color-rule: var(--canvas-hairline);
+  --color-halo: var(--canvas-halo);
+  --color-nav: var(--canvas-nav);
 }
 
 .theme-canvas {
@@ -422,17 +438,27 @@
   --card-foreground: var(--canvas-ink);
   --popover: var(--canvas-raised);
   --popover-foreground: var(--canvas-ink);
-  --primary: var(--canvas-signal);
-  --primary-foreground: var(--canvas-ink);
-  --secondary: var(--canvas-elevated);
+  /* The primary control is white on obsidian, not the accent. */
+  --primary: var(--canvas-ink);
+  --primary-foreground: var(--canvas-bg);
+  --secondary: var(--canvas-raised);
   --secondary-foreground: var(--canvas-ink);
-  --muted: var(--canvas-elevated);
+  --muted: var(--canvas-raised);
   --muted-foreground: var(--canvas-ink-muted);
-  --accent: #efe6d6;
-  --accent-foreground: var(--canvas-signal-deep);
+  --accent: var(--canvas-raised);
+  --accent-foreground: var(--canvas-signal);
   --border: var(--canvas-hairline);
   --input: var(--canvas-hairline);
-  --ring: var(--canvas-signal-deep);
+  --ring: var(--canvas-signal);
+
+  /* body resolved --foreground at :root, so the subtree would otherwise
+     inherit the app's dark ink onto a dark ground. */
+  color: var(--canvas-ink);
+
+  background-color: var(--canvas-bg);
+  background-image: var(--canvas-depth);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 
 @layer components {
@@ -466,31 +492,36 @@
   .canvas-rule {
     border-top: 1px solid var(--canvas-hairline);
   }
+  /* Card and mockup containers: 10px, one hairline of violet, nothing else. */
+  .canvas-frame {
+    border-radius: 10px;
+    border: 1px solid var(--canvas-halo);
+  }
 
-  /* The one filled control on screen. 22.5px radius, no shadow — the fill is
-     the whole emphasis. */
+  /* The one filled control on screen. Full pill, no shadow — white on
+     obsidian is the whole emphasis. */
   .canvas-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 22.5px;
+    border-radius: 100px;
     padding: 0.9rem 1.9rem;
     font-size: 15px;
     font-weight: 500;
-    background-color: var(--canvas-signal);
-    color: var(--canvas-ink);
+    background-color: var(--canvas-ink);
+    color: var(--canvas-bg);
     transition:
       background-color var(--dur-hover) var(--ease-glide),
       transform var(--dur-hover) var(--ease-glide);
   }
   .canvas-pill:hover {
-    background-color: #a8834b;
+    background-color: #e4e4e8;
     transform: translate3d(0, -2px, 0);
   }
 
-  /* Quiet counterpart: bronze label over a gold hairline that fills in on
-     hover. Never competes with the pill. */
+  /* Quiet counterpart: the accent label over an accent hairline that fills in
+     on hover. Never competes with the pill. */
   .canvas-link {
     display: inline-flex;
     align-items: center;
@@ -520,7 +551,7 @@
   .canvas-row:hover,
   .canvas-row:focus-within {
     transform: translate3d(3px, 0, 0);
-    border-color: rgb(184 147 90 / 0.55);
+    border-color: #3f3f4c;
   }
   /* The shared arrow nudge, re-pointed for a row's diagonal arrow. */
   .canvas-row:hover .clin-nudge,

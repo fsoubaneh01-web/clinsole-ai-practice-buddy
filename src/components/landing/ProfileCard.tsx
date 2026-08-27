@@ -19,7 +19,7 @@ export type Profile = {
 export function ProfileCard({ profile }: { profile: Profile }) {
   return (
     <article className="clin-card group">
-      <div className="clin-media relative aspect-4/5 overflow-hidden rounded-[20px]">
+      <div className="clin-media canvas-frame relative aspect-4/5 overflow-hidden">
         <div className="h-full w-full">
           <SceneImage scene={profile.scene} />
         </div>
