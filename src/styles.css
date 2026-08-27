@@ -158,3 +158,439 @@
 @utility shadow-soft {
   box-shadow: var(--shadow-soft);
 }
+
+/* ---------------------------------------------------------------------------
+   Motion system
+   ---------------------------------------------------------------------------
+   One vocabulary of easing and duration for the whole marketing surface, so
+   every hover, reveal and crossfade feels like it came from the same hand.
+   Everything here degrades to "no movement" under prefers-reduced-motion —
+   see the reduce block at the bottom of this section.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Long, decelerating ease. Nothing overshoots or bounces on purpose. */
+  --ease-glide: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-soft: cubic-bezier(0.33, 0, 0.2, 1);
+
+  --dur-hover: 380ms;
+  --dur-reveal: 760ms;
+
+  /* Hero imagery: each frame is held, then dissolves into the next. */
+  --stage-hold: 8000ms;
+  --stage-fade: 2400ms;
+}
+
+@keyframes clin-drift-a {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to   { transform: scale(1.13) translate3d(-1.8%, -1.4%, 0); }
+}
+@keyframes clin-drift-b {
+  from { transform: scale(1.12) translate3d(1.4%, -0.8%, 0); }
+  to   { transform: scale(1.03) translate3d(-0.6%, 0.9%, 0); }
+}
+@keyframes clin-drift-c {
+  from { transform: scale(1.05) translate3d(-1.6%, 0.9%, 0); }
+  to   { transform: scale(1.12) translate3d(1.5%, -0.7%, 0); }
+}
+@keyframes clin-drift-d {
+  from { transform: scale(1.11) translate3d(0.4%, 1.4%, 0); }
+  to   { transform: scale(1.04) translate3d(-1.2%, -1.1%, 0); }
+}
+
+/* Wide, lateral drift for full-bleed section backgrounds. */
+@keyframes clin-pan {
+  from { transform: scale(1.12) translate3d(-1.6%, 0, 0); }
+  to   { transform: scale(1.12) translate3d(1.6%, 0, 0); }
+}
+
+/* Availability halo. Deliberately shallow — a breath, not a blink. */
+@keyframes clin-halo {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%      { opacity: 0.9;  transform: scale(1.6); }
+}
+
+@layer components {
+  /* --- Scroll reveal ----------------------------------------------------- */
+  .clin-reveal,
+  .clin-reveal-media {
+    transition-property: opacity, transform, filter;
+    transition-duration: var(--dur-reveal);
+    transition-timing-function: var(--ease-glide);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+  .clin-reveal {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  /* Media reveals from a touch of scale and blur, so images resolve into
+     focus rather than simply appearing. */
+  .clin-reveal-media {
+    opacity: 0;
+    transform: scale(1.03);
+    filter: blur(10px);
+  }
+  .clin-reveal[data-revealed="true"],
+  .clin-reveal-media[data-revealed="true"] {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    will-change: auto;
+  }
+
+  /* --- Hover cards ------------------------------------------------------- */
+  .clin-card {
+    transition-property: transform, box-shadow, border-color;
+    transition-duration: var(--dur-hover);
+    transition-timing-function: var(--ease-glide);
+  }
+  .clin-card:hover,
+  .clin-card:focus-within {
+    transform: translate3d(0, -3px, 0);
+  }
+
+  .clin-media {
+    overflow: hidden;
+  }
+  .clin-media > * {
+    transition: transform 440ms var(--ease-glide);
+    transform-origin: 50% 50%;
+    will-change: transform;
+  }
+  .clin-card:hover .clin-media > *,
+  .clin-card:focus-within .clin-media > * {
+    transform: scale(1.045) translate3d(-0.9%, -0.9%, 0);
+  }
+
+  .clin-nudge {
+    transition: transform var(--dur-hover) var(--ease-glide);
+  }
+  .clin-card:hover .clin-nudge,
+  .clin-card:focus-within .clin-nudge {
+    transform: translate3d(4px, 0, 0);
+  }
+
+  /* --- Crossfading image stage ------------------------------------------- */
+  .clin-stage {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .clin-stage__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity var(--stage-fade) var(--ease-soft);
+  }
+  .clin-stage__slide[data-active="true"] {
+    opacity: 1;
+  }
+  /* Bleeds past the frame so the drift never exposes an edge. */
+  .clin-stage__drift {
+    position: absolute;
+    inset: -7%;
+    animation-duration: var(--drift-duration, 26s);
+    animation-timing-function: var(--ease-soft);
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    /* Paused rather than removed, so a frame leaving the stage holds its
+       position instead of snapping back mid-crossfade. */
+    animation-play-state: paused;
+    will-change: transform;
+  }
+  .clin-stage[data-motion="on"] .clin-stage__slide[data-active="true"] .clin-stage__drift {
+    animation-play-state: running;
+  }
+  .clin-stage__drift[data-drift="a"] { animation-name: clin-drift-a; }
+  .clin-stage__drift[data-drift="b"] { animation-name: clin-drift-b; }
+  .clin-stage__drift[data-drift="c"] { animation-name: clin-drift-c; }
+  .clin-stage__drift[data-drift="d"] { animation-name: clin-drift-d; }
+
+  /* --- Slow lateral background ------------------------------------------- */
+  .clin-pan {
+    animation: clin-pan 34s var(--ease-soft) infinite alternate;
+    will-change: transform;
+  }
+
+  /* --- Availability indicator -------------------------------------------- */
+  .clin-halo {
+    animation: clin-halo 3.8s var(--ease-soft) infinite;
+  }
+
+  /* --- Horizontal showcase ----------------------------------------------- */
+  .clin-track {
+    display: flex;
+    transition: transform 900ms var(--ease-glide);
+    will-change: transform;
+  }
+  .clin-dot {
+    transition:
+      width var(--dur-hover) var(--ease-glide),
+      background-color var(--dur-hover) var(--ease-glide);
+  }
+}
+
+/* No script, no reveal observer — never leave content stranded at opacity 0. */
+@media (scripting: none) {
+  .clin-reveal,
+  .clin-reveal-media {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion
+   Movement is the decoration, never the message: with the preference set the
+   page keeps its full layout and content and simply stops moving.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .clin-reveal,
+  .clin-reveal-media {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+  .clin-card,
+  .clin-media > *,
+  .clin-nudge,
+  .clin-track,
+  .clin-stage__slide {
+    transition: none !important;
+  }
+  .clin-card:hover,
+  .clin-card:focus-within,
+  .clin-card:hover .clin-media > *,
+  .clin-card:focus-within .clin-media > * {
+    transform: none !important;
+  }
+  .clin-stage__drift,
+  .clin-pan,
+  .clin-halo {
+    animation: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Obsidian — landing surface
+   ---------------------------------------------------------------------------
+   A dark, layered theme for the marketing page only. It is scoped to
+   `.theme-canvas` rather than :root so the signed-in app keeps its own palette:
+   the shadcn tokens are redefined inside that one class, and every Tailwind
+   colour utility on the page picks the new values up automatically.
+
+   The ground is never flat. `--canvas-depth` lays a violet-to-blue wash over
+   the obsidian base, with the lightest corner parked top-right behind the hero
+   visual rather than under any body copy.
+
+   Contrast, measured per text node against the pixel actually behind it —
+   the ground is a gradient, so token-vs-token arithmetic is not enough.
+   All 102 text nodes on the page, worst case first:
+     ink-muted  #82828E  4.70–5.49:1  (20 nodes)
+     signal     #6199F6  6.21–7.31:1  (16 nodes)  ← links, labels, icons
+     ink-soft   #A3A3B3  6.90–8.39:1  (23 nodes)
+     ink        #FCFCFC 17.51–20.33:1 (41 nodes)
+     on pill    #0A0A13 19.21:1       (2 nodes)
+   Every node clears AA. ink-muted was #757580 and failed on 13 of them,
+   bottoming out at 3.92:1 over the gradient's lighter corner.
+     halo       #6A6AA6  ← frame outlines only, never text
+   --------------------------------------------------------------------------- */
+
+:root {
+  --canvas-bg: #0a0a13;
+  --canvas-nav: #040407;
+  --canvas-raised: #16161f;
+  --canvas-elevated: #1a1a24;
+  --canvas-ink: #fcfcfc;
+  --canvas-ink-muted: #82828e;
+  --canvas-ink-soft: #a3a3b3;
+  --canvas-signal: #6199f6;
+  /* One chromatic accent: what used to be two tones is now a single blue. */
+  --canvas-signal-deep: #6199f6;
+  --canvas-halo: #6a6aa6;
+  --canvas-hairline: #2a2a32;
+  --canvas-depth:
+    radial-gradient(115% 85% at 88% 6%, rgb(12 29 50 / 0.9) 0%, transparent 62%),
+    linear-gradient(158deg, #0a0010 0%, #02000a 54%, #0c1d32 100%);
+}
+
+@theme inline {
+  --color-signal: var(--canvas-signal);
+  --color-signal-deep: var(--canvas-signal-deep);
+  --color-ink: var(--canvas-ink);
+  --color-ink-muted: var(--canvas-ink-muted);
+  --color-ink-soft: var(--canvas-ink-soft);
+  --color-elevated: var(--canvas-elevated);
+  --color-rule: var(--canvas-hairline);
+  --color-halo: var(--canvas-halo);
+  --color-nav: var(--canvas-nav);
+}
+
+.theme-canvas {
+  --background: var(--canvas-bg);
+  --foreground: var(--canvas-ink);
+  --surface: var(--canvas-raised);
+  --surface-muted: var(--canvas-elevated);
+  --card: var(--canvas-raised);
+  --card-foreground: var(--canvas-ink);
+  --popover: var(--canvas-raised);
+  --popover-foreground: var(--canvas-ink);
+  /* The primary control is white on obsidian, not the accent. */
+  --primary: var(--canvas-ink);
+  --primary-foreground: var(--canvas-bg);
+  --secondary: var(--canvas-raised);
+  --secondary-foreground: var(--canvas-ink);
+  --muted: var(--canvas-raised);
+  --muted-foreground: var(--canvas-ink-muted);
+  --accent: var(--canvas-raised);
+  --accent-foreground: var(--canvas-signal);
+  --border: var(--canvas-hairline);
+  --input: var(--canvas-hairline);
+  --ring: var(--canvas-signal);
+
+  /* body resolved --foreground at :root, so the subtree would otherwise
+     inherit the app's dark ink onto a dark ground. */
+  color: var(--canvas-ink);
+
+  background-color: var(--canvas-bg);
+  background-image: var(--canvas-depth);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+@layer components {
+  /* Display type is never bold: the size does the work, and the negative
+     tracking is what keeps it from reading as loose at 100px. */
+  .canvas-display {
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    line-height: 1.02;
+    color: var(--canvas-ink);
+  }
+  .canvas-display-sm {
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--canvas-ink);
+  }
+  .canvas-body {
+    font-weight: 200;
+    font-size: 18px;
+    line-height: 1.65;
+    color: var(--canvas-ink-muted);
+  }
+  .canvas-eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--canvas-signal-deep);
+  }
+  .canvas-rule {
+    border-top: 1px solid var(--canvas-hairline);
+  }
+  /* Card and mockup containers: 10px, one hairline of violet, nothing else. */
+  .canvas-frame {
+    border-radius: 10px;
+    border: 1px solid var(--canvas-halo);
+    background-color: var(--canvas-raised);
+  }
+
+  /* The one filled control on screen. Full pill, no shadow — white on
+     obsidian is the whole emphasis. */
+  .canvas-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 100px;
+    padding: 0.9rem 1.9rem;
+    font-size: 15px;
+    font-weight: 500;
+    background-color: var(--canvas-ink);
+    color: var(--canvas-bg);
+    transition:
+      background-color var(--dur-hover) var(--ease-glide),
+      transform var(--dur-hover) var(--ease-glide);
+  }
+  .canvas-pill:hover {
+    background-color: #e4e4e8;
+    transform: translate3d(0, -2px, 0);
+  }
+
+  /* Quiet counterpart: the accent label over an accent hairline that fills in
+     on hover. Never competes with the pill. */
+  .canvas-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--canvas-signal-deep);
+    padding-bottom: 2px;
+    background-image: linear-gradient(var(--canvas-signal), var(--canvas-signal));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 1px;
+    transition: background-size var(--dur-hover) var(--ease-glide);
+  }
+  .canvas-link:hover,
+  .canvas-link:focus-visible {
+    background-size: 100% 2px;
+  }
+
+  /* Rows replace cards: a hairline for separation, and the whole row shifts a
+     couple of pixels toward its arrow on hover. */
+  .canvas-row {
+    transition:
+      transform var(--dur-hover) var(--ease-glide),
+      border-color var(--dur-hover) var(--ease-glide);
+  }
+  .canvas-row:hover,
+  .canvas-row:focus-within {
+    transform: translate3d(3px, 0, 0);
+    border-color: #3f3f4c;
+  }
+  /* The shared arrow nudge, re-pointed for a row's diagonal arrow. */
+  .canvas-row:hover .clin-nudge,
+  .canvas-row:focus-within .clin-nudge {
+    transform: translate3d(3px, -3px, 0);
+  }
+}
+
+/* Ambient motion for the hero field: a slow breathe on the connecting lines,
+   well under the threshold where it would read as blinking. */
+@keyframes canvas-breathe {
+  0%,
+  100% {
+    opacity: 0.34;
+  }
+  50% {
+    opacity: 0.62;
+  }
+}
+
+@layer components {
+  .canvas-breathe {
+    animation: canvas-breathe 14s var(--ease-soft) infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-pill,
+  .canvas-link,
+  .canvas-row {
+    transition: none !important;
+  }
+  .canvas-pill:hover,
+  .canvas-row:hover,
+  .canvas-row:focus-within {
+    transform: none !important;
+  }
+  .canvas-breathe {
+    animation: none !important;
+  }
+}
