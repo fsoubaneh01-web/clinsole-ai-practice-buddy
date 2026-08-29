@@ -23,6 +23,10 @@ import {
   clearLedger, forgetCapture, markFailed, markUploaded, readLedger,
   recordCapture, setLedgerNote, unattachedEntries, type PhotoLedgerEntry,
 } from "@/lib/photo-ledger";
+import {
+  clearPhotoBlobs, deletePhotoBlob, fileFromStored, listPhotoBlobs,
+  putPhotoBlob, updatePhotoBlobNote,
+} from "@/lib/photo-blobs";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useStore, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
@@ -115,13 +119,49 @@ function VisitFlow() {
   const photoKey = pid ? `clinsole:visit-photos:${pid}` : null;
   const refreshLedger = useCallback(() => { setLedger(pid ? readLedger(pid) : []); }, [pid]);
   useEffect(() => { refreshLedger(); }, [refreshLedger]);
+  // Both rehydrate paths (sessionStorage = uploaded photos, IndexedDB = still
+  // pending/failed blobs) merge by id so neither can clobber the other's rows.
+  const mergePhotos = useCallback(
+    (incoming: { id: string; url: string; path?: string; uploading?: boolean; failed?: boolean; file?: File; note: string }[]) => {
+      setPhotos((prev) => {
+        const byId = new Map(prev.map((p) => [p.id, p]));
+        for (const p of incoming) {
+          const existing = byId.get(p.id);
+          byId.set(p.id, existing ? { ...p, ...existing, file: existing.file ?? p.file } : p);
+        }
+        return [...byId.values()];
+      });
+    },
+    [],
+  );
   useEffect(() => {
     if (!photoKey) return;
     try {
       const raw = sessionStorage.getItem(photoKey);
-      if (raw) setPhotos(JSON.parse(raw));
+      if (raw) mergePhotos(JSON.parse(raw));
     } catch { /* ignore */ }
-  }, [photoKey]);
+  }, [photoKey, mergePhotos]);
+  // Pull back any photo whose upload never completed, so "Retry" still works
+  // after a remount or a full page reload.
+  useEffect(() => {
+    if (!pid) return;
+    let cancelled = false;
+    void (async () => {
+      const stored = await listPhotoBlobs(pid);
+      if (cancelled || !stored.length) return;
+      mergePhotos(
+        stored.map((e) => ({
+          id: e.id,
+          url: e.thumbnail,
+          note: e.note || "",
+          failed: true,
+          uploading: false,
+          file: fileFromStored(e),
+        })),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [pid, mergePhotos]);
   useEffect(() => {
     if (!photoKey) return;
     try {
@@ -309,6 +349,9 @@ function VisitFlow() {
         // finish gate can say so instead of saving a visit without it.
         recordCapture(pid, id);
         refreshLedger();
+        // Persist the bytes before the upload starts: a failure (or a remount
+        // mid-upload) then still leaves something retryable on disk.
+        await putPhotoBlob(pid, id, prepared.file, prepared.thumbnail);
         setPhotos((p) => [
           { id, url: prepared!.thumbnail, note: "", uploading: true, file: prepared!.file },
           ...p,
@@ -327,6 +370,8 @@ function VisitFlow() {
       if (res.error || !res.paths?.[0]) throw new Error(res.error || "Photo upload failed.");
       if (import.meta.env.DEV) console.info("[photo] uploaded", { id, path: res.paths[0] });
       markUploaded(pid, id, res.paths[0]);
+      // Uploaded — the local copy is no longer needed.
+      void deletePhotoBlob(pid, id);
       setPhotos((p) =>
         p.map((x) => (x.id === id ? { ...x, uploading: false, failed: false, path: res.paths![0] } : x)),
       );
@@ -352,12 +397,12 @@ function VisitFlow() {
   };
 
   const removePhoto = (id: string) => {
-    if (pid) { forgetCapture(pid, id); refreshLedger(); }
+    if (pid) { forgetCapture(pid, id); refreshLedger(); void deletePhotoBlob(pid, id); }
     setPhotos((p) => p.filter((x) => x.id !== id));
   };
 
   const notePhoto = (id: string, note: string) => {
-    if (pid) { setLedgerNote(pid, id, note); refreshLedger(); }
+    if (pid) { setLedgerNote(pid, id, note); refreshLedger(); void updatePhotoBlobNote(pid, id, note); }
     setPhotos((p) => p.map((x) => (x.id === id ? { ...x, note } : x)));
   };
 
@@ -475,7 +520,7 @@ function VisitFlow() {
           toast.error("Visit saved, but photos could not be attached to the record.");
         } else {
           setPhotos([]);
-          if (pid) { clearLedger(pid); refreshLedger(); }
+          if (pid) { clearLedger(pid); refreshLedger(); void clearPhotoBlobs(pid); }
           if (photoKey) try { sessionStorage.removeItem(photoKey); } catch { /* ignore */ }
         }
       } else if (pid) {
@@ -493,6 +538,8 @@ function VisitFlow() {
         }
         clearLedger(pid);
         refreshLedger();
+        // The visit is over — stored blobs would otherwise pile up per patient.
+        void clearPhotoBlobs(pid);
       }
 
 
