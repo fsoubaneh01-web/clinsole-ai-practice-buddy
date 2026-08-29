@@ -349,6 +349,9 @@ function VisitFlow() {
         // finish gate can say so instead of saving a visit without it.
         recordCapture(pid, id);
         refreshLedger();
+        // Persist the bytes before the upload starts: a failure (or a remount
+        // mid-upload) then still leaves something retryable on disk.
+        await putPhotoBlob(pid, id, prepared.file, prepared.thumbnail);
         setPhotos((p) => [
           { id, url: prepared!.thumbnail, note: "", uploading: true, file: prepared!.file },
           ...p,
@@ -367,6 +370,8 @@ function VisitFlow() {
       if (res.error || !res.paths?.[0]) throw new Error(res.error || "Photo upload failed.");
       if (import.meta.env.DEV) console.info("[photo] uploaded", { id, path: res.paths[0] });
       markUploaded(pid, id, res.paths[0]);
+      // Uploaded — the local copy is no longer needed.
+      void deletePhotoBlob(pid, id);
       setPhotos((p) =>
         p.map((x) => (x.id === id ? { ...x, uploading: false, failed: false, path: res.paths![0] } : x)),
       );
@@ -392,12 +397,12 @@ function VisitFlow() {
   };
 
   const removePhoto = (id: string) => {
-    if (pid) { forgetCapture(pid, id); refreshLedger(); }
+    if (pid) { forgetCapture(pid, id); refreshLedger(); void deletePhotoBlob(pid, id); }
     setPhotos((p) => p.filter((x) => x.id !== id));
   };
 
   const notePhoto = (id: string, note: string) => {
-    if (pid) { setLedgerNote(pid, id, note); refreshLedger(); }
+    if (pid) { setLedgerNote(pid, id, note); refreshLedger(); void updatePhotoBlobNote(pid, id, note); }
     setPhotos((p) => p.map((x) => (x.id === id ? { ...x, note } : x)));
   };
 
