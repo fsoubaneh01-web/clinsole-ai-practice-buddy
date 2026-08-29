@@ -23,6 +23,10 @@ import {
   clearLedger, forgetCapture, markFailed, markUploaded, readLedger,
   recordCapture, setLedgerNote, unattachedEntries, type PhotoLedgerEntry,
 } from "@/lib/photo-ledger";
+import {
+  clearPhotoBlobs, deletePhotoBlob, fileFromStored, listPhotoBlobs,
+  putPhotoBlob, updatePhotoBlobNote,
+} from "@/lib/photo-blobs";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useStore, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
