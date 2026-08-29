@@ -119,13 +119,49 @@ function VisitFlow() {
   const photoKey = pid ? `clinsole:visit-photos:${pid}` : null;
   const refreshLedger = useCallback(() => { setLedger(pid ? readLedger(pid) : []); }, [pid]);
   useEffect(() => { refreshLedger(); }, [refreshLedger]);
+  // Both rehydrate paths (sessionStorage = uploaded photos, IndexedDB = still
+  // pending/failed blobs) merge by id so neither can clobber the other's rows.
+  const mergePhotos = useCallback(
+    (incoming: { id: string; url: string; path?: string; uploading?: boolean; failed?: boolean; file?: File; note: string }[]) => {
+      setPhotos((prev) => {
+        const byId = new Map(prev.map((p) => [p.id, p]));
+        for (const p of incoming) {
+          const existing = byId.get(p.id);
+          byId.set(p.id, existing ? { ...p, ...existing, file: existing.file ?? p.file } : p);
+        }
+        return [...byId.values()];
+      });
+    },
+    [],
+  );
   useEffect(() => {
     if (!photoKey) return;
     try {
       const raw = sessionStorage.getItem(photoKey);
-      if (raw) setPhotos(JSON.parse(raw));
+      if (raw) mergePhotos(JSON.parse(raw));
     } catch { /* ignore */ }
-  }, [photoKey]);
+  }, [photoKey, mergePhotos]);
+  // Pull back any photo whose upload never completed, so "Retry" still works
+  // after a remount or a full page reload.
+  useEffect(() => {
+    if (!pid) return;
+    let cancelled = false;
+    void (async () => {
+      const stored = await listPhotoBlobs(pid);
+      if (cancelled || !stored.length) return;
+      mergePhotos(
+        stored.map((e) => ({
+          id: e.id,
+          url: e.thumbnail,
+          note: e.note || "",
+          failed: true,
+          uploading: false,
+          file: fileFromStored(e),
+        })),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [pid, mergePhotos]);
   useEffect(() => {
     if (!photoKey) return;
     try {
