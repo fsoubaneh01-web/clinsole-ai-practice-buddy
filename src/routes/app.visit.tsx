@@ -520,7 +520,7 @@ function VisitFlow() {
           toast.error("Visit saved, but photos could not be attached to the record.");
         } else {
           setPhotos([]);
-          if (pid) { clearLedger(pid); refreshLedger(); }
+          if (pid) { clearLedger(pid); refreshLedger(); void clearPhotoBlobs(pid); }
           if (photoKey) try { sessionStorage.removeItem(photoKey); } catch { /* ignore */ }
         }
       } else if (pid) {
@@ -538,6 +538,8 @@ function VisitFlow() {
         }
         clearLedger(pid);
         refreshLedger();
+        // The visit is over — stored blobs would otherwise pile up per patient.
+        void clearPhotoBlobs(pid);
       }
 
 
