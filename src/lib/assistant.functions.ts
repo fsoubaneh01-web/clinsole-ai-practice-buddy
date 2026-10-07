@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 export type AssistantKind = "followup" | "education" | "marketing" | "business";
 
@@ -47,12 +46,11 @@ const KIND_BRIEF: Record<AssistantKind, { task: string; format: string }> = {
 export const generateAssistantContent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => InputSchema.parse(data))
-  .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("Missing LOVABLE_API_KEY");
-
-    const gateway = createLovableAiGatewayProvider(key);
-    const model = gateway("google/gemini-2.5-flash");
+  .handler(async ({ data, context }) => {
+    const { getTextModel } = await import("./ai-gateway.server");
+    const { reserveAiCredit } = await import("./ai-usage.server");
+    const model = getTextModel();
+    await reserveAiCredit(context.supabase, "assistant");
 
     const brief = KIND_BRIEF[data.kind];
     const practice = [
@@ -78,7 +76,14 @@ ${data.prompt}
 
 Format: ${brief.format}`;
 
-    const { text } = await generateText({ model, system, prompt });
+    const { text } = await generateText({
+      model,
+      system,
+      prompt,
+      maxOutputTokens: 1200,
+      maxRetries: 0,
+      timeout: 45000,
+    });
 
     const output = text.trim();
     if (!output) throw new Error("AI returned an empty response. Please try again.");

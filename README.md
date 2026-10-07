@@ -107,11 +107,18 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Independent development is supported with Node 22.12+ and npm:
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+git clone https://github.com/fsoubaneh01-web/clinsole-ai-practice-buddy.git
+cd clinsole-ai-practice-buddy
+npm ci
+cp .env.example .env.local
+# Configure staging credentials in .env.local, then:
 npm run dev
 ```
+
+See [the migration runbook](docs/migration-runbook.md) for the required staging
+migration, independent AI configuration, production builds, and release checks.
+Never commit `.env.local` or patient exports. Default builds use portable Node
+hosting; the existing Lovable environment has an explicit compatibility path.

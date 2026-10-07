@@ -84,8 +84,17 @@ function VisitFlow() {
   const { patientId } = Route.useSearch();
   const navigate = useNavigate();
   const {
-    patients, nurse, ageOf, latestAssessmentFor, footAssessments, uploadClinicalPhotos,
-    addTreatment, addTransaction, addAppointment, saveVisitPhotos,
+    patients,
+    nurse,
+    ageOf,
+    latestAssessmentFor,
+    refreshAiUsage,
+    footAssessments,
+    uploadClinicalPhotos,
+    addTreatment,
+    addTransaction,
+    addAppointment,
+    saveVisitPhotos,
   } = useStore();
   const generate = useServerFn(generateSoapNote);
   const checkOverlap = useServerFn(checkAppointmentOverlap);
@@ -438,6 +447,7 @@ function VisitFlow() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to generate note");
     } finally {
+      void refreshAiUsage();
       setSoapLoading(false);
     }
   };

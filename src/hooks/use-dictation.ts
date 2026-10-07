@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { createClientOnlyFn, useServerFn } from "@tanstack/react-start";
 import { transcribeDictation } from "@/lib/dictation.functions";
 import { getDictationQuota } from "@/lib/dictation-quota.functions";
 import { DICTATION_LIMIT_MESSAGE, clientMonthlyMinuteLimit } from "@/lib/dictation-limits";
 
+import { MAX_DICTATION_SECONDS } from "@/lib/dictation-audio";
+
+const recordingToWav = createClientOnlyFn(async (blob: Blob) => {
+  const { recordingToWav: convert } = await import("@/lib/dictation-audio.client");
+  return convert(blob);
+});
 
 export type DictationStatus = "idle" | "requesting" | "recording" | "transcribing" | "error";
 
@@ -68,14 +74,24 @@ export function useDictation(opts: {
   const chunksRef = useRef<Blob[]>([]);
   const startedAtRef = useRef(0);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const supported =
     typeof window !== "undefined" &&
     typeof MediaRecorder !== "undefined" &&
-    !!navigator.mediaDevices?.getUserMedia;
+    !!navigator.mediaDevices?.getUserMedia &&
+    typeof AudioContext !== "undefined" &&
+    typeof OfflineAudioContext !== "undefined";
 
   const cleanup = useCallback(() => {
-    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
+    if (autoStopRef.current) {
+      clearTimeout(autoStopRef.current);
+      autoStopRef.current = null;
+    }
+    if (tickRef.current) {
+      clearInterval(tickRef.current);
+      tickRef.current = null;
+    }
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
     recorderRef.current = null;
   }, []);
@@ -120,7 +136,6 @@ export function useDictation(opts: {
     recorder.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
 
     recorder.onstop = async () => {
-      const duration = Math.max(0.5, (Date.now() - startedAtRef.current) / 1000);
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
       cleanup();
       setSeconds(0);
@@ -143,11 +158,11 @@ export function useDictation(opts: {
         if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
       };
       try {
+        const wav = await recordingToWav(blob);
         const res = await transcribe({
           data: {
-            audioBase64: bytesToBase64(await blob.arrayBuffer()),
-            mimeType: blob.type,
-            durationSeconds: duration,
+            audioBase64: bytesToBase64(wav),
+            mimeType: "audio/wav",
             visitId,
           },
         });
@@ -179,6 +194,9 @@ export function useDictation(opts: {
 
     startedAtRef.current = Date.now();
     recorder.start();
+    autoStopRef.current = setTimeout(() => {
+      if (recorder.state === "recording") recorder.stop();
+    }, MAX_DICTATION_SECONDS * 1000);
     setSeconds(0);
     tickRef.current = setInterval(
       () => setSeconds(Math.floor((Date.now() - startedAtRef.current) / 1000)),

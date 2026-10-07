@@ -1,11 +1,10 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, nitro (build-only using cloudflare as a default target),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { execSync } from "node:child_process";
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig, loadEnv } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+import { nitro } from "nitro/vite";
 
 /**
  * Short commit of the build, surfaced in the app so the running bundle can be
@@ -30,16 +29,39 @@ function buildCommit(): string {
   }
 }
 
-export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
-  vite: {
-    define: {
-      __BUILD_COMMIT__: JSON.stringify(buildCommit()),
-      __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-    },
-  },
+export default defineConfig(async ({ command, mode }) => {
+  // Vite loads VITE_* for browsers. Server configuration stays in process.env.
+  const env = loadEnv(mode, process.cwd(), "");
+  for (const [key, value] of Object.entries(env)) {
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
+  const buildDefines = {
+    __BUILD_COMMIT__: JSON.stringify(buildCommit()),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  };
+
+  // Explicit compatibility path for the existing Lovable hosting environment.
+  if (process.env.LOVABLE_SANDBOX === "1" || process.env.CLINSOLE_BUILD_TARGET === "lovable") {
+    const { defineConfig: lovableConfig } = await import("@lovable.dev/vite-tanstack-config");
+    const config = lovableConfig({
+      tanstackStart: { server: { entry: "server" } },
+      vite: { define: buildDefines },
+    });
+    return typeof config === "function" ? config({ command, mode }) : config;
+  }
+
+  return {
+    plugins: [
+      tailwindcss(),
+      tsconfigPaths({ projects: ["./tsconfig.json"] }),
+      tanstackStart({ server: { entry: "server" } }),
+      ...(command === "build"
+        ? [nitro({ preset: process.env.NITRO_PRESET || "node-server" })]
+        : []),
+      react(),
+    ],
+    define: buildDefines,
+    resolve: { dedupe: ["react", "react-dom", "@tanstack/react-router"] },
+    server: { host: "0.0.0.0", port: 3000 },
+  };
 });

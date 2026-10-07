@@ -10,7 +10,7 @@ export const Route = createFileRoute("/app/subscription")({ component: Subscript
 
 function Subscription() {
   const nav = useNavigate();
-  const { nurse, upgradeToPremium, signOut } = useStore();
+  const { nurse, signOut } = useStore();
 
   return (
     <AppShell title="Subscription">

@@ -22,7 +22,15 @@ export const Route = createFileRoute("/app/soap")({
 
 function SoapNote() {
   const { patientId } = Route.useSearch();
-  const { patients, addTreatment, addTransaction, ageOf, nurse, useAiCredit, latestAssessmentFor } = useStore();
+  const {
+    patients,
+    addTreatment,
+    addTransaction,
+    ageOf,
+    nurse,
+    refreshAiUsage,
+    latestAssessmentFor,
+  } = useStore();
   const [pid, setPid] = useState(patientId || patients[0]?.id || "");
   const [brief, setBrief] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,15 +53,9 @@ function SoapNote() {
       toast.error("Add a few quick visit notes to generate from.");
       return;
     }
-    // Loading starts before the credit check so a slow or stuck check still
-    // shows the spinner, and everything after it is inside the try so a thrown
-    // error surfaces as a toast instead of an unhandled rejection.
+    // The server checks and reserves usage before calling the AI provider.
     setLoading(true);
     try {
-      if (!(await useAiCredit())) {
-        toast.error("You've used all AI notes on the Free plan this month.");
-        return;
-      }
       const age = ageOf(patient.dob);
       const out = await generate({
         data: {
@@ -72,7 +74,10 @@ function SoapNote() {
       console.error("soap generate", e);
       const msg = e instanceof Error ? e.message : "Failed to generate note";
       toast.error(msg);
-    } finally { setLoading(false); }
+    } finally {
+      void refreshAiUsage();
+      setLoading(false);
+    }
   };
 
   const save = async () => {

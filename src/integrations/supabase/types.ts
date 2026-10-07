@@ -528,6 +528,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      reserve_ai_usage: {
+        Args: { p_kind: string };
+        Returns: number;
+      };
+      reserve_dictation_usage: {
+        Args: {
+          p_user_id: string;
+          p_visit_id: string | null;
+          p_seconds: number;
+          p_cost: number;
+          p_minute_limit: number;
+          p_spend_cap: number;
+        };
+        Returns: string;
+      };
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

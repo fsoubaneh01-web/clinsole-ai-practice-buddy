@@ -196,8 +196,7 @@ type Ctx = {
   listVisitPhotos: (scope: { treatmentId?: string; patientId?: string }) => Promise<VisitPhoto[]>;
   latestAssessmentFor: (patientId: string) => FootAssessment | undefined;
   addTransaction: (t: Omit<Transaction, "id">) => Promise<void>;
-  upgradeToPremium: () => Promise<void>;
-  useAiCredit: (kind?: "soap" | "assistant") => Promise<boolean>;
+  refreshAiUsage: () => Promise<void>;
   ageOf: (dob: string) => number;
 };
 
@@ -627,22 +626,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setNurse: async (n) => {
       const userId = session?.user?.id;
       if (!userId) return;
-      const { error } = await supabase.from("nurse_profiles").upsert(
-        {
-          user_id: userId,
-          name: n.name,
-          email: n.email,
-          credentials: n.credentials,
-          service_area: n.serviceArea,
-          years_experience: n.yearsExperience,
-          bio: n.bio,
-          plan: n.plan,
-          onboarded: true,
-        },
-        { onConflict: "user_id" }
-      );
-      if (error) { console.error("setNurse", error); return; }
-      setNurseState({ ...n, aiUsedThisMonth: nurse?.aiUsedThisMonth ?? n.aiUsedThisMonth });
+      const { data, error } = await supabase
+        .from("nurse_profiles")
+        .upsert(
+          {
+            user_id: userId,
+            name: n.name,
+            email: n.email,
+            credentials: n.credentials,
+            service_area: n.serviceArea,
+            years_experience: n.yearsExperience,
+            bio: n.bio,
+            onboarded: true,
+          },
+          { onConflict: "user_id" },
+        )
+        .select()
+        .single();
+      if (error) {
+        console.error("setNurse", error);
+        return;
+      }
+      if (data) setNurseState(rowToNurse(data, nurse?.aiUsedThisMonth ?? 0));
       setOnboarded(true);
     },
 
@@ -990,38 +995,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (error || !data) { console.error("addTransaction", error); return; }
       setTransactions((s) => [rowToTransaction(data as TransactionRow), ...s]);
     },
-    upgradeToPremium: async () => {
+    // Display only. The generation endpoint reserves the credit atomically.
+    refreshAiUsage: async () => {
       const userId = session?.user?.id;
       if (!userId) return;
-      const { error } = await supabase
-        .from("nurse_profiles")
-        .update({ plan: "premium" })
-        .eq("user_id", userId);
-      if (error) { console.error("upgradeToPremium", error); return; }
-      setNurseState((n) => (n ? { ...n, plan: "premium" } : n));
-    },
-    /**
-     * Server-backed AI credit check. Usage is counted from ai_usage_events rows
-     * created since the start of the current calendar month, so credits reset
-     * automatically on month rollover and cannot be reset by clearing storage.
-     */
-    useAiCredit: async (kind = "soap") => {
-      const userId = session?.user?.id;
-      if (!userId) return false;
-      const plan = nurse?.plan || "free";
-      const limit = PLAN_LIMITS[plan].aiPerMonth;
       const { count, error } = await supabase
         .from("ai_usage_events")
         .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
         .gte("created_at", monthStartIso());
-      if (error) { console.error("aiUsage count", error); return false; }
-      const used = count ?? 0;
-      setNurseState((n) => (n ? { ...n, aiUsedThisMonth: used } : n));
-      if (used >= limit) return false;
-      const { error: insErr } = await supabase.from("ai_usage_events").insert({ user_id: userId, kind });
-      if (insErr) { console.error("aiUsage insert", insErr); return false; }
-      setNurseState((n) => (n ? { ...n, aiUsedThisMonth: used + 1 } : n));
-      return true;
+      if (error) return;
+      setNurseState((n) => (n ? { ...n, aiUsedThisMonth: count ?? 0 } : n));
     },
   };
 
