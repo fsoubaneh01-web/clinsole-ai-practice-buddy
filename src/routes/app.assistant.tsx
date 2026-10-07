@@ -19,7 +19,7 @@ const kinds: { id: AssistantKind; label: string; icon: any; hint: string; desc: 
 ];
 
 function Assistant() {
-  const { nurse, useAiCredit } = useStore();
+  const { nurse, refreshAiUsage } = useStore();
   const [kind, setKind] = useState<AssistantKind>("followup");
   const [prompt, setPrompt] = useState("");
   const [out, setOut] = useState("");
@@ -35,15 +35,9 @@ function Assistant() {
       toast.error("Add a little context to generate from.");
       return;
     }
-    // Loading starts before the credit check so a slow or stuck check still
-    // shows the spinner, and everything after it is inside the try so a thrown
-    // error surfaces as a toast instead of an unhandled rejection.
+    // The server checks and reserves usage before calling the AI provider.
     setLoading(true);
     try {
-      if (!(await useAiCredit("assistant"))) {
-        toast.error("You've used all AI credits on the Free plan this month.");
-        return;
-      }
       const res = await generate({
         data: {
           kind,
@@ -58,7 +52,10 @@ function Assistant() {
     } catch (e) {
       console.error("assistant generate", e);
       toast.error(e instanceof Error ? e.message : "Failed to generate content");
-    } finally { setLoading(false); }
+    } finally {
+      void refreshAiUsage();
+      setLoading(false);
+    }
   };
 
   const current = kinds.find((k) => k.id === kind)!;

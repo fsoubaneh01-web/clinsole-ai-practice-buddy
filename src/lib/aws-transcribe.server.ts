@@ -184,8 +184,3 @@ export async function transcribeMedicalAudio(
   }
   throw new Error("Transcription timed out. Please try a shorter recording or type your notes.");
 }
-
-/** AWS Transcribe Medical list price: $0.075 per minute. */
-export function estimateCost(durationSeconds: number): number {
-  return Math.round((durationSeconds / 60) * 0.075 * 10000) / 10000;
-}

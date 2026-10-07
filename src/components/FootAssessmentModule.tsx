@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import {
   Mic, Camera, Send, Sparkles, FileText, X, Image as ImageIcon,
@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDictation } from "@/hooks/use-dictation";
-import plantarAsset from "@/assets/foot-plantar.png.asset.json";
-import dorsalAsset from "@/assets/foot-dorsal-toesup-full.png.asset.json";
+import plantarImage from "@/assets/foot-plantar.png";
+import dorsalImage from "@/assets/foot-dorsal-toesup-full.png";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -655,7 +655,7 @@ function FootSvg({
   const observedIds = new Set(
     observations.filter((o) => o.side === side && o.view === view).map((o) => o.region),
   );
-  const baseImage = view === "plantar" ? plantarAsset.url : dorsalAsset.url;
+  const baseImage = view === "plantar" ? plantarImage : dorsalImage;
   // Source artwork: the plantar photo is a LEFT foot (hallux on the panel's
   // inner edge). The dorsal photo — shot toes-down — is a RIGHT foot (its
   // hallux sits on the image's own left side), so the RIGHT panel uses it
