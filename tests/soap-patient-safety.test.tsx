@@ -64,11 +64,14 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => { view.unmount(); }); });
 
 test("switching patients clears visit inputs and the generated draft", async () => {
+  await act(async () => { view.root.findAllByType("textarea")[1].props.onChange({ target: { value: "TEST A assessment" } }); });
   await makeDraft();
-  expect(view.root.findAllByType("textarea")).toHaveLength(5);
+  expect(generate.mock.calls[0][0].data.nurseAssessment).toBe("TEST A assessment");
+  expect(view.root.findAllByType("textarea")).toHaveLength(6);
   await selectPatient("B");
-  expect(view.root.findAllByType("textarea")).toHaveLength(1);
-  expect(view.root.findByType("textarea").props.value).toBe("");
+  expect(view.root.findAllByType("textarea")).toHaveLength(2);
+  expect(view.root.findAllByType("textarea")[0].props.value).toBe("");
+  expect(view.root.findAllByType("textarea")[1].props.value).toBe("");
   expect(view.root.findByType("select").props.value).toBe("B");
 });
 
@@ -80,7 +83,7 @@ test("late AI responses cannot populate another patient's editor", async () => {
   await act(async () => { request = button("Generate SOAP note").props.onClick(); });
   await selectPatient("B");
   await act(async () => { pending.resolve({ s: "A", o: "A", a: "A", p: "A" }); await request; });
-  expect(view.root.findAllByType("textarea")).toHaveLength(1);
+  expect(view.root.findAllByType("textarea")).toHaveLength(2);
   expect(messages).not.toContain("SOAP note generated");
 });
 
@@ -91,7 +94,7 @@ test("returning to patient A still discards the old in-flight A response", async
   await act(async () => { request = button("Generate SOAP note").props.onClick(); });
   await selectPatient("B"); await selectPatient("A");
   await act(async () => { pending.resolve({ s: "old A", o: "", a: "", p: "" }); await request; });
-  expect(view.root.findAllByType("textarea")).toHaveLength(1);
+  expect(view.root.findAllByType("textarea")).toHaveLength(2);
 });
 
 test("changing the route patient clears the draft", async () => {
@@ -99,7 +102,7 @@ test("changing the route patient clears the draft", async () => {
   search = { patientId: "B" };
   await act(async () => { view.update(<Route.component />); });
   expect(view.root.findByType("select").props.value).toBe("B");
-  expect(view.root.findAllByType("textarea")).toHaveLength(1);
+  expect(view.root.findAllByType("textarea")).toHaveLength(2);
 });
 
 test("rapid repeated saves create only one treatment", async () => {
@@ -120,7 +123,7 @@ test("an income failure preserves the saved note and cannot invite a duplicate s
   addTransaction.mockImplementation(async () => { throw new Error("offline"); });
   await act(async () => { await button("Save to patient record").props.onClick(); });
   expect(addTreatment).toHaveBeenCalledTimes(1);
-  expect(view.root.findAllByType("textarea")).toHaveLength(1);
+  expect(view.root.findAllByType("textarea")).toHaveLength(2);
   expect(messages.some((message) => message.includes("Note saved, but income"))).toBe(true);
 });
 
@@ -129,7 +132,7 @@ test("failed clinical saves retain the draft for retry", async () => {
   addTreatment.mockImplementation(async () => ({ error: "Save failed" }));
   await act(async () => { await button("Save to patient record").props.onClick(); });
   expect(addTransaction).not.toHaveBeenCalled();
-  expect(view.root.findAllByType("textarea")).toHaveLength(5);
+  expect(view.root.findAllByType("textarea")).toHaveLength(6);
   expect(messages).toContain("Save failed");
 });
 
@@ -147,8 +150,8 @@ test("changing nurse accounts clears the previous nurse's draft", async () => {
   await makeDraft();
   store = { ...store, session: { user: { id: "nurse-2" } } };
   await act(async () => { view.update(<Route.component />); });
-  expect(view.root.findAllByType("textarea")).toHaveLength(1);
-  expect(view.root.findByType("textarea").props.value).toBe("");
+  expect(view.root.findAllByType("textarea")).toHaveLength(2);
+  expect(view.root.findAllByType("textarea")[0].props.value).toBe("");
 });
 
 test("negative visit fees never reach persistence", async () => {

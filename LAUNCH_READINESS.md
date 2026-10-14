@@ -14,6 +14,7 @@ Target: Friday, October 16, 2026 (America/Toronto). This is a target, not a decl
 - Mobile headers now link to Account & plan. Manual income entry waits for persistence, reports failures, keeps failed inputs and blocks repeated submits.
 - Added behavioral regression tests with mocked persistence/AI. These do not validate production RLS, billing, transcription, AI accuracy or infrastructure privacy.
 - The AI prompt distinguishes the dated latest stored assessment from current visit observations, prohibits invented findings/interventions, and uses "Not documented" for missing information. Prompt wording alone cannot guarantee model accuracy; synthetic live validation remains required.
+- After a synthetic live draft invented "foot health status appears stable", Assessment was removed from model control: the server now replaces it with the nurse's explicitly entered assessment, or "Not documented". This applies to both structured-output and JSON fallback responses. The standalone SOAP screen exposes an optional nurse-assessment input; the guided Visit screen can still be edited during review. Other AI sections continue to require nurse verification.
 
 ## Release blockers
 
@@ -28,7 +29,7 @@ Target: Friday, October 16, 2026 (America/Toronto). This is a target, not a decl
 
 ## Verification commands
 
-Local verification on October 13, 2026 (Toronto): 13 SOAP/income regression tests passed, TypeScript passed using locked dependencies, production build passed, and `git diff --check` passed. Live account/database/AI/deployment verification remains blocked by access.
+Local verification on October 13, 2026 (Toronto): 16 SOAP/income/assessment regression tests passed, TypeScript passed using locked dependencies, production build passed, and `git diff --check` passed. User-provided preview screenshots at 22:39 showed Test A selected with both quick notes and SOAP draft cleared after switching from Test B; the mobile account link also worked. The corrected Assessment output still needs a live synthetic recheck. Agent database/deployment access remains blocked.
 
 Use the committed Bun lockfile. Resolving caret ranges with npm without the lockfile can select incompatible TanStack versions.
 

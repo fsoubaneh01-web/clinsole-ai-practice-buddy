@@ -38,6 +38,7 @@ function PatientSoapNote({ initialPatientId }: { initialPatientId?: string }) {
 function SoapEditor({ pid, onPatientChange }: { pid: string; onPatientChange: (id: string) => void }) {
   const { patients, addTreatment, addTransaction, ageOf, nurse, useAiCredit, latestAssessmentFor } = useStore();
   const [brief, setBrief] = useState("");
+  const [nurseAssessment, setNurseAssessment] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const active = useRef(true);
@@ -87,6 +88,7 @@ function SoapEditor({ pid, onPatientChange }: { pid: string; onPatientChange: (i
           diabetesStatus: patient.diabetesStatus,
           allergies: patient.allergies || "",
           briefNotes: brief,
+          nurseAssessment,
           assessmentSummary: latestAssessment ? `Recorded on ${latestAssessment.date}: ${summarizeAssessment(latestAssessment)}` : "",
         },
       });
@@ -118,7 +120,7 @@ function SoapEditor({ pid, onPatientChange }: { pid: string; onPatientChange: (i
       if (res.error) { if (active.current) toast.error(res.error); return; }
       // The clinical record is saved. Clear it before recording income so a
       // subsequent accounting failure cannot invite a duplicate clinical save.
-      if (active.current) { setSoap(null); setBrief(""); }
+      if (active.current) { setSoap(null); setBrief(""); setNurseAssessment(""); }
       try {
         await addTransaction({ type: "income", amount: fee, date, category: "Visit", patientId: patient.id });
       } catch {
@@ -168,6 +170,11 @@ function SoapEditor({ pid, onPatientChange }: { pid: string; onPatientChange: (i
               <div className="space-y-1.5">
                 <Label>Quick visit notes</Label>
                 <Textarea rows={8} value={brief} onChange={(e) => setBrief(e.target.value)} placeholder="What did you observe and do?" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="nurse-assessment">Your clinical assessment (optional)</Label>
+                <Textarea id="nurse-assessment" rows={3} maxLength={2000} value={nurseAssessment} disabled={loading || saving} onChange={(e) => setNurseAssessment(e.target.value)} placeholder="Enter your own clinical assessment, or leave blank." />
+                <p className="text-xs text-muted-foreground">Copied into Assessment as entered. If blank, the draft will say “Not documented”.</p>
               </div>
               {patient && (
                 latestAssessment ? (
