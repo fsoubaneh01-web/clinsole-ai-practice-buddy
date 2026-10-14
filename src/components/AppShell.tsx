@@ -98,6 +98,11 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
             </div>
             <div className="flex items-center gap-2">
               {actions}
+              <Button asChild size="sm" variant="outline" className="lg:hidden">
+                <Link to="/app/subscription" aria-label="Account and plan">
+                  <Settings className="h-4 w-4" /><span className="sr-only">Account & plan</span>
+                </Link>
+              </Button>
               {nurse?.plan === "free" && (
                 <Button asChild size="sm" className="hidden gradient-primary text-primary-foreground lg:inline-flex">
                   <Link to="/app/subscription"><Crown className="mr-1 h-4 w-4" />Upgrade</Link>

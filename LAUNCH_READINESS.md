@@ -11,6 +11,7 @@ Target: Friday, October 16, 2026 (America/Toronto). This is a target, not a decl
 - Failed income writes raise errors. When the note was saved but the income write fails, the nurse is told to add the income separately without saving the clinical note again.
 - Removed the calendar's fake reminder-send action. Automated reminders need a delivery implementation before they can return.
 - Premium is labelled coming soon; removed misleading signup, reminder, support and privacy promises.
+- Mobile headers now link to Account & plan. Manual income entry waits for persistence, reports failures, keeps failed inputs and blocks repeated submits.
 - Added behavioral regression tests with mocked persistence/AI. These do not validate production RLS, billing, transcription, AI accuracy or infrastructure privacy.
 - The AI prompt distinguishes the dated latest stored assessment from current visit observations, prohibits invented findings/interventions, and uses "Not documented" for missing information. Prompt wording alone cannot guarantee model accuracy; synthetic live validation remains required.
 
@@ -27,13 +28,13 @@ Target: Friday, October 16, 2026 (America/Toronto). This is a target, not a decl
 
 ## Verification commands
 
-Local verification on October 13, 2026 (Toronto): 10 patient-safety regression tests passed, TypeScript passed using locked dependencies, production build passed, and `git diff --check` passed. Live account/database/AI/deployment verification remains blocked by access.
+Local verification on October 13, 2026 (Toronto): 13 SOAP/income regression tests passed, TypeScript passed using locked dependencies, production build passed, and `git diff --check` passed. Live account/database/AI/deployment verification remains blocked by access.
 
 Use the committed Bun lockfile. Resolving caret ranges with npm without the lockfile can select incompatible TanStack versions.
 
 ```sh
 bun install --frozen-lockfile
-bun test tests/soap-patient-safety.test.tsx
+bun test tests
 bunx tsc --noEmit
 bun run build
 git diff --check

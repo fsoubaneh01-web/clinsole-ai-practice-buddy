@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useStore } from "@/lib/store";
+import { useStore, type Transaction } from "@/lib/store";
 import { format, subMonths, isSameMonth } from "date-fns";
 import { ArrowDownRight, ArrowUpRight, Plus, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/income")({ component: Income });
@@ -110,14 +110,16 @@ function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function NewTxDialog({ onCreate }: any) {
+function NewTxDialog({ onCreate }: { onCreate: (transaction: Omit<Transaction, "id">) => Promise<void> }) {
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const busy = useRef(false);
   const [type, setType] = useState<"income" | "expense">("income");
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState("Visit");
   const [note, setNote] = useState("");
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(value) => { if (!busy.current) setOpen(value); }}>
       <DialogTrigger asChild>
         <Button size="sm" className="gradient-primary text-primary-foreground"><Plus className="mr-1 h-4 w-4" />Add transaction</Button>
       </DialogTrigger>
@@ -141,12 +143,24 @@ function NewTxDialog({ onCreate }: any) {
           <div className="space-y-1.5"><Label>Note</Label><Input value={note} onChange={(e) => setNote(e.target.value)} /></div>
           <Button
             className="w-full gradient-primary text-primary-foreground"
-            onClick={() => {
-              onCreate({ type, amount, category, note, date: new Date().toISOString() });
-              toast.success("Transaction added");
-              setOpen(false); setAmount(0); setNote("");
+            disabled={saving}
+            onClick={async () => {
+              if (busy.current) return;
+              if (!Number.isFinite(amount) || amount < 0) { toast.error("Enter a valid amount of zero or more."); return; }
+              busy.current = true;
+              setSaving(true);
+              try {
+                await onCreate({ type, amount, category, note, date: new Date().toISOString() });
+                toast.success("Transaction added");
+                setOpen(false); setAmount(0); setNote("");
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Unable to save transaction. Please try again.");
+              } finally {
+                busy.current = false;
+                setSaving(false);
+              }
             }}
-          >Save</Button>
+          >{saving ? "Saving…" : "Save"}</Button>
         </div>
       </DialogContent>
     </Dialog>
