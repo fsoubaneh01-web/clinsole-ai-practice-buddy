@@ -24,12 +24,12 @@ const SHELL = "mx-auto w-full max-w-[1280px] px-6 lg:px-10";
 const SECTION = "py-[72px] lg:py-[120px]";
 
 const CAPABILITIES = [
-  { title: "AI SOAP notes", description: "Turn quick visit notes into full clinical documentation in seconds." },
+  { title: "AI SOAP drafts", description: "Turn quick visit notes into editable SOAP drafts for your review." },
   { title: "Patient records", description: "Medical history, diabetes status, allergies, assessments, and treatment history." },
-  { title: "Smart scheduling", description: "Book visits, set recurring appointments, and send patient reminders." },
+  { title: "Appointment calendar", description: "Book visits and organize upcoming appointments. Automated patient reminders are not available yet." },
   { title: "Income tracking", description: "Log visits, payments, and expenses. See monthly revenue at a glance." },
   { title: "Business assistant", description: "Generate follow-ups, education handouts, and marketing content." },
-  { title: "Secure & private", description: "Your patient data is encrypted and stays private to your practice." },
+  { title: "Nurse-reviewed documentation", description: "Review and edit AI-generated notes before saving them to a patient record." },
 ];
 
 /* Illustrative practice profiles — the shapes of practice ClinSole is built
@@ -111,7 +111,7 @@ const PREMIUM_PLAN = [
   "Unlimited patients",
   "Unlimited AI SOAP notes",
   "AI business assistant",
-  "Recurring appointments & reminders",
+  "Appointment scheduling",
   "Advanced income & expense tracking",
   "Priority support",
 ];
@@ -261,7 +261,7 @@ function Landing() {
         <Reveal className="max-w-2xl">
           <div className="canvas-eyebrow">Simple pricing</div>
           <h2 className="canvas-display mt-7 text-[clamp(38px,4.4vw,68px)]">
-            Start free. Upgrade when you're ready.
+            Start free. Premium is coming soon.
           </h2>
         </Reveal>
 
@@ -298,9 +298,7 @@ function Landing() {
               ))}
             </ul>
             <div className="mt-10">
-              <Link to="/signup" className="canvas-pill">
-                Start with Premium <ArrowRight className="h-4 w-4" />
-              </Link>
+              <span className="canvas-pill" aria-disabled="true">Premium coming soon</span>
             </div>
           </Reveal>
         </div>
@@ -320,7 +318,7 @@ function Landing() {
             </Reveal>
             <Reveal delay={110}>
               <p className="canvas-body max-w-md">
-                Import your patient list, set up your first week of visits, or get a note reviewed. A real person answers, and setup help is included on every plan — including the free one.
+                Questions about patient records, appointment scheduling, or using ClinSole? Contact support. Review clinical documentation yourself before saving it.
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-8">
                 <Link to="/signup" className="canvas-link">

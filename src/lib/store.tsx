@@ -973,7 +973,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     addTransaction: async (t) => {
       const userId = session?.user?.id;
-      if (!userId) return;
+      if (!userId) throw new Error("Sign in before recording income.");
+      if (!Number.isFinite(t.amount) || t.amount < 0) throw new Error("Enter a valid amount of zero or more.");
       const { data, error } = await supabase
         .from("transactions")
         .insert({
@@ -987,7 +988,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         })
         .select()
         .single();
-      if (error || !data) { console.error("addTransaction", error); return; }
+      if (error || !data) throw new Error("The income entry could not be recorded. Add it from Income tracking.");
       setTransactions((s) => [rowToTransaction(data as TransactionRow), ...s]);
     },
     upgradeToPremium: async () => {

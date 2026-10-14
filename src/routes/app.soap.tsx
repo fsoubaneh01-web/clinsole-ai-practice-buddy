@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useStore, PLAN_LIMITS, summarizeAssessment } from "@/lib/store";
 import { generateSoapNote } from "@/lib/soap.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles, Save, Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -22,10 +22,30 @@ export const Route = createFileRoute("/app/soap")({
 
 function SoapNote() {
   const { patientId } = Route.useSearch();
+  const { session } = useStore();
+  return <PatientSoapNote key={`${session?.user.id || "signed-out"}:${patientId || "default"}`} initialPatientId={patientId} />;
+}
+
+function PatientSoapNote({ initialPatientId }: { initialPatientId?: string }) {
+  const { patients } = useStore();
+  const [selectedId, setSelectedId] = useState(initialPatientId || "");
+  const pid = selectedId || patients[0]?.id || "";
+  // A separate editor for each patient discards all visit inputs and drafts
+  // together. This also handles patients arriving after the store loads.
+  return <SoapEditor key={pid} pid={pid} onPatientChange={setSelectedId} />;
+}
+
+function SoapEditor({ pid, onPatientChange }: { pid: string; onPatientChange: (id: string) => void }) {
   const { patients, addTreatment, addTransaction, ageOf, nurse, useAiCredit, latestAssessmentFor } = useStore();
-  const [pid, setPid] = useState(patientId || patients[0]?.id || "");
   const [brief, setBrief] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const active = useRef(true);
+  const busy = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
   const [soap, setSoap] = useState<{ s: string; o: string; a: string; p: string } | null>(null);
   const [fee, setFee] = useState(75);
   const generate = useServerFn(generateSoapNote);
@@ -37,6 +57,7 @@ function SoapNote() {
   const outOfCredit = used >= limit;
 
   const gen = async () => {
+    if (busy.current) return;
     if (!patient) {
       toast.error("Select a patient first.");
       return;
@@ -48,9 +69,12 @@ function SoapNote() {
     // Loading starts before the credit check so a slow or stuck check still
     // shows the spinner, and everything after it is inside the try so a thrown
     // error surfaces as a toast instead of an unhandled rejection.
+    busy.current = true;
     setLoading(true);
     try {
-      if (!(await useAiCredit())) {
+      const hasCredit = await useAiCredit();
+      if (!active.current) return;
+      if (!hasCredit) {
         toast.error("You've used all AI notes on the Free plan this month.");
         return;
       }
@@ -63,25 +87,51 @@ function SoapNote() {
           diabetesStatus: patient.diabetesStatus,
           allergies: patient.allergies || "",
           briefNotes: brief,
-          assessmentSummary: latestAssessment ? summarizeAssessment(latestAssessment) : "",
+          assessmentSummary: latestAssessment ? `Recorded on ${latestAssessment.date}: ${summarizeAssessment(latestAssessment)}` : "",
         },
       });
+      if (!active.current) return;
       setSoap(out);
       toast.success("SOAP note generated");
     } catch (e) {
+      if (!active.current) return;
       console.error("soap generate", e);
       const msg = e instanceof Error ? e.message : "Failed to generate note";
       toast.error(msg);
-    } finally { setLoading(false); }
+    } finally {
+      busy.current = false;
+      if (active.current) setLoading(false);
+    }
   };
 
   const save = async () => {
-    if (!soap || !patient) return;
-    const res = await addTreatment(patient.id, { date: new Date().toISOString(), soap, fee });
-    if (res.error) { toast.error(res.error); return; }
-    await addTransaction({ type: "income", amount: fee, date: new Date().toISOString(), category: "Visit", patientId: patient.id });
-    toast.success("Note saved to patient record");
-    setSoap(null); setBrief("");
+    if (!soap || !patient || busy.current) return;
+    if (!Number.isFinite(fee) || fee < 0) {
+      toast.error("Enter a valid visit fee of zero or more.");
+      return;
+    }
+    busy.current = true;
+    setSaving(true);
+    try {
+      const date = new Date().toISOString();
+      const res = await addTreatment(patient.id, { date, soap, fee });
+      if (res.error) { if (active.current) toast.error(res.error); return; }
+      // The clinical record is saved. Clear it before recording income so a
+      // subsequent accounting failure cannot invite a duplicate clinical save.
+      if (active.current) { setSoap(null); setBrief(""); }
+      try {
+        await addTransaction({ type: "income", amount: fee, date, category: "Visit", patientId: patient.id });
+      } catch {
+        if (active.current) toast.warning("Note saved, but income could not be recorded. Add it from Income tracking.");
+        return;
+      }
+      if (active.current) toast.success("Note saved to patient record");
+    } catch (e) {
+      if (active.current) toast.error(e instanceof Error ? e.message : "Unable to save visit. Please try again.");
+    } finally {
+      busy.current = false;
+      if (active.current) setSaving(false);
+    }
   };
 
   return (
@@ -108,7 +158,7 @@ function SoapNote() {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label>Patient</Label>
-                <Select value={pid} onValueChange={setPid}>
+                <Select value={pid} onValueChange={onPatientChange} disabled={saving}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
@@ -122,7 +172,7 @@ function SoapNote() {
               {patient && (
                 latestAssessment ? (
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs">
-                    <div className="mb-1 font-semibold text-primary">Attached: latest foot assessment</div>
+                    <div className="mb-1 font-semibold text-primary">Context: latest foot assessment · {new Date(latestAssessment.date).toLocaleDateString()}</div>
                     <div className="text-muted-foreground">{summarizeAssessment(latestAssessment)}</div>
                   </div>
                 ) : (
@@ -134,7 +184,7 @@ function SoapNote() {
                   </div>
                 )
               )}
-              <Button onClick={gen} disabled={loading || !patient} className="w-full gradient-primary text-primary-foreground">
+              <Button onClick={gen} disabled={loading || saving || !patient} className="w-full gradient-primary text-primary-foreground">
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating…</> : <><Sparkles className="mr-2 h-4 w-4" />Generate SOAP note</>}
               </Button>
               {outOfCredit && <p className="text-center text-xs text-muted-foreground">Upgrade to Premium for unlimited notes.</p>}
@@ -149,18 +199,19 @@ function SoapNote() {
               </div>
             ) : (
               <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">AI draft: verify every section against your assessment and care provided before saving. Earlier assessment findings are historical context.</p>
                 {(["s","o","a","p"] as const).map((k) => (
                   <div key={k} className="space-y-1.5">
                     <Label className="uppercase">{k === "s" ? "Subjective" : k === "o" ? "Objective" : k === "a" ? "Assessment" : "Plan"}</Label>
-                    <Textarea rows={k === "o" || k === "p" ? 4 : 3} value={soap[k]} onChange={(e) => setSoap({ ...soap, [k]: e.target.value })} />
+                    <Textarea disabled={loading || saving} rows={k === "o" || k === "p" ? 4 : 3} value={soap[k]} onChange={(e) => setSoap({ ...soap, [k]: e.target.value })} />
                   </div>
                 ))}
                 <div className="space-y-1.5">
                   <Label>Visit fee ($)</Label>
-                  <Input type="number" value={fee} onChange={(e) => setFee(Number(e.target.value))} />
+                  <Input type="number" min={0} disabled={saving} value={fee} onChange={(e) => setFee(Number(e.target.value))} />
                 </div>
-                <Button onClick={save} size="lg" className="w-full gradient-primary text-primary-foreground">
-                  <Save className="mr-2 h-4 w-4" /> Save to patient record
+                <Button onClick={save} disabled={loading || saving || !patient} size="lg" className="w-full gradient-primary text-primary-foreground">
+                  {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : <><Save className="mr-2 h-4 w-4" /> Save to patient record</>}
                 </Button>
               </div>
             )}

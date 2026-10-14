@@ -51,7 +51,7 @@ function Subscription() {
               "Unlimited patients",
               "Unlimited AI SOAP notes",
               "AI business assistant",
-              "Recurring appointments & reminders",
+              "Appointment scheduling",
               "Advanced income & expense tracking",
               "Priority support",
             ]}
@@ -61,7 +61,7 @@ function Subscription() {
 
         </div>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">Cancel anytime. Prices in USD.</p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">Premium billing is not available yet. Listed Premium pricing is in USD.</p>
 
         <div className="mt-10 border-t pt-6">
           <div className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Account</div>

@@ -430,7 +430,7 @@ function VisitFlow() {
           diabetesStatus: patient.diabetesStatus,
           allergies: patient.allergies || "",
           briefNotes: brief || "Routine foot care visit.",
-          assessmentSummary: latestAssessment ? summarizeAssessment(latestAssessment) : "",
+          assessmentSummary: latestAssessment ? `Recorded on ${latestAssessment.date}: ${summarizeAssessment(latestAssessment)}` : "",
         },
       });
       setSoap(out);

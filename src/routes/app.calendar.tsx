@@ -17,7 +17,7 @@ import { addDaysLocal, addMonthsLocal, parseLocalDateTime } from "@/lib/datetime
 
 
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
-import { Bell, CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -161,11 +161,6 @@ function CalendarView() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => toast.info(`Reminder sent to ${a.patientName}`)}
-                    className="grid h-9 w-9 place-items-center rounded-full text-primary hover:bg-accent"
-                    aria-label="Send reminder"
-                  ><Bell className="h-4 w-4" /></button>
                   <button
                     onClick={() => setEditing(a)}
                     className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-primary"

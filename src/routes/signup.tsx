@@ -27,7 +27,7 @@ function Signup() {
       <p className="mt-1 text-sm text-muted-foreground">14 days free · No credit card required</p>
 
       <ul className="mt-5 space-y-2 rounded-2xl border bg-accent/40 p-4 text-sm">
-        {["Unlimited patients & visit notes","AI SOAP note generator","Appointment calendar & reminders","Income tracker & business AI"].map((f) => (
+        {["Patient records with plan limits","Editable AI SOAP drafts","Appointment calendar","Income tracker & business AI"].map((f) => (
           <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" />{f}</li>
         ))}
       </ul>
