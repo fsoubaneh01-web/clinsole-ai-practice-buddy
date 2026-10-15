@@ -12,6 +12,13 @@ const TONE = {
 
 /** Compact pill — for cards and list rows. */
 export function RiskPill({ risk, className }: { risk: RiskResult; className?: string }) {
+  if (!risk.hasData) {
+    return (
+      <span className={cn("inline-flex rounded-full border bg-muted px-2.5 py-1 text-xs text-muted-foreground", className)}>
+        Risk not assessed
+      </span>
+    );
+  }
   const tone = TONE[risk.level];
   const Icon = tone.icon;
   return (
@@ -31,6 +38,14 @@ export function RiskPill({ risk, className }: { risk: RiskResult; className?: st
 
 /** Full card — for the patient dashboard header and the top of a visit summary. */
 export function RiskBadge({ risk, className }: { risk: RiskResult; className?: string }) {
+  if (!risk.hasData) {
+    return (
+      <section className={cn("rounded-2xl border bg-surface p-4 shadow-soft", className)} aria-label="Foot risk not assessed">
+        <p className="text-sm font-semibold">Risk not assessed</p>
+        <p className="mt-2 text-sm text-muted-foreground">No assessment findings documented for this visit yet. Complete a clinical assessment before assigning a risk category.</p>
+      </section>
+    );
+  }
   const tone = TONE[risk.level];
   const Icon = tone.icon;
   return (
