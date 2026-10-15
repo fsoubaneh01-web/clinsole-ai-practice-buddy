@@ -191,10 +191,19 @@ function PatientProfile() {
                     <div className="text-sm font-semibold">{format(new Date(t.date), "MMM d, yyyy")}</div>
                     <Badge variant="outline">${t.fee}</Badge>
                   </div>
-                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                    <div><b className="text-foreground">A:</b> {t.soap.a}</div>
-                    <div><b className="text-foreground">P:</b> {t.soap.p}</div>
-                  </div>
+                  <dl className="mt-4 space-y-3 text-sm">
+                    {([
+                      ["Subjective", t.soap.s],
+                      ["Objective", t.soap.o],
+                      ["Assessment", t.soap.a],
+                      ["Plan", t.soap.p],
+                    ] as const).map(([label, text]) => (
+                      <div key={label}>
+                        <dt className="font-semibold text-foreground">{label}</dt>
+                        <dd className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">{text || "Not documented"}</dd>
+                      </div>
+                    ))}
+                  </dl>
                   <TreatmentPhotoStrip treatmentId={t.id} />
                 </div>
               ))}
