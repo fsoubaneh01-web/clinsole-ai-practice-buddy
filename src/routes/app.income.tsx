@@ -28,6 +28,8 @@ function Income() {
   const net = thisMonth.income - thisMonth.expense;
 
   const visits = useMemo(() => transactions.filter((t) => t.type === "income" && t.category === "Visit").length, [transactions]);
+  const monthlyVisits = transactions.filter((t) => t.type === "income" && t.category === "Visit" && isSameMonth(new Date(t.date), now));
+  const monthlyVisitIncome = monthlyVisits.reduce((sum, transaction) => sum + transaction.amount, 0);
 
   return (
     <AppShell title="Business dashboard" actions={<NewTxDialog onCreate={addTransaction} />}>
@@ -40,14 +42,14 @@ function Income() {
               <div className="mb-1 text-xs font-semibold opacity-90">{net >= 0 ? "+" : ""}${net} net</div>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-              <MiniStat label="Visits" value={visits} />
+              <MiniStat label="Visit entries" value={monthlyVisits.length} />
               <MiniStat label="Expenses" value={`$${thisMonth.expense}`} />
-              <MiniStat label="Avg / visit" value={`$${visits ? Math.round(thisMonth.income / Math.max(1, visits)) : 0}`} />
+              <MiniStat label="Avg / visit" value={`$${monthlyVisits.length ? Math.round(monthlyVisitIncome / monthlyVisits.length) : 0}`} />
             </div>
           </div>
 
-          <Stat label="Services completed" value={visits} />
-          <Stat label="Payments received" value={`$${transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0)}`} />
+          <Stat label="Visit entries (all time)" value={visits} />
+          <Stat label="Income recorded (all time)" value={`$${transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0)}`} />
         </div>
 
         <section className="mt-8">
