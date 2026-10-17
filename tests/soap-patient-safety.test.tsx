@@ -33,7 +33,7 @@ mock.module("@/components/ui/select", () => ({
   Select: host("select"), SelectContent: host("section"), SelectItem: host("option"),
   SelectTrigger: host("header"), SelectValue: host("span"),
 }));
-mock.module("lucide-react", () => Object.fromEntries(["Sparkles", "Save", "Loader2", "Crown", "Plus", "ArrowUpRight", "ArrowDownRight", "TrendingUp"].map((name) => [name, host("i")])));
+mock.module("lucide-react", () => Object.fromEntries(["Sparkles", "Save", "Loader2", "Crown", "CalendarPlus", "MapPin", "Pencil", "RefreshCw", "Trash2", "Plus", "ArrowUpRight", "ArrowDownRight", "TrendingUp"].map((name) => [name, host("i")])));
 mock.module("sonner", () => ({ toast: Object.fromEntries(["error", "success", "warning"].map((name) => [name, (message: string) => messages.push(message)])) }));
 
 const { Route } = await import("../src/routes/app.soap");

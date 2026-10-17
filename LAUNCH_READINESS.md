@@ -1,6 +1,6 @@
 # ClinSole launch readiness
 
-Target: Friday, October 16, 2026 (America/Toronto). This is a target, not a declaration that the app is ready.
+Original target: Friday, October 16, 2026 (America/Toronto). As of October 17, the public release remains unverified and the blockers below are unresolved.
 
 ## Prepared changes
 
@@ -16,6 +16,12 @@ Target: Friday, October 16, 2026 (America/Toronto). This is a target, not a decl
 - The AI prompt distinguishes the dated latest stored assessment from current visit observations, prohibits invented findings/interventions, and uses "Not documented" for missing information. Prompt wording alone cannot guarantee model accuracy; synthetic live validation remains required.
 - After a synthetic live draft invented "foot health status appears stable", Assessment was removed from model control: the server now replaces it with the nurse's explicitly entered assessment, or "Not documented". This applies to both structured-output and JSON fallback responses. The standalone SOAP screen exposes an optional nurse-assessment input; the guided Visit screen can still be edited during review. Other AI sections continue to require nurse verification.
 
+- Missing patient history is now passed as "Not documented", keeping the separate diabetes field intact. A synthetic preview retest retained Type 1 diabetes without the earlier contradictory "no known conditions" statement.
+- Visit history now renders all four saved SOAP sections. Preview screenshots on October 15 showed the saved note on both iPhone and MacBook.
+- Unassessed visits display "Risk not assessed" instead of a low-risk badge/category. This only addresses missing assessments; it does not validate the scoring algorithm for partial or complete assessments.
+- Business totals distinguish monthly visit entries/average from all-time totals. Screenshots showed one October 15 $75 entry, retained on MacBook, with one monthly visit and a $75 average. August entries were preserved.
+- Calendar saves now block repeat clicks and closing while pending, validate duration/fee/patient, retain failed inputs, and stop if the conflict service fails. Repeat bookings whose checks fail are skipped and reported as failures, not conflicts. Opening a new booking uses the selected calendar day. These are client-flow protections, not an atomic database guarantee against simultaneous bookings from separate sessions.
+
 ## Release blockers
 
 1. **Lovable access and publishing**: project `3cfd8151-814b-4f44-96ea-a4a97d0f8aa5` is private; the browser requires sign-in. GitHub sync does not prove the published app has updated. Verify the running build identifier after publishing.
@@ -29,7 +35,7 @@ Target: Friday, October 16, 2026 (America/Toronto). This is a target, not a decl
 
 ## Verification commands
 
-Local verification on October 13, 2026 (Toronto): 16 SOAP/income/assessment regression tests passed, TypeScript passed using locked dependencies, production build passed, and `git diff --check` passed. User-provided preview screenshots at 22:39 showed Test A selected with both quick notes and SOAP draft cleared after switching from Test B; the mobile account link also worked. The corrected Assessment output still needs a live synthetic recheck. Agent database/deployment access remains blocked.
+Local verification on October 17, 2026 (Toronto): 25 SOAP/income/history/calendar regression tests passed, TypeScript passed using locked dependencies, production build passed, and the changed files passed whitespace checks. User preview screenshots verified patient-switch clearing, explicit Assessment fallback, consistent diabetes history, saved full SOAP text, an unassessed risk label and the $75 income entry retained across devices. Appointment details/reload, separate-nurse isolation, photos, dictation and the public production version remain unverified. Agent access to the correct database and Lovable publishing remains blocked.
 
 Use the committed Bun lockfile. Resolving caret ranges with npm without the lockfile can select incompatible TanStack versions.
 

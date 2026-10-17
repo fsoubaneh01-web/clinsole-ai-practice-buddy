@@ -18,7 +18,7 @@ import { addDaysLocal, addMonthsLocal, parseLocalDateTime } from "@/lib/datetime
 
 import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { CalendarPlus, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/calendar")({ component: CalendarView });
@@ -238,7 +238,16 @@ function AppointmentDialog({
   const controlled = openProp !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlled ? openProp : internalOpen;
-  const setOpen = (o: boolean) => { controlled ? onOpenChange?.(o) : setInternalOpen(o); };
+  const savingRef = useRef(false);
+  const setOpen = (o: boolean) => {
+    if (savingRef.current) return;
+    if (o && !existing) {
+      setDateStr(format(defaultDate, "yyyy-MM-dd"));
+      setPid((current) => patients.some((patient) => patient.id === current) ? current : patients[0]?.id || "");
+      setConflict(null);
+    }
+    controlled ? onOpenChange?.(o) : setInternalOpen(o);
+  };
 
   const init = existing;
   const [pid, setPid] = useState(init?.patientId || patients[0]?.id || "");
@@ -266,6 +275,7 @@ function AppointmentDialog({
     if (!onCreateOccurrence) return;
     let created = 0;
     let skipped = 0;
+    let failed = 0;
     const dates = recurrenceDates(start, kind);
     if (dates.length === 0) {
       toast.warning("No repeat visits could be generated for this date.");
@@ -278,15 +288,15 @@ function AppointmentDialog({
           data: { startIso: d.toISOString(), durationMin: duration },
         });
         if (res.conflict) { skipped++; continue; }
-      } catch (e) {
-        console.error("overlap check (series)", e);
+        const ok = await onCreateOccurrence({
+          patientId: pid, date: d.toISOString(), duration, type,
+          location, notes, expectedFee: fee,
+          recurring: kind,
+        });
+        if (ok) created++; else failed++;
+      } catch {
+        failed++;
       }
-      const ok = await onCreateOccurrence({
-        patientId: pid, date: d.toISOString(), duration, type,
-        location, notes, expectedFee: fee,
-        recurring: kind,
-      });
-      if (ok) created++; else skipped++;
     }
     if (created > 0) {
       toast.success(
@@ -296,10 +306,12 @@ function AppointmentDialog({
     } else if (skipped > 0) {
       toast.warning(`No repeat visits added — ${skipped} slot${skipped === 1 ? "" : "s"} conflicted.`);
     }
+    if (failed > 0) {
+      toast.warning(`${failed} repeat visit${failed === 1 ? "" : "s"} could not be checked or saved. The first appointment is saved; review the schedule before adding missing repeats.`);
+    }
   };
 
   const commit = async (d: Date) => {
-    setBusy(true);
     const kind = recurring === "none" ? null : (recurring as "weekly" | "biweekly" | "monthly");
     const ok = await onSave({
       patientId: pid, date: d.toISOString(), duration, type,
@@ -307,29 +319,44 @@ function AppointmentDialog({
       recurring: kind,
     });
     if (ok && kind && !existing) await createSeries(d, kind);
-    setBusy(false);
-    if (ok) setOpen(false);
+    return ok;
   };
 
   // Client check first (instant), then an authoritative server-side check so a
   // stale local cache can't let a real double-booking slip through.
-  const attemptSave = async () => {
+  const attemptSave = async (allowConflict = false) => {
+    if (savingRef.current) return;
+    if (!patients.some((patient) => patient.id === pid)) { toast.error("Choose a patient."); return; }
+    if (!Number.isFinite(duration) || duration <= 0 || !Number.isInteger(duration)) { toast.error("Enter a positive whole-number duration."); return; }
+    if (!Number.isFinite(fee) || fee < 0) { toast.error("Enter a valid fee of zero or more."); return; }
     const d = buildDate();
     if (!d) { toast.error("Please enter a valid date and time."); return; }
-    const clash = findOverlap(appointments, d, duration, existing?.id);
-    if (clash) { setConflict(clash); return; }
-
+    savingRef.current = true;
     setBusy(true);
+    let saved = false;
     try {
-      const res = await checkOverlap({
-        data: { startIso: d.toISOString(), durationMin: duration, excludeId: existing?.id },
-      });
-      if (res.conflict) { setBusy(false); setConflict(res.conflict); return; }
-    } catch (e) {
-      console.error("overlap check", e);
+      if (!allowConflict) {
+        const clash = findOverlap(appointments, d, duration, existing?.id);
+        if (clash) { setConflict(clash); return; }
+        let res;
+        try {
+          res = await checkOverlap({
+            data: { startIso: d.toISOString(), durationMin: duration, excludeId: existing?.id },
+          });
+        } catch {
+          toast.error("Could not check appointment conflicts. Nothing was booked. Please retry.");
+          return;
+        }
+        if (res.conflict) { setConflict(res.conflict); return; }
+      }
+      saved = await commit(d);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save appointment. Please retry.");
+    } finally {
+      savingRef.current = false;
+      setBusy(false);
+      if (saved) setOpen(false);
     }
-    setBusy(false);
-    await commit(d);
   };
 
 
@@ -345,7 +372,7 @@ function AppointmentDialog({
       )}
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{existing ? "Edit appointment" : "New appointment"}</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+        <fieldset disabled={busy} className="space-y-3">
           <div className="space-y-1.5">
             <Label>Patient</Label>
             <Select value={pid} onValueChange={setPid}>
@@ -402,7 +429,7 @@ function AppointmentDialog({
             onClick={() => { void attemptSave(); }}
 
           >{busy ? "Saving..." : existing ? "Save changes" : "Book appointment"}</Button>
-        </div>
+        </fieldset>
       </DialogContent>
 
       <AlertDialog open={!!conflict} onOpenChange={(o) => { if (!o) setConflict(null); }}>
@@ -416,7 +443,8 @@ function AppointmentDialog({
           <AlertDialogFooter>
             <AlertDialogCancel>Go back</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { setConflict(null); const d = buildDate(); if (d) void commit(d); }}
+              disabled={busy}
+              onClick={() => { setConflict(null); void attemptSave(true); }}
             >Book anyway</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

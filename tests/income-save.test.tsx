@@ -15,7 +15,7 @@ mock.module("@/components/ui/input", () => ({ Input: host("input") }));
 mock.module("@/components/ui/label", () => ({ Label: host("label") }));
 mock.module("@/components/ui/select", () => Object.fromEntries(["Select", "SelectContent", "SelectItem", "SelectTrigger", "SelectValue"].map((name) => [name, host("section")])));
 mock.module("@/components/ui/dialog", () => ({ Dialog: host("dialog"), DialogContent: host("section"), DialogHeader: host("header"), DialogTitle: host("h2"), DialogTrigger: host("div") }));
-mock.module("lucide-react", () => Object.fromEntries(["Plus", "ArrowUpRight", "ArrowDownRight", "TrendingUp", "Sparkles", "Save", "Loader2", "Crown"].map((name) => [name, host("i")])));
+mock.module("lucide-react", () => Object.fromEntries(["Plus", "ArrowUpRight", "ArrowDownRight", "TrendingUp", "Sparkles", "Save", "Loader2", "Crown", "CalendarPlus", "MapPin", "Pencil", "RefreshCw", "Trash2"].map((name) => [name, host("i")])));
 mock.module("sonner", () => ({ toast: { success: (message: string) => success.push(message), error: (message: string) => errors.push(message) } }));
 
 const { Route } = await import("../src/routes/app.income");
